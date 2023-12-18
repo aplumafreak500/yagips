@@ -47,7 +47,7 @@ std::string getQueryRegionListHttpRsp() {
 	/* Query current region URL */
 	region->set_dispatch_url("http://ps.yuuki.me/query_cur_region"); // TODO Temporary value!
 	/* Dispatch seed (used to derive xor key) */
-	std::string seed((const char*) dispatchSeed, 2072);
+	std::string seed((const char*) dispatchSeed, 2076);
 	ret.set_client_secret_key(seed);
 	/* TODO Unknown what this does. */
 	ret.set_enable_login_pc(1);
