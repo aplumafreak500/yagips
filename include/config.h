@@ -11,34 +11,108 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #ifndef CONFIG_H
 #define CONFIG_H
-class RegionConfig;
+
+#include <stddef.h>
+#include <string>
+
+// these structs are used as an intermediary between Protobuf and TOML
+struct RegionListEntry {
+	const char* name;
+	const char* type;
+	const char*	title;
+	const char* url;
+};
+
+struct ResMd5 {
+	const char* remote_name;
+	const char* md5;
+	size_t fileSize;
+};
+
+struct ResVersionConfig {
+	const char* resourceUrl;
+	const char* dataUrl;
+	const char* resourceUrlBak;
+	const char* resourceUrlNext;
+	const char* dataUrlBak;
+	const char* resourceSuffix;
+	const char* dataSuffix;
+	const char* silenceSuffix;
+	const char* branch;
+	const char* scriptVersion;
+	unsigned int resVersion;
+	unsigned int dataVersion;
+	unsigned int silenceVersion;
+	const char* resourceRes;
+	const char* dataRes;
+	const char* silenceRes;
+	// TODO Below 4 should be used instead of above 3
+	// struct ResMd5** resourceRes;
+	// size_t resourceResCnt;
+	// struct ResMd5* dataRes;
+	// struct ResMd5* silenceRes;
+	unsigned int relogin;
+	const char* releaseTotalSize;
+};
+
+struct StopServer {
+	unsigned long long start;
+	unsigned long long end;
+	const char* url;
+	const char* msg;
+};
+
+struct RegionInfo {
+	const char* gateserverIp;
+	unsigned short gateserverPort;
+	unsigned int gateserverIpIsDomainName;
+	const char* feedbackUrl;
+	const char* bulletinUrl;
+	const char* handbookUrl;
+	const char* communityUrl;
+	const char* userCenterUrl;
+	const char* privacyPolicyUrl;
+	const char* accountBindUrl;
+	const char* cdKeyUrl;
+	const char* payCbUrl;
+	struct ResVersionConfig* res;
+	struct ResVersionConfig* resNext;
+	const char* gameBiz;
+	const char* areaType;
+	unsigned int sendSecretKey;
+	unsigned int sendClientSecretKey;
+	unsigned int sendDispatchSeed;
+	const char* forceUpdateUrl;
+	const char* regionCustomConfig;
+	const char* clientRegionCustomConfig;
+	unsigned int sendStopServerOrForceUpdate;
+	struct StopServer* stopServer;
+};
+
+// Root config layer
+typedef struct {
+	const char* gameserver_bind_ip;
+	const char* dispatch_bind_ip;
+	unsigned short gameserver_bind_port;
+	unsigned short dispatch_bind_port;
+	unsigned int maxSessions;
+	unsigned int kcpInterval;
+	unsigned int sessionTickRate;
+	const char* dbPath;
+	const char* dataPath;
+	const char* logPath;
+	size_t regionCnt;
+	struct RegionListEntry** regions;
+	struct RegionInfo* regionInfo;
+} config_t;
 
 class Config {
 public:
-	Config();
+	Config(const char* path = NULL);
 	~Config();
-	const char* getGameserverBindIp();
-	unsigned short getGameserverBindPort();
-	const char* getDispatchBindIp();
-	unsigned short getDispatchBindPort();
-	unsigned int getMaxSessions();
-	const char* getDbPath();
-	const char* getDataPath();
+	const config_t* getConfig();
 private:
-	const char* gameserver_bind_ip;
-	unsigned short gameserver_bind_port;
-	const char* dispatch_bind_ip;
-	unsigned short dispatch_bind_port;
-	unsigned int max_sessions;
-	const char* db_path;
-	const char* data_path;
-};
-
-class RegionConfig {
-public:
-	
-private:
-	
+	config_t config;
 };
 
 #endif
