@@ -16,13 +16,13 @@ AS_IF([test "x${PROTOC}" == "x"], [AC_MSG_ERROR([Required program 'protoc' not f
 PKG_CHECK_MODULES(PROTOBUF, protobuf >= 3.12.4)
 AC_SUBST(PROTOBUF_LIBS)
 AC_SUBST(PROTOBUF_CFLAGS)
-AC_SUBST(PROTOBUF_VERSION)
-# TODO: Windows may use {,ssl}eay32 instead of {crypto,ssl}
-AC_CHECK_LIB(crypto, CRYPTO_new_ex_data, [], [AC_MSG_ERROR([Required library 'libcrypto' not found.])])
-#FOUND_SSL_LIB="no"
-#AC_CHECK_LIB(ssl, OPENSSL_init_ssl, [FOUND_SSL_LIB="yes"])
-#AC_CHECK_LIB(ssl, SSL_library_init, [FOUND_SSL_LIB="yes"])
-#AS_IF([test "x$FOUND_SSL_LIB" = xno], [AC_MSG_ERROR([Required library 'libssl' not found])])
+PKG_CHECK_MODULES(LIBCRYPTO, libcrypto >= 3.0.5)
+AC_SUBST(LIBCRYPTO_LIBS)
+AC_SUBST(LIBCRYPTO_CFLAGS)
+PKG_CHECK_MODULES(SQLITE3, sqlite3 >= 3.37.2)
+AC_SUBST(SQLITE3_LIBS)
+AC_SUBST(SQLITE3_CFLAGS)
+# TODO: do we need libssl at all?
 # TODO: Check required functions
 # Note that we have our own config.h which is a C++ class definition for setting runtime configuration, so we need to use a different name for the config.h that Autotools generates.
 AC_CONFIG_HEADERS([buildconf.h])
