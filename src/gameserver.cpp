@@ -13,6 +13,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/random.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -24,7 +25,6 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "session.h"
 #include "kcpsession.h"
 #include "util.h"
-#include "mt19937-64.h"
 
 Gameserver::Gameserver(const char* _ip, unsigned short _port) {
 	ip = _ip;
@@ -280,7 +280,7 @@ extern "C" {
 					if (i >= maxSessions) {
 						// No existing sessions matched. Try to see if a client is trying to open a new session. (Note that it's entirely possible that a client can send an oversized but still valid handshake packet.)
 						if (hs->magic1 == htobe32(0xff) && hs->cmd == htobe32(1234567890) && hs->magic2 == htobe32(0xffffffff)) {
-							sid = genrand64_int64();
+							getrandom(&sid, sizeof(unsigned long long), 0);
 							// Open a new session.
 							hs->magic1 = htobe32(0x145);
 							hs->sid1 = htobe32(sid >> 32);

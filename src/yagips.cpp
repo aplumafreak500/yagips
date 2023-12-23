@@ -16,19 +16,15 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <pthread.h>
 #include "gameserver.h"
 #include "dispatch.h"
-#include "mt19937-64.h"
 
 extern "C" {
 	int main(int argc, char** argv) {
 		pthread_t dispatch, gameserver;
 		int ret = 0;
 		int tret;
-		long long seed;
-		getrandom(&seed, sizeof(long long), 0);
 		// TODO Thread attributes
 		// TODO Getopt
 		// TODO Set up signal handlers
-		init_genrand64(seed);
 		int terrno = pthread_create(&gameserver, NULL, GameserverMain, NULL);
 		if (terrno) {
 			fprintf(stderr, "Unable to create gameserver thread, errno = %d (%s)\n", terrno, strerror(terrno));
