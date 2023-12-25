@@ -11,31 +11,31 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #ifndef ACCOUNT_H
 #define ACCOUNT_H
+#include <string>
 class Account {
 public:
 	Account();
 	~Account();
-	const char* getUsername();
-	void setUsername(const char*);
-	const char* getPasswordHash();
-	void setPasswordHash(const char*);
-	const char* getEmail();
-	void setEmail(const char*);
-	const char* getToken();
-	const char* getNewToken();
-	const char* getSessionKey();
-	const char* getNewSessionKey();
-	unsigned int getUid();
-	void setUid(unsigned int);
-	unsigned int getAccountId(); // Read-only since this is entirely handled by the db
-	void saveToDb();
+	const std::string& getUsername() const;
+	void setUsername(const std::string&);
+	const std::string& getPasswordHash() const;
+	void setPasswordHash(const std::string&);
+	const std::string& getEmail() const;
+	void setEmail(const std::string&);
+	const std::string& getToken() const;
+	void setToken(const std::string&);
+	const std::string& getNewToken();
+	const std::string& getSessionKey() const;
+	void setSessionKey(const std::string&);
+	const std::string& getNewSessionKey();
+	unsigned int getAccountId() const;
+	void setAccountId(unsigned int);
 private:
-	const char* username;
-	const char* password_hash;
-	const char* email;
-	const char* token;
-	const char* sessionKey;
+	std::string username;
+	std::string password_hash;
+	std::string email;
+	std::string token;
+	std::string sessionKey;
 	unsigned int aid;
-	unsigned int uid;
 };
 #endif
