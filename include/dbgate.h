@@ -13,23 +13,21 @@ You should have received a copy of the GNU Affero General Public License along w
 #define DBGATE_H
 #include <sqlite3.h>
 #include "account.h"
-
 class dbGate {
 public:
 	dbGate(const char*);
 	~dbGate();
 	/* Account manager */
-	unsigned int getNextAid();
 	Account* getAccountByAid(unsigned int);
 	Account* getAccountByUid(unsigned int);
 	Account* getAccountByUsername(const char*);
 	Account* getAccountByToken(const char*);
 	Account* getAccountBySessionKey(const char*);
 	Account* createAccount(const char*);
-	Account* createAccount(const char*, unsigned int);
-	int saveAccount(Account&);
-	int deleteAccount(Account&);
+	int saveAccount(const Account&);
+	int deleteAccount(const Account&);
 private:
 	sqlite3* db;
 };
+extern dbGate* globalDbGate;
 #endif
