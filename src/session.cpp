@@ -20,7 +20,6 @@ You should have received a copy of the GNU Affero General Public License along w
 Session::Session(Gameserver* gs, sock_t* sock, unsigned long long sid) {
 	// TODO Null check on gs and sock
 	kcpSession = new KcpSession(sid, sock, gs);
-	// TODO Null check on kcpSession
 	// state = <some constant idk...>
 }
 

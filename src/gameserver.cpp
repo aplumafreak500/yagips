@@ -98,6 +98,7 @@ void Gameserver::stop() {
 		if (sessionList == NULL) break;
 		if (sessionList[i] == NULL) continue;
 		sessionList[i]->close();
+		delete sessionList[i];
 	}
 	// TODO: Wait for a timeout or until all sessions have shut down
 	if (fd != -1) {
@@ -226,11 +227,6 @@ extern "C" {
 			DispatchServerSignal = 1; // TODO enum constant
 			return (void*) -1;
 		}
-		if (gs == NULL) {
-			fprintf(stderr, "Gameserver object didn't get created\n");
-			DispatchServerSignal = 1; // TODO enum constant
-			return (void*) -1;
-		}
 		// TODO Grab KCP interval from the config and call the object's setter
 		gs->setMaxSessions(maxSessions);
 		if (gs->start() < 0) {
@@ -303,11 +299,9 @@ extern "C" {
 								}
 								else {
 									sessionList[i] = new Session(gs, &client, sid);
-									// TODO Null check
 									inet_ntop(AF_INET6, client.sin6_addr.s6_addr, (char*) addr_buf, 128);
 									fprintf(stderr, "Accepted new client from %s:%d\n", addr_buf, client.sin6_port);
 									sessionThreads[i] = new std::thread(SessionMain, sessionList[i]);
-									// TODO Null check
 								}
 							}
 						}
