@@ -11,10 +11,11 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include <string>
 #include "util.h"
 
-std::string b64enc(const std::string in) {
+std::string b64enc(const std::string& in) {
 	const char b64tbl[64] = {
 		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
 		'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
@@ -87,4 +88,21 @@ extern "C" {
 		}
 		fprintf(stderr, "\t%s\n", abuf);
 	}
+
+	#define rotl(x, k) ((x << k) | (x >> (64 - k)))
+
+	unsigned long long rand_xoshiro256(unsigned long long s[4]) {
+		assert(s != NULL);
+		assert((s[0] | s[1] | s[2] | s[3]) != 0);
+		unsigned long long result = rotl((s[0] + s[3]), 23) + s[0];
+		unsigned long long t = s[1] << 17;
+		s[2] ^= s[0];
+		s[3] ^= s[1];
+		s[1] ^= s[2];
+		s[0] ^= s[3];
+		s[2] ^= t;
+		s[3] = rotl(s[3], 45);
+		return result;
+	}
+
 }

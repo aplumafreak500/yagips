@@ -13,8 +13,9 @@ You should have received a copy of the GNU Affero General Public License along w
 #define UTIL_H
 #include <stddef.h>
 #include <string>
-std::string b64enc(const std::string);
+std::string b64enc(const std::string&);
 extern "C" {
 	void DbgHexdump(const unsigned char*, size_t);
+	unsigned long long rand_xoshiro256(unsigned long long [4]);
 }
 #endif

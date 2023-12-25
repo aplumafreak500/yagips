@@ -10,11 +10,14 @@ They are as follows:
 * [kcp](#kcp) \(<https://github.com/skywind3000/kcp>\) in <src/kcp.c> and <include/kcp.h> \(modified 2023-12-14 by ArcticLuma113 to support 64-bit `conv` value\)
 * [toml-c](#toml-c) \(<https://github.com/arp242/toml-c>\) in <src/toml.c> and <include/toml.h>
 * [picohttpparser](#picohttpparser) \(<https://github.com/h2o/picohttpparser>\) in <src/http.c> and <include/http.h>
+* xoshiro256++ \(<https://prng.di.unimi.it>, [public domain](https://creativecommons.org/publicdomain/zero/1.0)\) in <src/util.cpp> \(function `rand_xoshiro256`\)
 
 ### External dependencies
 
 * Protobuf \(<https://protobuf.dev>\)
 * OpenSSL \(<https://openssl.org>\)
+* SQLite3 \(<https://www.sqlite.org>\)
+* json-c \(<https://github.com/json-c/json-c>\)
 
 ## mt19937-64
 
