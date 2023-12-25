@@ -11,7 +11,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #ifndef CONFIG_H
 #define CONFIG_H
-
+#include "buildconf.h"
 #include <stddef.h>
 #include <string>
 
@@ -110,9 +110,10 @@ class Config {
 public:
 	Config(const char* path = NULL);
 	~Config();
-	const config_t* getConfig();
+	const config_t* getConfig() const;
 private:
 	config_t config;
 };
 
+extern Config* globalConfig;
 #endif
