@@ -22,6 +22,9 @@ AC_SUBST(LIBCRYPTO_CFLAGS)
 PKG_CHECK_MODULES(SQLITE3, sqlite3 >= 3.37.2)
 AC_SUBST(SQLITE3_LIBS)
 AC_SUBST(SQLITE3_CFLAGS)
+PKG_CHECK_MODULES(JSON_C, json-c >= 0.15)
+AC_SUBST(JSON_C_LIBS)
+AC_SUBST(JSON_C_CFLAGS)
 # TODO: do we need libssl at all?
 # TODO: Check required functions
 # Note that we have our own config.h which is a C++ class definition for setting runtime configuration, so we need to use a different name for the config.h that Autotools generates.

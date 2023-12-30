@@ -9,8 +9,8 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(builddir)/proto -DCONFDIR=\"$(sysconfd
 bin_PROGRAMS = yagips
 yagips_SOURCES = yagips.cpp gameserver.cpp session.cpp account.cpp kcpsession.cpp dispatch.cpp dbgate.cpp config.cpp util.cpp http.c toml.c mt19937-64.c crypt.c kcp.c keys.c
 nodist_yagips_SOURCES = $(builddir)/proto/dispatch.pb.cc
-yagips_CFLAGS = $(PROTOBUF_CFLAGS) $(LIBCRYPTO_CFLAGS) $(SQLITE3_CFLAGS)
-yagips_LDADD = $(PROTOBUF_LIBS) $(LIBCRYPTO_LIBS) $(SQLITE3_LIBS)
+yagips_CFLAGS = $(PROTOBUF_CFLAGS) $(LIBCRYPTO_CFLAGS) $(SQLITE3_CFLAGS) $(JSON_C_CFLAGS)
+yagips_LDADD = $(PROTOBUF_LIBS) $(LIBCRYPTO_LIBS) $(SQLITE3_LIBS) $(JSON_C_LIBS)
 BUILT_SOURCES = $(builddir)/proto/dispatch.pb.h
 CLEANFILES = $(builddir)/proto/dispatch.pb.cc $(builddir)/proto/dispatch.pb.h
 dist_noinst_DATA = proto/dispatch.proto

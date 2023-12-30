@@ -15,7 +15,9 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <sys/random.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <json-c/json_tokener.h>
 #include <string>
+#include "config.h"
 #include "gameserver.h"
 #include "util.h"
 #include "crypt.h"
@@ -24,136 +26,298 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "keys.h"
 #include "http.h"
 
-// TODO pass in a struct containing the HTTP GET parameters
-std::string getQueryRegionListHttpRsp() {
+enum {
+	CLIENT_UNK = -1,
+	CLIENT_PC = 0,
+	CLIENT_ANDROID = 1,
+	CLIENT_IOS = 2,
+//	CLIENT_PS4 = 3,
+//	CLIENT_PS5 = 4,
+	CLIENT_CNT
+};
+
+enum {
+	REGION_UNK = -1,
+	REGION_OS = 0,
+	REGION_CN = 1,
+	REGION_CNT
+};
+
+#define LIVE_MAJOR 4
+#define LIVE_MINOR 3
+#define CUR_MAJOR 3
+#define CUR_MINOR 2
+
+std::string getQueryRegionListHttpRsp(const char* post) {
 	proto::QueryRegionListHttpRsp ret;
-	proto::RegionSimpleInfo* region = ret.add_region_list();
+	proto::RegionSimpleInfo* pregion;
 	std::string ret_enc;
-	// TODO Get these from config
-	// TODO Unknown what these do
-	const char* config = "{\"sdkenv\":\"2\",\"checkdevice\":false,\"loadPatch\":false,\"showexception\":false,\"regionConfig\":\"pm|fk|add\",\"downloadMode\":0,\"codeSwitch\":[0]}";
-	size_t config_sz = strlen(config);
+	std::string seed;
+	std::string cconfig;
+	size_t post_len;
+	struct json_tokener* jtk;
+	enum json_tokener_error jerr;
+	struct json_object* jobj;
+	const char* data;
+	struct json_object* dobj;
+	unsigned int major = 0;
+	unsigned int minor = 0;
+	unsigned int patch = 0;
+	int client, region;
+	char sclient[32];
+	char sregion[3];
+	int sret;
 	char configBuf[1024];
+	const char* config;
+	size_t config_sz;
 	size_t i;
+	if (post == NULL) {
+		ret.set_retcode(-1);
+		goto build_rsp;
+	}
+	post_len = strlen(post) + 1;
+	jtk = json_tokener_new();
+	if (jtk == NULL) {
+		ret.set_retcode(-1);
+		goto build_rsp;
+	}
+	jobj = json_tokener_parse_ex(jtk, post, post_len);
+	if (jobj == NULL) {
+		jerr = json_tokener_get_error(jtk);
+		if (jerr != json_tokener_continue) {
+			fprintf(stderr, "Error: JSON in POST data is incomplete\n");
+		}
+		else {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		ret.set_retcode(-1);
+		goto build_rsp;
+	}
+	if (json_tokener_get_parse_end(jtk) < post_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(jobj, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		ret.set_retcode(-1);
+		goto build_rsp;
+	}
+	if (!json_object_object_get_ex(jobj, "version", &dobj)) {
+		// Version isn't even present
+		json_object_put(jobj);
+		ret.set_retcode(-1);
+		goto build_rsp;
+	}
+	data = json_object_get_string(dobj);
+	if (data == NULL) {
+		// Version is present, but set to null
+		json_object_put(jobj);
+		ret.set_retcode(-1);
+		goto build_rsp;
+	}
+	memset(sregion, '\0', 3);
+	memset(sclient, '\0', 32);
+	sret = sscanf(data, "%2cREL%31[^0-9.]%d.%d.%d", sregion, sclient, &major, &minor, &patch);
+	if (sret == EOF || sret < 5) {
+		// Version is present, but in an invalid format
+		json_object_put(jobj);
+		ret.set_retcode(-1);
+		goto build_rsp;
+	}
+	if (strncmp(sregion, "OS", 3) == 0) region = REGION_OS;
+	else if (strncmp(sregion, "CN", 3) == 0) region = REGION_CN;
+	else region = REGION_UNK;
+	if (strncmp(sclient, "Win", 31) == 0) client = CLIENT_PC;
+	else if (strncmp(sclient, "Android", 31) == 0) client = CLIENT_ANDROID;
+	else if (strncmp(sclient, "iOS", 31) == 0) client = CLIENT_IOS;
+	// TODO PS4 and PS5 version ID's?
+	// else if (strncmp(sclient, "PS4", 31) == 0) client = CLIENT_PS4;
+	// else if (strncmp(sclient, "PS5", 31) == 0) client = CLIENT_PS5;
+	else client = CLIENT_UNK;
+	if (
+		(client <= CLIENT_UNK || client >= CLIENT_CNT) ||
+		(region <= REGION_UNK || region >= REGION_CNT) ||
+		// Note: Official server accepts any version, as long as it's a valid, in range version, including both release and beta versions. (For example, reporting 1.0.0 or 4.2.51 is still allowed, but (as of 12/27/2023 when 4.3.0 was live) reporting 4.2.2 or 4.3.1 (not existing live client patch), 4.4.0 (future version), or 4.3.55 (not existing beta) causes dispatch to return -1.)
+		// Also note that query_curr_region has much stricter version checks.
+		// TODO: allow pre-1.0 betas, including CB3 (not CB1 or 2, they don't use KCP)
+		(major < 1 || major > LIVE_MAJOR) ||
+		(major == 1 && minor > 6) || // 2.0 was the first major version with a minor set to 7 or 8
+		(major == LIVE_MAJOR && minor > LIVE_MINOR) ||
+		minor > 8 ||
+		// TODO: Does any beta version have a patch value above 51?
+		patch > 51 ||
+		// TODO: Does any live version have a patch value above 1?
+		(patch > 1 && patch < 51)
+	) {
+		// Invalid version
+		json_object_put(jobj);
+		ret.set_retcode(-1);
+		goto build_rsp;
+	}
+	// Note: Official servers check for the existence and correctness of the `channel_id` parameter. In my testing, no other parameters are needed (though they may be validated if present) to get a positive response. Here, we don't check that at all, nor any other parameters, though that may change in the future.
+	// TODO Clients send a `language` parameter, this could be useful in case we end up supporting multilingual `title` parameters in the region list config.
+	/* TODO Roadmap:
+		1. Iterate through server-configured regions and check for its version.
+			* If the config-level region list is empty, send -1 to the client and an error to the log.
+			* If no version is set at the config level, treat it as allowing all versions.
+		2. If there's a match, add it to the response here.
+		3. If the proto-level region list is empty, send back -1.
+		4. Grab "custom config", seed, and enable_login_pc from config, apply to the proto if present
+			* If no seed is configured, send -1 to the client and an error to the log
+	*/
+	// TODO Unknown what these do
+	config = "{\"sdkenv\":\"2\",\"checkdevice\":false,\"loadPatch\":false,\"showexception\":false,\"regionConfig\":\"pm|fk|add\",\"downloadMode\":0,\"codeSwitch\":[0]}";
+	config_sz = strlen(config);
 	for (i = 0; i < config_sz; i++) {
 		configBuf[i] = config[i] ^ dispatchKey[i % 4096];
 	}
+	pregion = ret.add_region_list();
 	/* Text ID of the region */
-	region->set_name("os_usa");
+	pregion->set_name("os_usa");
 	/* Name of the region (displayed in client) */
-	region->set_title("yagips test");
+	pregion->set_title("yagips test");
 	/* Server type (TODO unknown what this does) */
-	region->set_type("DEV_PUBLIC");
+	pregion->set_type("DEV_PUBLIC");
 	/* Query current region URL */
-	region->set_dispatch_url("http://ps.yuuki.me/query_cur_region"); // TODO Temporary value!
+	pregion->set_dispatch_url("http://ps.yuuki.me/query_curr_region"); // TODO Temporary value!
 	/* Dispatch seed (used to derive xor key) */
-	std::string seed((const char*) dispatchSeed, 2076);
+	seed.assign((const char*) dispatchSeed, 2076);
 	ret.set_client_secret_key(seed);
 	/* TODO Unknown what this does. */
 	ret.set_enable_login_pc(1);
 	/* Encrypted json config object. */
-	std::string cconfig(configBuf, config_sz);
+	cconfig.assign(configBuf, config_sz);
 	ret.set_client_custom_config_encrypted(cconfig);
+build_rsp:
 	if (!ret.SerializeToString(&ret_enc)) {
-		return "";
+		// Bypass Protobuf and encode a response ourselves. Note that this eventually gets base64 encoded, hence the raw hex string.
+		ret_enc.assign("\x08\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01", 11); // retcode = -1 and no other fields set
 	}
 	return ret_enc;
 }
 
 // TODO pass in a struct containing the HTTP GET parameters
 std::string getQueryCurrRegionHttpRsp(std::string& sign, int doEnc) {
+	/* TODO Roadmap:
+		1. Parse JSON, as in query_region_list
+		2. If version is set, verify it, using the version set in the config for the region with index 0. (config.cpp does its own checks regarding the configured client version supported by the server.) Otherwise, fall back to said configure-time defaults.
+			* If there's a mismatch, send back a negative response with `msg` and `retcode` set appropriately. (TODO should we also set `resVersionConfig`-related stuff too in that case?)
+			* Grasscutter actually uses stopServer responses to report version mismatches. (TODO are there any other ways to do the same?)
+		3. If key_id is set, verify that it's either negative, 0, or in range [2,5]. If not, error out.
+			* Negative, 0, or unset means bypass the encryption step.
+		4. Parse aid and check it. If negative, unset, or non-numeric, continue. Else, check that it exists in the db. If not, continue. Else, check for a ban. If there is one and it hasn't expired, send back a negative response with `msg` and `retcode` set appropriately. (TODO should we also set `resVersionConfig`-related stuff too in that case?) If it has expired, delete it from the db and then continue.
+		5. (TODO Figure out what to do with	the dispatch_seed. Yuuki verifies it as part of determining the client version; Grasscutter merely checks for its existence and uses a hardcoded signature if not present, but doesn't appear to do anything else with it if it is set.)
+		6. If (non-vanilla) parameter `skipSign` is present and nonzero, skip the signing step altogether and return an empty string as the signature. The caller should see this and omit the signature from the outer json response.
+		7. (TODO What other parameters do we need to check?)
+		8. (TODO What other parameters does the official server check?)
+		9. Set the proto fields according to the config. (TODO On the official server, if retcode is not 0, due to eg. a ban or an error, are resVersionConfig fields set too?)
+		10. Check sendStopServerOrForceUpdate and apply the corresponding proto field if it is set. (TODO On the official server, if forceUpdate is set, are resVersionConfig fields set too?)
+		11. Proceed from the line `if (!ret.SerializeToString(&ret_enc))`.
+	*/
 	int doSign = 1;
 	proto::QueryCurrRegionHttpRsp ret;
+	proto::RegionInfo* region;
+	proto::ResVersionConfig* res;
 	std::string ret_enc;
-	// TODO Most, if not all, of this data can be pulled from the config and/or client.
 	/* Unknown Fields TODO
 		* client_secret_key - ECB seed struct. At least on Yuuki, this is actually different from the one given in the region list. Unknown what this is actually used for, but it's likely that, once derived, it's the same as the secretKey we already have.
 		* region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one below, or with the one from query_cur_region
 		* client_region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one above, or with the one from query_cur_region
 	*/
-	/* Status code. 0 means success, anything else means an error. TODO see if there are differences in client behavior whenever retcode is positive or negative */
-	ret.set_retcode(0);
-	/* Return message. I'm pretty sure this is used to report things like bans or server problems, and that, if it's set, it displays when retcode != 0. TODO Verify */
-	ret.set_msg("ok");
-	/* Start Region Info */
-	proto::RegionInfo* region = new proto::RegionInfo;
-	/* Unknown Fields TODO
-		* pay_callback_url - definitely related to IAP, but unknown how it's used
-		* area_type - Unknown. maybe CN vs OS?
-		* resource_url_bak - Backup base URL for resources? (On Yuuki this is set to just the branch name...?)
-		* data_url_bak - most likely same as resource_url_bak, but for data/silence
-		* next_resource_url - Preload resource base URL(?)
-		* secret_key - ECB seed struct. On Yuuki, this is the same as the dispatch seed. Unknown if this is true on vanilla. Also unknown if it's even used.
-		* game_biz - Unknown.
-	*/
-	/* Gameserver IP. TODO Unknown if the game accepts IPv6 addresses. */
-	region->set_gateserver_ip("192.168.49.1");
-	/* Gameserver domain name. (Use instead of gateserver_ip if DNS needs to be used for the gameserver; helpful for eg. DDNS or load balancing) */
-	// region->set_use_gateserver_domain_name(1);
-	// region->set_gateserver_domain_name("ps.yuuki.me");
-	/* Gameserver port */
-	region->set_gateserver_port(22102);
-	/* Note: The gameserver can work without any more fields set. Tho, behavior might be weird when accessing web stuff, because the client would be attempting to open an empty string as a URL. (Also, in-game resource downloads won't work.) */
-	/* Where the "Feedback" button in the Paimon menu leads to. */
-	region->set_feedback_url("http://ps.yuuki.me/feedback");
-	/* Where the "Notices" button in the Paimon menu leads to. TODO Verify */
-	region->set_bulletin_url("http://ps.yuuki.me/news");
-	/* Where the "Version Highlights" button in the Paimon menu leads to. TODO Verify */
-	region->set_handbook_url("http://ps.yuuki.me/book");
-	/* Where the "Community" button in the Paimon menu leads to. */
-	region->set_official_community_url("http://discord.yuuki.me");
-	/* Where the "User Center" menu in the settings menu leads to. */
-	region->set_user_center_url("http://ps.yuuki.me/user");
-	/* Where the "Privacy Policy" button in the settings menu leads to. TODO Verify */
-	region->set_privacy_policy_url("http://ps.yuuki.me/privacy");
-	/* TODO Unknown what exactly this does. I do seem to remember another button in the settings menu... */
-	region->set_account_bind_url("http://ps.yuuki.me/account");
-	/* TODO Unknown what exactly this does. */
-	region->set_cdkey_url("http://ps.yuuki.me/api/key/hk4e/");
-	/* Base URL for client resources */
-	region->set_resource_url("http://ps.yuuki.me/data_game/genshin/client_game_res/3.2_live");
-	/* Base URL for client design data (+ silence) */
-	region->set_data_url("http://ps.yuuki.me/data_game/genshin/client_design_data/3.2_live");
-	/* Data revision */
-	region->set_client_data_version(11793813);
-	/* Data hash suffix. Unknown how this is generated (at least on vanilla). */
-	region->set_client_version_suffix("1bb7eba264");
-	/* JSON object containing name, MD5 and size of data file list */
-	// TODO Set these to their proper values
-	//region->set_client_data_md5("{\"remoteName\":\"data_versions\",\"md5\":\"\", \"fileSize\":0}");
-	/* Silence revision */
-	region->set_client_silence_data_version(11212885);
-	/* Silence hash suffix. Unknown how this is generated (at least on vanilla). */
-	region->set_client_silence_version_suffix("766b0a2560");
-	/* JSON object containing name, MD5 and size of silence file list */
-	// TODO Set these to their proper values
-	//region->set_client_silence_data_md5("{\"remoteName\":\"data_versions\",\"md5\":\"\",\"fileSize\":0}");
-	/* Start Resource Config */
-	proto::ResVersionConfig* res = new proto::ResVersionConfig;
-	/* Resource revision */
-	res->set_version(11611027);
-	/* Resource hash suffix. Unknown how this is generated (at least on vanilla). */
-	res->set_version_suffix("8bf0cf5f3d");
-	/* JSON object containing name, MD5, and size of resource file lists, one line per file. On vanilla, the list of files are: res_versions_{external,medium,streaming} and base_revision. Preloads also list audio_diff_versions. */
-	// TODO Set these to their proper values
-	/*res->set_md5(
-		"{\"remoteName\":\"res_versions_external\",\"md5\":\"\",\"fileSize\":0}\n"
-		"{\"remoteName\":\"res_versions_medium\",\"md5\":\"\",\"fileSize\":0}\n"
-		"{\"remoteName\":\"res_versions_streaming\",\"md5\":\"\",\"fileSize\":0}\n"
-		"{\"remoteName\":\"base_revision\",\"md5\":\"\",\"fileSize\":0}\n"
-		// TODO release_res wut? (base rev? original unmodified files?)
-		"{\"remoteName\":\"release_res_versions_external\",\"md5\":\"\",\"fileSize\":0}\n"
-		"{\"remoteName\":\"release_res_versions_medium\",\"md5\":\"\",\"fileSize\":0}\n"
-		"{\"remoteName\":\"release_res_versions_streaming\",\"md5\":\"\",\"fileSize\":0}"
-	);*/
-	/* Branch name */
-	res->set_branch("3.2_live");
-	/* TODO Unknown what exactly this does. */
-	// res->set_release_total_size("0");
-	/* TODO Unknown what exactly this does. */
-	// res->set_relogin(0);
-	/* End Resource Config */
-	region->set_allocated_res_version_config(res);
+	const config_t* config = globalConfig->getConfig();
+	if (config->regionInfo == NULL) {
+		fprintf(stderr, "Error: Region info is null, check the config\n");
+		ret.set_retcode(-1); // TODO more specific error code?
+		ret.set_msg("Server is missing region data");
+		goto build_rsp;
+	}
+	region = new proto::RegionInfo;
+	if (config->regionInfo->gateserverIp == NULL || config->regionInfo->gateserverPort == 0) {
+		fprintf(stderr, "Error: Gateserver IP or port is null, check the config\n");
+		ret.set_retcode(-1); // TODO more specific error code?
+		ret.set_msg("Server is missing region data");
+	}
+	else {
+		if (config->regionInfo->gateserverIpIsDomainName) {
+			region->set_use_gateserver_domain_name(1);
+			region->set_gateserver_domain_name(config->regionInfo->gateserverIp);
+		}
+		else {
+			region->set_gateserver_ip(config->regionInfo->gateserverIp);
+		}
+		region->set_gateserver_port(config->regionInfo->gateserverPort);
+		ret.set_retcode(0);
+		ret.set_msg("ok");
+	}
+	if (config->regionInfo->feedbackUrl != NULL) {
+		region->set_feedback_url(config->regionInfo->feedbackUrl);
+	}
+	if (config->regionInfo->bulletinUrl != NULL) {
+		region->set_bulletin_url(config->regionInfo->bulletinUrl);
+	}
+	if (config->regionInfo->handbookUrl != NULL) {
+		region->set_handbook_url(config->regionInfo->handbookUrl);
+	}
+	if (config->regionInfo->communityUrl != NULL) {
+		region->set_official_community_url(config->regionInfo->communityUrl);
+	}
+	if (config->regionInfo->userCenterUrl != NULL) {
+		region->set_user_center_url(config->regionInfo->userCenterUrl);
+	}
+	if (config->regionInfo->privacyPolicyUrl != NULL) {
+		region->set_privacy_policy_url(config->regionInfo->privacyPolicyUrl);
+	}
+	if (config->regionInfo->accountBindUrl != NULL) {
+		region->set_account_bind_url(config->regionInfo->accountBindUrl);
+	}
+	if (config->regionInfo->cdKeyUrl != NULL) {
+		region->set_cdkey_url(config->regionInfo->cdKeyUrl);
+	}
+	if (config->regionInfo->payCbUrl != NULL) {
+		region->set_pay_callback_url(config->regionInfo->payCbUrl);
+	}
+	if (config->regionInfo->res != NULL) {
+		if (config->regionInfo->res->resourceUrl != NULL) {
+			region->set_resource_url(config->regionInfo->res->resourceUrl);
+		}
+		if (config->regionInfo->res->dataUrl != NULL) {
+			region->set_data_url(config->regionInfo->res->dataUrl);
+		}
+		region->set_client_data_version(config->regionInfo->res->dataVersion);
+		if (config->regionInfo->res->dataSuffix != NULL) {
+			region->set_client_version_suffix(config->regionInfo->res->dataSuffix);
+		}
+		if (config->regionInfo->res->dataRes != NULL) {
+			region->set_client_data_md5(config->regionInfo->res->dataRes);
+		}
+		region->set_client_silence_data_version(config->regionInfo->res->silenceVersion);
+		if (config->regionInfo->res->silenceSuffix != NULL) {
+			region->set_client_silence_version_suffix(config->regionInfo->res->silenceSuffix);
+		}
+		if (config->regionInfo->res->silenceRes != NULL) {
+			region->set_client_silence_data_md5(config->regionInfo->res->silenceRes);
+		}
+		res = new proto::ResVersionConfig;
+		res->set_version(config->regionInfo->res->resVersion);
+		if (config->regionInfo->res->resourceSuffix != NULL) {
+			res->set_version_suffix(config->regionInfo->res->resourceSuffix);
+		}
+		if (config->regionInfo->res->resourceRes != NULL) {
+			res->set_md5(config->regionInfo->res->resourceRes);
+		}
+		if (config->regionInfo->res->branch != NULL) {
+			res->set_branch(config->regionInfo->res->branch);
+		}
+		// TODO also read config->regionInfo->res->scriptVersion?
+		if (config->regionInfo->res->releaseTotalSize != NULL) {
+			res->set_release_total_size(config->regionInfo->res->releaseTotalSize);
+		}
+		res->set_relogin(config->regionInfo->res->relogin);
+		region->set_allocated_res_version_config(res);
+	}
+	// TODO "Grab from config" rewrite stops here
 	/* Start Next Resource Config */
 	// proto::ResVersionConfig* resNext = new proto::ResVersionConfig;
 	/* Resource revision */
@@ -201,11 +365,14 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, int doEnc) {
 	// upd->set_force_update_url("http://ps.yuuki.me/game/genshin-impact");
 	/* End Force Update */
 	// ret.set_allocated_stop_server(upd);
+build_rsp:
 	if (!ret.SerializeToString(&ret_enc)) {
 		sign = "";
 		return "";
 	}
-	size_t sz = ret_enc.size() - 1;
+	size_t sz = ret_enc.size();
+	size_t bufsz = ((sz / 256) + 1) * 256;
+	ret_enc.resize(bufsz, '\0');
 	size_t sign_sz = 4096;
 	unsigned char sign_c[sign_sz];
 	int j;
@@ -221,15 +388,13 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, int doEnc) {
 	if (!doEnc) {
 		return ret_enc;
 	}
-	// TODO HACK - get libasan to stop complaining about a read buffer overflow
-	ret_enc.resize(sz * 2, '\0');
 	// Default to twice the size of the buffer to account for some crazy small keys.
-	unsigned char* tmpbuf = (unsigned char*) malloc(sz * 2);
+	unsigned char* tmpbuf = (unsigned char*) malloc(bufsz * 2);
 	if (tmpbuf == NULL) {
 		return ret_enc; // fall back to unencrypted buffer
 	}
 	// TODO Get key id from client
-	j = HyvCryptRsaEnc((unsigned char*) ret_enc.c_str(), sz, tmpbuf, sz * 2, 4);
+	j = HyvCryptRsaEnc((unsigned char*) ret_enc.c_str(), sz, tmpbuf, bufsz * 2, 4);
 	if (j < 0) {
 		free(tmpbuf);
 		return ret_enc;
@@ -238,6 +403,42 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, int doEnc) {
 	free(tmpbuf);
 	return ret_enc;
 }
+
+// TODO: These endpoints should allow "guest" accounts.
+
+/* TODO /session/new Roadmap:
+	1. globalDbGate->getAccountByUsername(username)
+		* If null, retcode = 17 (or -101?) (TODO: Guest accounts use the x-rpc-device-id HTTP header instead.)
+	2. Check the password. Simple string compare (HMAC-SHA256 (at least for us) before version ?.?(TODO), RSA afterwards(TODO with which key?)). If config tells us to skip password verification... well, we skip password verification :p
+		* If there's a mismatch, retcode = 12 (or -101?)
+	3. account->getNewToken()
+	4. globalDbGate->saveAccount(account)
+	5. retcode = 0 (success)
+*/
+
+/* TODO /session/verify Roadmap:
+	1. globalDbGate->getAccountById(aid)
+		* If null, retcode = 17 (or -101?)
+	2. If the config tells us to check the token's expiration date, do so.
+		* If expired, retcode = 16 (or -101?)
+	3. If the config tells us to check the device ID (or if it's a guest account), do so.
+		* If it's unset and a guest account, retcode = ? (or -101?)
+		* If it's unset and not a guest account, proceed.
+		* If it's set, but there's a mismatch, retcode = 16? (or -101?)
+	4. strcmp(token, account->token)
+		* If nonzero return, retcode = 16 (or -101?)
+	5. If config tells us to regenerate the token, do so.
+		* If not, but it does tell us to refresh expiration dates, do so.
+	6. If the account object was not changed, return right away, retcode = 0.
+		* Else, globalDbGate->saveAccount(account) and then return, retcode = 0.
+*/
+
+/* TODO /session/combo Roadmap:
+	1. Same as /session/verify
+	2. account->getNewComboToken()
+	3. globalDbGate->saveAccount(account)
+	4. retcode = 0 (success)
+*/
 
 extern "C" {
 	volatile int DispatchServerSignal = 0;
@@ -289,6 +490,10 @@ extern "C" {
 		}
 		if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &opt, sizeof(int)) < 0) {
 			fprintf(stderr, "Warning: Unable to unset option IPV6_V6ONLY (errno %d - %s).\nDispatch server might only be able to accept IPv6 clients.\n", errno, strerror(errno));
+		}
+		opt = 1;
+		if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) < 0) {
+			fprintf(stderr, "Warning: Unable to set option SO_REUSEADDR (errno %d - %s).\nIf this program crashes, you may need to wait to restart it until the kernel lets us use the port again.\n", errno, strerror(errno));
 		}
 		struct in_addr addr4 = {INADDR_ANY};
 		struct in6_addr addr6 = IN6ADDR_ANY_INIT;
@@ -347,12 +552,27 @@ extern "C" {
 		unsigned int ssz = sizeof(sock_t);
 		char cip[64];
 		unsigned short cport;
+		struct timeval tm;
+		fd_set fds;
+		FD_ZERO(&fds);
+		FD_SET(fd, &fds);
 		while (!DispatchServerSignal) {
+			// TODO Get from config (as ms)
+			tm.tv_sec = 0;
+			tm.tv_usec = 5000;
+			FD_ZERO(&fds);
+			FD_SET(fd, &fds);
 			pret = 0;
 			actual_len = 0;
+			cfd = select(FD_SETSIZE, &fds, NULL, NULL, &tm);
+			if (cfd <= 0) {
+				if (cfd) fprintf(stderr, "Failed to check for a new connection, errno = %d (%s)\n", errno, strerror(errno));
+				continue;
+			}
 			cfd = accept(fd, (struct sockaddr*) &client, &ssz);
 			if (cfd < 0) {
 				fprintf(stderr, "Failed to accept a new connection, errno = %d (%s)\n", errno, strerror(errno));
+				continue;
 			}
 			inet_ntop(AF_INET6, client.sin6_addr.s6_addr, cip, 64);
 			cport = ntohs(client.sin6_port);
@@ -390,7 +610,12 @@ extern "C" {
 					status = 400;
 					goto write_rsp;
 				}
-				body = pkt_buf + pret;
+				if (strncmp(meth, "POST", 4) != 0) {
+					body = NULL;
+				}
+				else {
+					body = pkt_buf + pret;
+				}
 				if (strncmp(meth, "OPTIONS", 7) == 0) {
 					status = 1204;
 					goto write_rsp;
@@ -436,8 +661,6 @@ write_rsp:
 				size_t rsp_len = 0;
 				const char* mime = "text/plain";
 				const char* extra_hdrs = "";
-				char token[16];
-				const char* chk_token;
 				switch (status) {
 				// Generic responses
 				case 404:
@@ -483,6 +706,7 @@ write_rsp:
 					rsp_len = rsp_str.size();
 					break;
 				case 200:
+					// TODO if POST, send 403
 					rsp = "OK";
 					rsp_str = "hi from yagips dispatch server\n";
 					mime = "text/plain";
@@ -491,15 +715,14 @@ write_rsp:
 					break;
 				// Endpoints - TODO implement them all
 				case SDK_QUERY_REGION_LIST:
-					// Notes: PHP frontend converts GET (or POST) parameters to JSON before sending it to us in a POST. If we get a GET request anyways (or an empty POST), fall back to some reasonable default parameters.
-					// TODO: Parse the parameters and then pass them to this function
-					rsp_str = b64enc(getQueryRegionListHttpRsp());
+					// Notes: PHP frontend converts GET (or POST) parameters to JSON before sending it to us in a POST. This string is thus passed to getQueryRegionListHttpRsp.
+					rsp_str = b64enc(getQueryRegionListHttpRsp(body));
 					mime = "text/plain";
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();
 					break;
 				case SDK_QUERY_CURR_REGION:
-					// Notes: PHP frontend converts GET (or POST) parameters to JSON before sending it to us in a POST. If we get a GET request anyways (or an empty POST), fall back to some reasonable default parameters.
+					// Notes: PHP frontend converts GET (or POST) parameters to JSON before sending it to us in a POST. This string is thus passed to getQueryCurrRegionHttpRsp.
 					rsp_str = "{\"content\":\"" + b64enc(getQueryCurrRegionHttpRsp(sign, 1)) + "\"";
 					// TODO What to do if there's no signature?
 					if (!sign.empty()) rsp_str += ",\"sign\":\"" + b64enc(sign) + "\"";
