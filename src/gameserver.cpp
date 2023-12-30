@@ -157,7 +157,7 @@ int Gameserver::canRecv(unsigned long mills) {
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(fd, &fds);
-	int ret = select(1, &fds, NULL, NULL, &tm);
+	int ret = select(FD_SETSIZE, &fds, NULL, NULL, &tm);
 	if (ret < 0) {
 		fprintf(stderr, "Warning: Attempt to check for input on the socket returned error %d (%s)\n", errno, strerror(errno));
 		return 0;
@@ -237,9 +237,10 @@ extern "C" {
 		}
 		fprintf(stderr, "Gameserver started at %s:%d\n", ip, port);
 		Session** sessionList = gs->getSessions();
-		// TODO Set up signal handlers
 		static sock_t client;
-		while((GameserverSignal & 1) == 0) {
+		while(!GameserverSignal) {
+			// TODO Get from config
+			if (!gs->canRecv(5)) continue;
 			pkt_size = gs->recv(&client, pkt_buf, pkt_buf_size);
 			if (pkt_size < 0) {
 				fprintf(stderr, "Warning: Gameserver couldn't receive a packet.\n");
