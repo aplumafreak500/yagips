@@ -41,12 +41,13 @@ extern "C" {
 	static int createTables(sqlite3* db) {
 		int ret = sqlite3_exec(db,
 			// TODO create more tables
-			"create table if not exists accounts (aid integer primary key, username text unique, password text, email text, token text, sessionKey text);",
+			"CREATE TABLE IF NOT EXISTS accounts (aid INTEGER PRIMARY KEY, timeCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, username TEXT UNIQUE, password TEXT, email TEXT, token TEXT, tokenCreated DATETIME, sessionKey TEXT);",
 		NULL, NULL, NULL);
 		if (ret != SQLITE_OK) {
 			fprintf(stderr, "Unable to create accounts table - errcode %d\n", -ret);
 			return -1;
 		}
+		// CREATE TABLE bans (aid INTEGER, uid INTEGER, ip TEXT, reason TEXT, start DATETIME DEFAULT CURRENT_TIMESTAMP, end DATETIME);
 		return 0;
 	}
 }
@@ -54,7 +55,7 @@ extern "C" {
 Account* dbGate::getAccountByAid(unsigned int aid) {
 	sqlite3_stmt* stmt;
 	Account* account;
-	int ret = sqlite3_prepare(db, "select username, password, email, token, sessionKey from accounts where aid = ?1 limit 1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "SELECT username, password, email, token, sessionKey FROM accounts WHERE aid = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -94,7 +95,7 @@ Account* dbGate::getAccountByUid(unsigned int uid) {
 Account* dbGate::getAccountByUsername(const char* username) {
 	sqlite3_stmt* stmt;
 	Account* account;
-	int ret = sqlite3_prepare(db, "select aid, password, email, token, sessionKey from accounts where username = ?1 limit 1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "SELECT aid, password, email, token, sessionKey FROM accounts WHERE username = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -129,7 +130,7 @@ Account* dbGate::getAccountByUsername(const char* username) {
 Account* dbGate::getAccountByToken(const char* token) {
 	sqlite3_stmt* stmt;
 	Account* account;
-	int ret = sqlite3_prepare(db, "select aid, username, password, email, sessionKey from accounts where token = ?1 limit 1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, sessionKey FROM accounts WHERE token = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -164,7 +165,7 @@ Account* dbGate::getAccountByToken(const char* token) {
 Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
 	sqlite3_stmt* stmt;
 	Account* account;
-	int ret = sqlite3_prepare(db, "select aid, username, password, email, token from accounts where sessionKey = ?1 limit 1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -200,7 +201,7 @@ Account* dbGate::createAccount(const char* username) {
 	sqlite3_stmt* stmt;
 	Account* account = new Account();
 	account->setUsername(username);
-	int ret = sqlite3_prepare(db, "insert into accounts(username, token, sessionKey) values (?1, ?2, ?3);", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "INSERT INTO accounts(username, token, sessionKey) VALUES (?1, ?2, ?3);", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		delete account;
@@ -237,7 +238,7 @@ Account* dbGate::createAccount(const char* username) {
 
 int dbGate::saveAccount(const Account& account) {
 	sqlite3_stmt* stmt;
-	int ret = sqlite3_prepare(db, "update accounts set username = ?1, password = ?2, email = ?3, token = ?4, sessionKey = ?5 where aid = ?6;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "UPDATE accounts SET username = ?1, password = ?2, email = ?3, token = ?4, sessionKey = ?5 WHERE aid = ?6;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return -3;
@@ -283,7 +284,7 @@ int dbGate::saveAccount(const Account& account) {
 
 int dbGate::deleteAccount(const Account& account) {
 	sqlite3_stmt* stmt;
-	int ret = sqlite3_prepare(db, "delete from accounts where aid = ?1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "DELETE FROM accounts WHERE aid = ?1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return -2;
