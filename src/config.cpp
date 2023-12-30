@@ -255,43 +255,46 @@ Config::Config(const char* path) {
 				}
 				else config.regionInfo->res = NULL;
 				// Section `dispatch.res.next` - NextResVersionConfig
-				dispatchSubConfig = toml_table_table(dispatchSubConfig, "next");
 				if (dispatchSubConfig != NULL) {
-					config.regionInfo->resNext = (struct ResVersionConfig*) malloc(sizeof(struct ResVersionConfig));
-					if (config.regionInfo->resNext != NULL) {
-						config.regionInfo->resNext->resourceUrl = config.regionInfo->res->resourceUrl;
-						config.regionInfo->resNext->dataUrl = config.regionInfo->res->dataUrl;
-						config.regionInfo->resNext->resourceUrlBak = config.regionInfo->res->resourceUrlBak;
-						config.regionInfo->resNext->dataUrlBak = config.regionInfo->res->dataUrlBak;
-						config.regionInfo->resNext->resourceUrlNext = config.regionInfo->res->resourceUrlNext;
-						val = toml_table_string(dispatchSubConfig, "resourceSuffix");
-						config.regionInfo->resNext->resourceSuffix = val.ok ? val.u.s : NULL;
-						val = toml_table_string(dispatchSubConfig, "dataSuffix");
-						config.regionInfo->resNext->dataSuffix = val.ok ? val.u.s : NULL;
-						val = toml_table_string(dispatchSubConfig, "silenceSuffix");
-						config.regionInfo->resNext->silenceSuffix = val.ok ? val.u.s : NULL;
-						val = toml_table_int(dispatchSubConfig, "resVersion");
-						config.regionInfo->resNext->resVersion = val.ok ? val.u.i : 0;
-						val = toml_table_int(dispatchSubConfig, "dataVersion");
-						config.regionInfo->resNext->dataVersion = val.ok ? val.u.i : 0;
-						val = toml_table_int(dispatchSubConfig, "silenceVersion");
-						config.regionInfo->resNext->silenceVersion = val.ok ? val.u.i : 0;
-						val = toml_table_string(dispatchSubConfig, "branch");
-						config.regionInfo->resNext->branch = val.ok ? val.u.s : NULL;
-						val = toml_table_string(dispatchSubConfig, "scriptVersion");
-						config.regionInfo->resNext->scriptVersion = val.ok ? val.u.s : NULL;
-						val = toml_table_string(dispatchSubConfig, "releaseTotalSize");
-						config.regionInfo->resNext->releaseTotalSize = val.ok ? val.u.s : NULL;
-						val = toml_table_int(dispatchSubConfig, "relogin");
-						config.regionInfo->resNext->relogin = val.ok ? val.u.i : 0;
-						// TODO These should be objects, not strings
-						val = toml_table_string(dispatchSubConfig, "resourceRes");
-						config.regionInfo->resNext->resourceRes = val.ok ? val.u.s : NULL;
-						val = toml_table_string(dispatchSubConfig, "dataRes");
-						config.regionInfo->resNext->dataRes = val.ok ? val.u.s : NULL;
-						val = toml_table_string(dispatchSubConfig, "silenceRes");
-						config.regionInfo->resNext->silenceRes = val.ok ? val.u.s : NULL;
+					dispatchSubConfig = toml_table_table(dispatchSubConfig, "next");
+					if (dispatchSubConfig != NULL) {
+						config.regionInfo->resNext = (struct ResVersionConfig*) malloc(sizeof(struct ResVersionConfig));
+						if (config.regionInfo->resNext != NULL) {
+							config.regionInfo->resNext->resourceUrl = config.regionInfo->res->resourceUrl;
+							config.regionInfo->resNext->dataUrl = config.regionInfo->res->dataUrl;
+							config.regionInfo->resNext->resourceUrlBak = config.regionInfo->res->resourceUrlBak;
+							config.regionInfo->resNext->dataUrlBak = config.regionInfo->res->dataUrlBak;
+							config.regionInfo->resNext->resourceUrlNext = config.regionInfo->res->resourceUrlNext;
+							val = toml_table_string(dispatchSubConfig, "resourceSuffix");
+							config.regionInfo->resNext->resourceSuffix = val.ok ? val.u.s : NULL;
+							val = toml_table_string(dispatchSubConfig, "dataSuffix");
+							config.regionInfo->resNext->dataSuffix = val.ok ? val.u.s : NULL;
+							val = toml_table_string(dispatchSubConfig, "silenceSuffix");
+							config.regionInfo->resNext->silenceSuffix = val.ok ? val.u.s : NULL;
+							val = toml_table_int(dispatchSubConfig, "resVersion");
+							config.regionInfo->resNext->resVersion = val.ok ? val.u.i : 0;
+							val = toml_table_int(dispatchSubConfig, "dataVersion");
+							config.regionInfo->resNext->dataVersion = val.ok ? val.u.i : 0;
+							val = toml_table_int(dispatchSubConfig, "silenceVersion");
+							config.regionInfo->resNext->silenceVersion = val.ok ? val.u.i : 0;
+							val = toml_table_string(dispatchSubConfig, "branch");
+							config.regionInfo->resNext->branch = val.ok ? val.u.s : NULL;
+							val = toml_table_string(dispatchSubConfig, "scriptVersion");
+							config.regionInfo->resNext->scriptVersion = val.ok ? val.u.s : NULL;
+							val = toml_table_string(dispatchSubConfig, "releaseTotalSize");
+							config.regionInfo->resNext->releaseTotalSize = val.ok ? val.u.s : NULL;
+							val = toml_table_int(dispatchSubConfig, "relogin");
+							config.regionInfo->resNext->relogin = val.ok ? val.u.i : 0;
+							// TODO These should be objects, not strings
+							val = toml_table_string(dispatchSubConfig, "resourceRes");
+							config.regionInfo->resNext->resourceRes = val.ok ? val.u.s : NULL;
+							val = toml_table_string(dispatchSubConfig, "dataRes");
+							config.regionInfo->resNext->dataRes = val.ok ? val.u.s : NULL;
+							val = toml_table_string(dispatchSubConfig, "silenceRes");
+							config.regionInfo->resNext->silenceRes = val.ok ? val.u.s : NULL;
+						}
 					}
+					else config.regionInfo->resNext = NULL;
 				}
  				else config.regionInfo->resNext = NULL;
 				// Section `dispatch.stop` - StopServer (maintenance period)
@@ -305,6 +308,7 @@ Config::Config(const char* path) {
 						config.regionInfo->stopServer->end = val.ok ? val.u.i : 0;
 						val = toml_table_string(dispatchSubConfig, "url");
 						config.regionInfo->stopServer->url = val.ok ? val.u.s : NULL;
+						// TODO: Also support an array of strings here for i18n purposes.
 						val = toml_table_string(dispatchSubConfig, "msg");
 						config.regionInfo->stopServer->msg = val.ok ? val.u.s : NULL;
 					}
@@ -327,12 +331,15 @@ Config::Config(const char* path) {
 								if (config.regions[i] == NULL) continue;
 								val = toml_table_string(dispatchSubConfig, "name");
 								config.regions[i]->name = val.ok ? val.u.s : NULL;
+								// TODO: Also support an array of strings here for i18n purposes.
 								val = toml_table_string(dispatchSubConfig, "title");
 								config.regions[i]->title = val.ok ? val.u.s : NULL;
 								val = toml_table_string(dispatchSubConfig, "url");
 								config.regions[i]->url = val.ok ? val.u.s : NULL;
 								val = toml_table_string(dispatchSubConfig, "type");
 								config.regions[i]->type = val.ok ? val.u.s : NULL;
+								val = toml_table_string(dispatchSubConfig, "version");
+								config.regions[i]->version = val.ok ? val.u.s : NULL;
 							}
 						}
 					}
@@ -373,14 +380,18 @@ Config::Config(const char* path) {
 
 Config::~Config() {
 	unsigned int i;
-	if (config.regionInfo->res != NULL) free(config.regionInfo->res);
-	if (config.regionInfo->resNext != NULL) free(config.regionInfo->resNext);
-	if (config.regionInfo->stopServer != NULL) free(config.regionInfo->stopServer);
-	if (config.regionInfo != NULL) free(config.regionInfo);
-	for (i = 0; i < config.regionCnt; i++) {
-		if (config.regions[i] != NULL) free(config.regions[i]);
+	if (config.regionInfo != NULL) {
+		if (config.regionInfo->res != NULL) free(config.regionInfo->res);
+		if (config.regionInfo->resNext != NULL) free(config.regionInfo->resNext);
+		if (config.regionInfo->stopServer != NULL) free(config.regionInfo->stopServer);
+		free(config.regionInfo);
 	}
-	free(config.regions);
+	if (config.regions != NULL) {
+		for (i = 0; i < config.regionCnt; i++) {
+			if (config.regions[i] != NULL) free(config.regions[i]);
+		}
+		free(config.regions);
+	}
 	toml_free(rootConfig);
 	memset(&config, 0, sizeof(config_t));
 }

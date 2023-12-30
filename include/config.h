@@ -19,8 +19,9 @@ You should have received a copy of the GNU Affero General Public License along w
 struct RegionListEntry {
 	const char* name;
 	const char* type;
-	const char*	title;
+	const char* title; // TODO: Also support an array of strings here for i18n purposes.
 	const char* url;
+	const char* version; // Not in the proto. Instead, it's used to build query_region_list based on reported client version
 };
 
 struct ResMd5 {
@@ -59,7 +60,7 @@ struct StopServer {
 	unsigned long long start;
 	unsigned long long end;
 	const char* url;
-	const char* msg;
+	const char* msg; // TODO: Also support an array of strings here for i18n purposes.
 };
 
 struct RegionInfo {
