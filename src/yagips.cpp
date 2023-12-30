@@ -11,49 +11,119 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/random.h>
 #include <time.h>
 #include <pthread.h>
 #include "gameserver.h"
 #include "dispatch.h"
+#include "dbgate.h"
+#include "config.h"
 
 extern "C" {
+	static int exitSignal = 0;
+	static pthread_t dispatch, gameserver, parent;
+	static struct sigaction SA_DFL;
+
+	static void handleTerm(int sig) {
+		static int timesCalled = 0;
+		pthread_t tid = pthread_self();
+		GameserverSignal = 1;
+		DispatchServerSignal = 1;
+		if (sig == SIGINT && pthread_equal(tid, parent)) {
+			timesCalled++;
+			if (timesCalled >= 3) {
+				sigaction(sig, &SA_DFL, NULL);
+				kill(getpid(), sig);
+			}
+		}
+		exitSignal = sig;
+	}
+
 	int main(int argc, char** argv) {
-		pthread_t dispatch, gameserver;
 		int ret = 0;
 		int tret;
-		// TODO Thread attributes
+		struct sigaction termAction;
+		sigset_t sigblock;
+		struct sigaction prevAction;
+		parent = pthread_self();
+		memset(&SA_DFL, 0, sizeof(SA_DFL));
+		SA_DFL.sa_handler = SIG_DFL;
+		termAction.sa_handler = handleTerm;
+		termAction.sa_flags = 0;
+		sigemptyset(&sigblock);
+		sigaddset(&sigblock, SIGINT);
+		sigaddset(&sigblock, SIGQUIT);
+		sigaddset(&sigblock, SIGTERM);
+		sigaddset(&sigblock, SIGHUP);
+		termAction.sa_mask = sigblock;
+		sigaction(SIGINT, NULL, &prevAction);
+		if (prevAction.sa_handler != SIG_IGN) {
+			if (sigaction(SIGINT, &termAction, NULL) < 0) {
+				fprintf(stderr, "Unable to set signal handler for %s, errno = %d (%s)\n", "SIGINT", errno, strerror(errno));
+			}
+		}
+		sigaction(SIGTERM, NULL, &prevAction);
+		if (prevAction.sa_handler != SIG_IGN) {
+			if (sigaction(SIGTERM, &termAction, NULL) < 0) {
+				fprintf(stderr, "Unable to set signal handler for %s, errno = %d (%s)\n", "SIGTERM", errno, strerror(errno));
+			}
+		}
+		sigaction(SIGHUP, NULL, &prevAction);
+		if (prevAction.sa_handler != SIG_IGN) {
+			if (sigaction(SIGHUP, &termAction, NULL) < 0) {
+				fprintf(stderr, "Unable to set signal handler for %s, errno = %d (%s)\n", "SIGHUP", errno, strerror(errno));
+			}
+		}
 		// TODO Getopt
-		// TODO Set up signal handlers
+		// TODO Path from command line arg
+		globalConfig = new Config();
+		// TODO Null check
+		globalDbGate = new dbGate(globalConfig->getConfig()->dbPath);
+		// TODO Null check
+		// TODO Thread attributes
 		int terrno = pthread_create(&gameserver, NULL, GameserverMain, NULL);
 		if (terrno) {
 			fprintf(stderr, "Unable to create gameserver thread, errno = %d (%s)\n", terrno, strerror(terrno));
+			delete globalDbGate;
+			delete globalConfig;
 			return -terrno;
 		}
 		terrno = pthread_create(&dispatch, NULL, DispatchServerMain, NULL);
 		if (terrno) {
 			fprintf(stderr, "Unable to create dispatch server thread, errno = %d (%s)\n", terrno, strerror(terrno));
+			delete globalDbGate;
+			delete globalConfig;
 			return -terrno;
 		}
+		// TODO Server console
 		terrno = pthread_join(gameserver, (void**) &tret);
 		if (terrno) {
 			fprintf(stderr, "Unable to watch the gameserver thread, errno = %d (%s)\n", terrno, strerror(terrno));
+			delete globalDbGate;
+			delete globalConfig;
 			return -terrno;
 		}
 		if (tret) {
 			fprintf(stderr, "Gameserver thread returned status %d\n", tret);
 			ret = tret;
 		}
-		DispatchServerSignal = 1; // TODO enum constant
-		// TODO it may segfault here
 		terrno = pthread_join(dispatch, (void**) &tret);
 		if (terrno) {
 			fprintf(stderr, "Unable to watch the dispatch server thread, errno = %d (%s)\n", terrno, strerror(terrno));
+			delete globalDbGate;
+			delete globalConfig;
 			return -terrno;
 		}
 		if (tret) {
 			fprintf(stderr, "Dispatch server thread returned status %d\n", tret);
 			ret += tret;
+		}
+		delete globalDbGate;
+		delete globalConfig;
+		if (!(exitSignal == 0 || exitSignal == SIGINT)) {
+			sigaction(exitSignal, &SA_DFL, NULL);
+			kill(getpid(), exitSignal);
 		}
 		return ret;
 	}
