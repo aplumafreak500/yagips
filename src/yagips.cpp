@@ -11,6 +11,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <signal.h>
 #include <sys/random.h>
 #include <time.h>

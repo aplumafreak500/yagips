@@ -11,6 +11,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include <stddef.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <sys/random.h>
 #include <arpa/inet.h>
