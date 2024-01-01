@@ -20,6 +20,8 @@ public:
 	void setUsername(const std::string&);
 	const std::string& getPasswordHash() const;
 	void setPasswordHash(const std::string&);
+	const std::string& getDeviceId() const;
+	void setDeviceId(const std::string&);
 	const std::string& getEmail() const;
 	void setEmail(const std::string&);
 	const std::string& getToken() const;
@@ -30,12 +32,20 @@ public:
 	const std::string& getNewSessionKey();
 	unsigned int getAccountId() const;
 	void setAccountId(unsigned int);
+	unsigned int isGuest() const;
+	void setIsGuest(unsigned int);
+	long long getTokenTimestamp() const;
+	void setTokenTimestamp();
+	void setTokenTimestamp(long long);
 private:
 	std::string username;
 	std::string password_hash;
+	std::string deviceId;
 	std::string email;
 	std::string token;
 	std::string sessionKey;
 	unsigned int aid;
+	unsigned int guest;
+	long long tokenTimestamp;
 };
 #endif

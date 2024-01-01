@@ -41,7 +41,7 @@ extern "C" {
 	static int createTables(sqlite3* db) {
 		int ret = sqlite3_exec(db,
 			// TODO create more tables
-			"CREATE TABLE IF NOT EXISTS accounts (aid INTEGER PRIMARY KEY, timeCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, username TEXT UNIQUE, password TEXT, email TEXT, token TEXT, tokenCreated DATETIME, sessionKey TEXT);",
+			"CREATE TABLE IF NOT EXISTS accounts (aid INTEGER PRIMARY KEY, timeCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, username TEXT UNIQUE, password TEXT, deviceId TEXT, email TEXT, token TEXT, tokenCreated DATETIME, sessionKey TEXT);",
 		NULL, NULL, NULL);
 		if (ret != SQLITE_OK) {
 			fprintf(stderr, "Unable to create accounts table - errcode %d\n", -ret);
@@ -55,7 +55,8 @@ extern "C" {
 Account* dbGate::getAccountByAid(unsigned int aid) {
 	sqlite3_stmt* stmt;
 	Account* account;
-	int ret = sqlite3_prepare(db, "SELECT username, password, email, token, sessionKey FROM accounts WHERE aid = ?1 limit 1;", -1, &stmt, NULL);
+	const char* username;
+	int ret = sqlite3_prepare(db, "SELECT username, password, email, token, sessionKey, deviceId, tokenCreated FROM accounts WHERE aid = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -77,25 +78,36 @@ Account* dbGate::getAccountByAid(unsigned int aid) {
 	case SQLITE_ROW: // got a hit
 		account = new Account();
 		account->setAccountId(aid);
-		account->setUsername((const char*) sqlite3_column_text(stmt, 1));
+		username = (const char*) sqlite3_column_text(stmt, 1);
+		if (username != NULL) {
+			account->setUsername(username);
+			account->setIsGuest(0);
+		}
+		else {
+			account->setIsGuest(1);
+		}
+		// TODO Text values can be null
 		account->setPasswordHash((const char*) sqlite3_column_text(stmt, 2));
 		account->setEmail((const char*) sqlite3_column_text(stmt, 3));
 		account->setToken((const char*) sqlite3_column_text(stmt, 4));
 		account->setSessionKey((const char*) sqlite3_column_text(stmt, 5));
+		account->setDeviceId((const char*) sqlite3_column_text(stmt, 6));
+		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
 		sqlite3_finalize(stmt);
 		return account;
 	}
 }
 
 Account* dbGate::getAccountByUid(unsigned int uid) {
-	// TODO "select aid from players where uid = ?1 limit 1;"
+	// TODO "select aid from players where uid = ?1 limit 1;" and then `return getAccountByAid(aid);`
 	return NULL;
 }
 
 Account* dbGate::getAccountByUsername(const char* username) {
+	if (username == NULL) return NULL;
 	sqlite3_stmt* stmt;
 	Account* account;
-	int ret = sqlite3_prepare(db, "SELECT aid, password, email, token, sessionKey FROM accounts WHERE username = ?1 limit 1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "SELECT aid, password, email, token, sessionKey, deviceId, tokenCreated FROM accounts WHERE username = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -118,10 +130,13 @@ Account* dbGate::getAccountByUsername(const char* username) {
 		account = new Account();
 		account->setUsername(username);
 		account->setAccountId(sqlite3_column_int(stmt, 1));
+		// TODO Text values can be null
 		account->setPasswordHash((const char*) sqlite3_column_text(stmt, 2));
 		account->setEmail((const char*) sqlite3_column_text(stmt, 3));
 		account->setToken((const char*) sqlite3_column_text(stmt, 4));
 		account->setSessionKey((const char*) sqlite3_column_text(stmt, 5));
+		account->setDeviceId((const char*) sqlite3_column_text(stmt, 6));
+		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -130,7 +145,8 @@ Account* dbGate::getAccountByUsername(const char* username) {
 Account* dbGate::getAccountByToken(const char* token) {
 	sqlite3_stmt* stmt;
 	Account* account;
-	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, sessionKey FROM accounts WHERE token = ?1 limit 1;", -1, &stmt, NULL);
+	const char* username;
+	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, sessionKey, deviceId, tokenCreated FROM accounts WHERE token = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -153,10 +169,20 @@ Account* dbGate::getAccountByToken(const char* token) {
 		account = new Account();
 		account->setToken(token);
 		account->setAccountId(sqlite3_column_int(stmt, 1));
-		account->setUsername((const char*) sqlite3_column_text(stmt, 2));
+		username = (const char*) sqlite3_column_text(stmt, 2);
+		if (username != NULL) {
+			account->setUsername(username);
+			account->setIsGuest(0);
+		}
+		else {
+			account->setIsGuest(1);
+		}
+		// TODO Text values can be null
 		account->setPasswordHash((const char*) sqlite3_column_text(stmt, 3));
 		account->setEmail((const char*) sqlite3_column_text(stmt, 4));
 		account->setSessionKey((const char*) sqlite3_column_text(stmt, 5));
+		account->setDeviceId((const char*) sqlite3_column_text(stmt, 6));
+		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -165,7 +191,8 @@ Account* dbGate::getAccountByToken(const char* token) {
 Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
 	sqlite3_stmt* stmt;
 	Account* account;
-	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
+	const char* username;
+	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token, deviceId, tokenCreated FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -188,10 +215,66 @@ Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
 		account = new Account();
 		account->setSessionKey(sessionKey);
 		account->setAccountId(sqlite3_column_int(stmt, 1));
-		account->setUsername((const char*) sqlite3_column_text(stmt, 2));
+		username = (const char*) sqlite3_column_text(stmt, 2);
+		if (username != NULL) {
+			account->setUsername(username);
+			account->setIsGuest(0);
+		}
+		else {
+			account->setIsGuest(1);
+		}
+		// TODO Text values can be null
 		account->setPasswordHash((const char*) sqlite3_column_text(stmt, 3));
 		account->setEmail((const char*) sqlite3_column_text(stmt, 4));
 		account->setToken((const char*) sqlite3_column_text(stmt, 5));
+		account->setDeviceId((const char*) sqlite3_column_text(stmt, 6));
+		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
+		sqlite3_finalize(stmt);
+		return account;
+	}
+}
+
+Account* dbGate::getAccountByDeviceId(const char* deviceId) {
+	sqlite3_stmt* stmt;
+	Account* account;
+	const char* username;
+	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token, sessionKey, tokenCreated FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return NULL;
+	}
+	ret = sqlite3_bind_text(stmt, 1, deviceId, -1, SQLITE_STATIC);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return NULL;
+	}
+	ret = sqlite3_step(stmt);
+	switch (ret) {
+	default: // error
+		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
+		sqlite3_finalize(stmt);
+		return NULL;
+	case SQLITE_DONE: // no results
+		sqlite3_finalize(stmt);
+		return NULL;
+	case SQLITE_ROW: // got a hit
+		account = new Account();
+		account->setDeviceId(deviceId);
+		account->setAccountId(sqlite3_column_int(stmt, 1));
+		username = (const char*) sqlite3_column_text(stmt, 2);
+		if (username != NULL) {
+			account->setUsername(username);
+			account->setIsGuest(0);
+		}
+		else {
+			account->setIsGuest(1);
+		}
+		// TODO Text values can be null
+		account->setPasswordHash((const char*) sqlite3_column_text(stmt, 3));
+		account->setEmail((const char*) sqlite3_column_text(stmt, 4));
+		account->setToken((const char*) sqlite3_column_text(stmt, 5));
+		account->setSessionKey((const char*) sqlite3_column_text(stmt, 6));
+		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -200,7 +283,13 @@ Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
 Account* dbGate::createAccount(const char* username) {
 	sqlite3_stmt* stmt;
 	Account* account = new Account();
-	account->setUsername(username);
+	if (username != NULL) {
+		account->setUsername(username);
+		account->setIsGuest(0);
+	}
+	else {
+		account->setIsGuest(1);
+	}
 	int ret = sqlite3_prepare(db, "INSERT INTO accounts(username, token, sessionKey) VALUES (?1, ?2, ?3);", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
@@ -219,7 +308,7 @@ Account* dbGate::createAccount(const char* username) {
 		delete account;
 		return NULL;
 	}
-	ret = sqlite3_bind_text(stmt, 3, account->getSessionKey().c_str(), -1, SQLITE_STATIC);
+	ret = sqlite3_bind_text(stmt, 3, account->getNewSessionKey().c_str(), -1, SQLITE_STATIC);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		delete account;
@@ -238,26 +327,29 @@ Account* dbGate::createAccount(const char* username) {
 
 int dbGate::saveAccount(const Account& account) {
 	sqlite3_stmt* stmt;
-	int ret = sqlite3_prepare(db, "UPDATE accounts SET username = ?1, password = ?2, email = ?3, token = ?4, sessionKey = ?5 WHERE aid = ?6;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "UPDATE accounts SET username = ?1, password = ?2, email = ?3, token = ?4, sessionKey = ?5, deviceId = ?7, tokenCreated = ?8 WHERE aid = ?6;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return -3;
 	}
-	ret = sqlite3_bind_text(stmt, 1, account.getUsername().c_str(), -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
+	if (!account.isGuest()) {
+		ret = sqlite3_bind_text(stmt, 1, account.getUsername().c_str(), -1, SQLITE_STATIC);
+		if (ret != SQLITE_OK) {
+			fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+			return -2;
+		}
+		ret = sqlite3_bind_text(stmt, 2, account.getPasswordHash().c_str(), -1, SQLITE_STATIC);
+		if (ret != SQLITE_OK) {
+			fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+			return -2;
+		}
+		ret = sqlite3_bind_text(stmt, 3, account.getEmail().c_str(), -1, SQLITE_STATIC);
+		if (ret != SQLITE_OK) {
+			fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+			return -2;
+		}
 	}
-	ret = sqlite3_bind_text(stmt, 2, account.getPasswordHash().c_str(), -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
-	}
-	ret = sqlite3_bind_text(stmt, 3, account.getEmail().c_str(), -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
-	}
+	// TODO Turn empty into null
 	ret = sqlite3_bind_text(stmt, 4, account.getToken().c_str(), -1, SQLITE_STATIC);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
@@ -269,6 +361,16 @@ int dbGate::saveAccount(const Account& account) {
 		return -2;
 	}
 	ret = sqlite3_bind_int(stmt, 6, account.getAccountId());
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return -2;
+	}
+	ret = sqlite3_bind_text(stmt, 7, account.getDeviceId().c_str(), -1, SQLITE_STATIC);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return -2;
+	}
+	ret = sqlite3_bind_int(stmt, 8, account.getTokenTimestamp());
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return -2;

@@ -16,9 +16,12 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <sys/random.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <json-c/json_object.h>
 #include <json-c/json_tokener.h>
 #include <string>
 #include "config.h"
+#include "account.h"
+#include "dbgate.h"
 #include "gameserver.h"
 #include "util.h"
 #include "crypt.h"
@@ -85,7 +88,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	jobj = json_tokener_parse_ex(jtk, post, post_len);
 	if (jobj == NULL) {
 		jerr = json_tokener_get_error(jtk);
-		if (jerr != json_tokener_continue) {
+		if (jerr == json_tokener_continue) {
 			fprintf(stderr, "Error: JSON in POST data is incomplete\n");
 		}
 		else {
@@ -405,17 +408,131 @@ build_rsp:
 	return ret_enc;
 }
 
-// TODO: These endpoints should allow "guest" accounts.
-
-/* TODO /session/new Roadmap:
-	1. globalDbGate->getAccountByUsername(username)
-		* If null, retcode = 17 (or -101?) (TODO: Guest accounts use the x-rpc-device-id HTTP header instead.)
-	2. Check the password. Simple string compare (HMAC-SHA256 (at least for us) before version ?.?(TODO), RSA afterwards(TODO with which key?)). If config tells us to skip password verification... well, we skip password verification :p
-		* If there's a mismatch, retcode = 12 (or -101?)
-	3. account->getNewToken()
-	4. globalDbGate->saveAccount(account)
-	5. retcode = 0 (success)
-*/
+// /session/new (/hk4e_{cn,global}/mdk/shield/api/login)
+std::string handleLogin(const char* post) {
+	if (post == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
+	}
+	size_t post_len = strlen(post) + 1;
+	struct json_tokener* jtk = json_tokener_new();
+	if (jtk == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
+	}
+	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
+	if (jobj == NULL) {
+		enum json_tokener_error jerr = json_tokener_get_error(jtk);
+		if (jerr != json_tokener_continue) {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		return "{\"retcode\":-101,\"message\":\"Login failure: error parsing JSON data\"}";
+	}
+	if (json_tokener_get_parse_end(jtk) < post_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(jobj, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
+	}
+	struct json_object* dobj;
+	unsigned int isGuest = 0;
+	if (json_object_object_get_ex(jobj, "is_guest", &dobj)) {
+		isGuest = json_object_get_boolean(dobj);
+	}
+	const char* deviceId = NULL;
+	if (json_object_object_get_ex(jobj, "device_id", &dobj)) {
+		deviceId = json_object_get_string(dobj);
+	}
+	Account* account;
+	if (isGuest) {
+		if (deviceId == NULL) {
+			json_object_put(jobj);
+			return "{\"retcode\":-101,\"message\":\"Device ID is null\"}";
+		}
+		if (strlen(deviceId) == 0) {
+			return "{\"retcode\":-101,\"message\":\"Device ID is empty\"}";
+		}
+		account = globalDbGate->getAccountByDeviceId(deviceId);
+	}
+	else {
+		if (!json_object_object_get_ex(jobj, "account", &dobj)) {
+			json_object_put(jobj);
+			return "{\"retcode\":-101,\"message\":\"Username is not set\"}";
+		}
+		const char* username = json_object_get_string(dobj);
+		if (username == NULL) {
+			json_object_put(jobj);
+			return "{\"retcode\":-101,\"message\":\"Username is null\"}";
+		}
+		if (strlen(username) == 0) {
+			return "{\"retcode\":-101,\"message\":\"Username is empty\"}";
+		}
+		account = globalDbGate->getAccountByUsername(username);
+	}
+	if (account == NULL) {
+		// TODO look up auto create an account in config
+		return "{\"retcode\":-101,\"message\":\"Username does not exist\"}";
+	}
+	if (!json_object_object_get_ex(jobj, "password", &dobj)) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Password is not set\"}";
+	}
+	const char* password = json_object_get_string(dobj);
+	if (password == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Password is null\"}";
+	}
+	unsigned int isCrypto = 0;
+	if (json_object_object_get_ex(jobj, "is_crypto", &dobj)) {
+		isCrypto = json_object_get_boolean(dobj);
+	}
+	// TODO look up verify password in config
+#if 0
+	char encPassword[1024];
+	memset(encPassword, '\0', 1024);
+	if (isCrypto) {
+		// TODO HyvCryptRsaDec
+	}
+	// TODO look up encrypt password in config
+	// TODO HMAC-SHA256
+	if (strcmp(encPassword, account->getPasswordHash().c_str()) != 0) {
+		return "{\"retcode\":-101,\"message\":\"Incorrect password\"}";
+	}
+#endif
+	std::string token = account->getNewToken();
+	globalDbGate->saveAccount(*account);
+	std::string ret;
+	json_object* njobj = json_object_new_object();
+	if (njobj == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON object\"}";
+	}
+	json_object_object_add(njobj, "uid", json_object_new_uint64(account->getAccountId()));
+	if (isGuest) {
+		json_object_object_add(njobj, "account_type", json_object_new_uint64(0));
+		ret = "{\"retcode\":0,\"message\":\"ok\",\"data\":";
+		ret += json_object_to_json_string_ext(njobj, JSON_C_TO_STRING_PLAIN);
+		ret += "}";
+	}
+	else {
+		// TODO Official servers mask name and email for privacy reasons.
+		json_object_object_add(njobj, "name", json_object_new_string(account->getUsername().c_str()));
+		json_object_object_add(njobj, "email", json_object_new_string(account->getEmail().c_str()));
+		json_object_object_add(njobj, "is_email_verify", json_object_new_boolean(0)); // TODO Unknown what this does.
+		json_object_object_add(njobj, "token", json_object_new_string(token.c_str()));
+		// Note: country and area_code might get rewritten by PHP, per the client IP address.
+		json_object_object_add(njobj, "country", json_object_new_string("ZZ"));
+		json_object_object_add(njobj, "area_code", NULL);
+		ret = "{\"retcode\":0,\"message\":\"ok\",\"data\":{\"account\":";
+		ret += json_object_to_json_string_ext(njobj, JSON_C_TO_STRING_PLAIN);
+		// Not sure what any of these do.
+		ret += ",\"device_grant_required\":false,\"realname_operation\":null,\"realperson_required\":false,\"safe_mobile_required\":false}}";
+	}
+	json_object_put(njobj);
+	json_object_put(jobj);
+	return ret;
+}
 
 /* TODO /session/verify Roadmap:
 	1. globalDbGate->getAccountById(aid)
@@ -547,7 +664,7 @@ extern "C" {
 		static char pkt_buf[buf_len];
 		const char* meth;
 		const char* path;
-		const char* body;
+		const char* body = NULL;
 		struct phr_header headers[_hdr_cnt];
 		int mver;
 		unsigned int ssz = sizeof(sock_t);
@@ -611,10 +728,7 @@ extern "C" {
 					status = 400;
 					goto write_rsp;
 				}
-				if (strncmp(meth, "POST", 4) != 0) {
-					body = NULL;
-				}
-				else {
+				if (strncmp(meth, "POST", 4) == 0) {
 					body = pkt_buf + pret;
 				}
 				if (strncmp(meth, "OPTIONS", 7) == 0) {
@@ -633,9 +747,11 @@ extern "C" {
 				// the question mark, on the other hand, accounts for the possibility of GET parameters
 				// there's gotta be a more graceful way to handle this
 				if (strncmp(path, "/ ", 2) == 0 || strncmp(path, "/?", 2) == 0) {
-					status = 200;
+					if (strncmp(meth, "POST", 4) == 0) status = 403;
+					else status = 200;
 					goto write_rsp;
 				}
+				// TODO are we really letting POST requests here?
 				if (strncmp(path, "/generate_204", 13) == 0 || strncmp(path, "/gen_204", 8) == 0) {
 					status = 204;
 					goto write_rsp;
@@ -668,6 +784,13 @@ write_rsp:
 				default:
 					rsp = "Not Found";
 					rsp_str = "{\"retcode\":-10,\"message\":\"No such endpoint\"}";
+					mime = "application/json";
+					rsp_body = rsp_str.c_str();
+					rsp_len = rsp_str.size();
+					break;
+				case 403:
+					rsp = "Forbidden";
+					rsp_str = "{\"retcode\":-1,\"message\":\"Permission denied\"}";
 					mime = "application/json";
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();
@@ -707,7 +830,6 @@ write_rsp:
 					rsp_len = rsp_str.size();
 					break;
 				case 200:
-					// TODO if POST, send 403
 					rsp = "OK";
 					rsp_str = "hi from yagips dispatch server\n";
 					mime = "text/plain";
@@ -732,8 +854,13 @@ write_rsp:
 					rsp_len = rsp_str.size();
 					mime = "application/json";
 					break;
-				// TODO Wait to fully implement these until we have a database driver to use.
 				case SDK_GET_AUTH_TOKEN:
+					rsp_str = handleLogin(body);
+					mime = "application/json";
+					rsp_body = rsp_str.c_str();
+					rsp_len = rsp_str.size();
+					break;
+				// TODO
 				case SDK_CHECK_AUTH_TOKEN:
 				case SDK_CHECK_COMBO_TOKEN:
 					rsp_str = "{\"retcode\":-101,\"message\":\"Endpoint not implemented yet, please be patient\"}";
