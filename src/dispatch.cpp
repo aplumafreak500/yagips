@@ -731,6 +731,9 @@ extern "C" {
 				if (strncmp(meth, "POST", 4) == 0) {
 					body = pkt_buf + pret;
 				}
+				else {
+					body = NULL;
+				}
 				if (strncmp(meth, "OPTIONS", 7) == 0) {
 					status = 1204;
 					goto write_rsp;
