@@ -41,7 +41,7 @@ extern "C" {
 	static int createTables(sqlite3* db) {
 		int ret = sqlite3_exec(db,
 			// TODO create more tables
-			"CREATE TABLE IF NOT EXISTS accounts (aid INTEGER PRIMARY KEY, timeCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, username TEXT UNIQUE, password TEXT, deviceId TEXT, email TEXT, token TEXT, tokenCreated DATETIME, sessionKey TEXT);",
+			"CREATE TABLE IF NOT EXISTS accounts (aid INTEGER PRIMARY KEY, timeCreated INTEGER NOT NULL DEFAULT (strftime('%s', 'now')), username TEXT UNIQUE, password TEXT, deviceId TEXT, email TEXT, token TEXT, tokenCreated INTEGER, sessionKey TEXT);",
 		NULL, NULL, NULL);
 		if (ret != SQLITE_OK) {
 			fprintf(stderr, "Unable to create accounts table - errcode %d\n", -ret);
