@@ -56,6 +56,11 @@ Account* dbGate::getAccountByAid(unsigned int aid) {
 	sqlite3_stmt* stmt;
 	Account* account;
 	const char* username;
+	const char* password;
+	const char* deviceId;
+	const char* email;
+	const char* token;
+	const char* sessionKey;
 	int ret = sqlite3_prepare(db, "SELECT username, password, email, token, sessionKey, deviceId, tokenCreated FROM accounts WHERE aid = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
@@ -86,12 +91,16 @@ Account* dbGate::getAccountByAid(unsigned int aid) {
 		else {
 			account->setIsGuest(1);
 		}
-		// TODO Text values can be null
-		account->setPasswordHash((const char*) sqlite3_column_text(stmt, 2));
-		account->setEmail((const char*) sqlite3_column_text(stmt, 3));
-		account->setToken((const char*) sqlite3_column_text(stmt, 4));
-		account->setSessionKey((const char*) sqlite3_column_text(stmt, 5));
-		account->setDeviceId((const char*) sqlite3_column_text(stmt, 6));
+		password = (const char*) sqlite3_column_text(stmt, 2);
+		if (password != NULL) account->setPasswordHash(password);
+		email = (const char*) sqlite3_column_text(stmt, 3);
+		if (email != NULL) account->setEmail(email);
+		token = (const char*) sqlite3_column_text(stmt, 4);
+		if (token != NULL) account->setToken(token);
+		sessionKey = (const char*) sqlite3_column_text(stmt, 5);
+		if (sessionKey != NULL) account->setSessionKey(sessionKey);
+		deviceId = (const char*) sqlite3_column_text(stmt, 6);
+		if (deviceId != NULL) account->setDeviceId(deviceId);
 		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
 		sqlite3_finalize(stmt);
 		return account;
@@ -107,6 +116,11 @@ Account* dbGate::getAccountByUsername(const char* username) {
 	if (username == NULL) return NULL;
 	sqlite3_stmt* stmt;
 	Account* account;
+	const char* password;
+	const char* deviceId;
+	const char* email;
+	const char* token;
+	const char* sessionKey;
 	int ret = sqlite3_prepare(db, "SELECT aid, password, email, token, sessionKey, deviceId, tokenCreated FROM accounts WHERE username = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
@@ -130,12 +144,16 @@ Account* dbGate::getAccountByUsername(const char* username) {
 		account = new Account();
 		account->setUsername(username);
 		account->setAccountId(sqlite3_column_int(stmt, 1));
-		// TODO Text values can be null
-		account->setPasswordHash((const char*) sqlite3_column_text(stmt, 2));
-		account->setEmail((const char*) sqlite3_column_text(stmt, 3));
-		account->setToken((const char*) sqlite3_column_text(stmt, 4));
-		account->setSessionKey((const char*) sqlite3_column_text(stmt, 5));
-		account->setDeviceId((const char*) sqlite3_column_text(stmt, 6));
+		password = (const char*) sqlite3_column_text(stmt, 2);
+		if (password != NULL) account->setPasswordHash(password);
+		email = (const char*) sqlite3_column_text(stmt, 3);
+		if (email != NULL) account->setEmail(email);
+		token = (const char*) sqlite3_column_text(stmt, 4);
+		if (token != NULL) account->setToken(token);
+		sessionKey = (const char*) sqlite3_column_text(stmt, 5);
+		if (sessionKey != NULL) account->setSessionKey(sessionKey);
+		deviceId = (const char*) sqlite3_column_text(stmt, 6);
+		if (deviceId != NULL) account->setDeviceId(deviceId);
 		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
 		sqlite3_finalize(stmt);
 		return account;
@@ -146,6 +164,10 @@ Account* dbGate::getAccountByToken(const char* token) {
 	sqlite3_stmt* stmt;
 	Account* account;
 	const char* username;
+	const char* password;
+	const char* deviceId;
+	const char* email;
+	const char* sessionKey;
 	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, sessionKey, deviceId, tokenCreated FROM accounts WHERE token = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
@@ -177,11 +199,14 @@ Account* dbGate::getAccountByToken(const char* token) {
 		else {
 			account->setIsGuest(1);
 		}
-		// TODO Text values can be null
-		account->setPasswordHash((const char*) sqlite3_column_text(stmt, 3));
-		account->setEmail((const char*) sqlite3_column_text(stmt, 4));
-		account->setSessionKey((const char*) sqlite3_column_text(stmt, 5));
-		account->setDeviceId((const char*) sqlite3_column_text(stmt, 6));
+		password = (const char*) sqlite3_column_text(stmt, 3);
+		if (password != NULL) account->setPasswordHash(password);
+		email = (const char*) sqlite3_column_text(stmt, 4);
+		if (email != NULL) account->setEmail(email);
+		sessionKey = (const char*) sqlite3_column_text(stmt, 5);
+		if (sessionKey != NULL) account->setSessionKey(sessionKey);
+		deviceId = (const char*) sqlite3_column_text(stmt, 6);
+		if (deviceId != NULL) account->setDeviceId(deviceId);
 		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
 		sqlite3_finalize(stmt);
 		return account;
@@ -192,6 +217,10 @@ Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
 	sqlite3_stmt* stmt;
 	Account* account;
 	const char* username;
+	const char* password;
+	const char* deviceId;
+	const char* email;
+	const char* token;
 	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token, deviceId, tokenCreated FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
@@ -223,11 +252,14 @@ Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
 		else {
 			account->setIsGuest(1);
 		}
-		// TODO Text values can be null
-		account->setPasswordHash((const char*) sqlite3_column_text(stmt, 3));
-		account->setEmail((const char*) sqlite3_column_text(stmt, 4));
-		account->setToken((const char*) sqlite3_column_text(stmt, 5));
-		account->setDeviceId((const char*) sqlite3_column_text(stmt, 6));
+		password = (const char*) sqlite3_column_text(stmt, 3);
+		if (password != NULL) account->setPasswordHash(password);
+		email = (const char*) sqlite3_column_text(stmt, 4);
+		if (email != NULL) account->setEmail(email);
+		token = (const char*) sqlite3_column_text(stmt, 5);
+		if (token != NULL) account->setToken(token);
+		deviceId = (const char*) sqlite3_column_text(stmt, 6);
+		if (deviceId != NULL) account->setDeviceId(deviceId);
 		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
 		sqlite3_finalize(stmt);
 		return account;
@@ -238,6 +270,10 @@ Account* dbGate::getAccountByDeviceId(const char* deviceId) {
 	sqlite3_stmt* stmt;
 	Account* account;
 	const char* username;
+	const char* password;
+	const char* email;
+	const char* token;
+	const char* sessionKey;
 	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token, sessionKey, tokenCreated FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
@@ -269,11 +305,14 @@ Account* dbGate::getAccountByDeviceId(const char* deviceId) {
 		else {
 			account->setIsGuest(1);
 		}
-		// TODO Text values can be null
-		account->setPasswordHash((const char*) sqlite3_column_text(stmt, 3));
-		account->setEmail((const char*) sqlite3_column_text(stmt, 4));
-		account->setToken((const char*) sqlite3_column_text(stmt, 5));
-		account->setSessionKey((const char*) sqlite3_column_text(stmt, 6));
+		password = (const char*) sqlite3_column_text(stmt, 3);
+		if (password != NULL) account->setPasswordHash(password);
+		email = (const char*) sqlite3_column_text(stmt, 4);
+		if (email != NULL) account->setEmail(email);
+		token = (const char*) sqlite3_column_text(stmt, 5);
+		if (token != NULL) account->setToken(token);
+		sessionKey = (const char*) sqlite3_column_text(stmt, 6);
+		if (sessionKey != NULL) account->setSessionKey(sessionKey);
 		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
 		sqlite3_finalize(stmt);
 		return account;
