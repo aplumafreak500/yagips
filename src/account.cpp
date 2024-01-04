@@ -67,10 +67,9 @@ void Account::setToken(const std::string& t) {
 }
 
 const std::string& Account::getNewToken() {
-	char rawtoken[24]; // for a 32-character token. TODO pull from config
-	getrandom(rawtoken, 24, 0);
-	token = b64enc(std::string(rawtoken, 24));
-	tokenTimestamp = time(NULL);
+	char rawtoken[16]; // for a 32-character token. TODO pull from config
+	getrandom(rawtoken, 16, 0);
+	token = hexenc(std::string(rawtoken, 16));
 	return token;
 }
 
@@ -86,19 +85,20 @@ const std::string& Account::getNewSessionKey() {
 	char rawtoken[24]; // for a 32-character token. TODO pull from config
 	getrandom(rawtoken, 24, 0);
 	sessionKey = b64enc(std::string(rawtoken, 24));
+	sessionKeyTimestamp = time(NULL);
 	return sessionKey;
 }
 
-long long Account::getTokenTimestamp() const {
-	return tokenTimestamp;
+long long Account::getSessionKeyTimestamp() const {
+	return sessionKeyTimestamp;
 }
 
-void Account::setTokenTimestamp() {
-	tokenTimestamp = time(NULL);
+void Account::setSessionKeyTimestamp() {
+	sessionKeyTimestamp = time(NULL);
 }
 
-void Account::setTokenTimestamp(long long t) {
-	tokenTimestamp = t;
+void Account::setSessionKeyTimestamp(long long t) {
+	sessionKeyTimestamp = t;
 }
 
 unsigned int Account::isGuest() const {

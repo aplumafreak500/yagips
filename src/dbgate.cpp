@@ -41,7 +41,7 @@ extern "C" {
 	static int createTables(sqlite3* db) {
 		int ret = sqlite3_exec(db,
 			// TODO create more tables
-			"CREATE TABLE IF NOT EXISTS accounts (aid INTEGER PRIMARY KEY, timeCreated INTEGER NOT NULL DEFAULT (strftime('%s', 'now')), username TEXT UNIQUE, password TEXT, deviceId TEXT, email TEXT, token TEXT, tokenCreated INTEGER, sessionKey TEXT);",
+			"CREATE TABLE IF NOT EXISTS accounts (aid INTEGER PRIMARY KEY, timeCreated INTEGER NOT NULL DEFAULT (strftime('%s', 'now')), username TEXT UNIQUE, password TEXT, deviceId TEXT, email TEXT, token TEXT, sessionKeyCreated INTEGER, sessionKey TEXT);",
 		NULL, NULL, NULL);
 		if (ret != SQLITE_OK) {
 			fprintf(stderr, "Unable to create accounts table - errcode %d\n", -ret);
@@ -61,7 +61,7 @@ Account* dbGate::getAccountByAid(unsigned int aid) {
 	const char* email;
 	const char* token;
 	const char* sessionKey;
-	int ret = sqlite3_prepare(db, "SELECT username, password, email, token, sessionKey, deviceId, tokenCreated FROM accounts WHERE aid = ?1 limit 1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "SELECT username, password, email, token, sessionKey, deviceId, sessionKeyCreated FROM accounts WHERE aid = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -101,7 +101,7 @@ Account* dbGate::getAccountByAid(unsigned int aid) {
 		if (sessionKey != NULL) account->setSessionKey(sessionKey);
 		deviceId = (const char*) sqlite3_column_text(stmt, 5);
 		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setTokenTimestamp(sqlite3_column_int(stmt, 6));
+		account->setSessionKeyTimestamp(sqlite3_column_int(stmt, 6));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -121,7 +121,7 @@ Account* dbGate::getAccountByUsername(const char* username) {
 	const char* email;
 	const char* token;
 	const char* sessionKey;
-	int ret = sqlite3_prepare(db, "SELECT aid, password, email, token, sessionKey, deviceId, tokenCreated FROM accounts WHERE username = ?1 limit 1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "SELECT aid, password, email, token, sessionKey, deviceId, sessionKeyCreated FROM accounts WHERE username = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -154,7 +154,7 @@ Account* dbGate::getAccountByUsername(const char* username) {
 		if (sessionKey != NULL) account->setSessionKey(sessionKey);
 		deviceId = (const char*) sqlite3_column_text(stmt, 5);
 		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setTokenTimestamp(sqlite3_column_int(stmt, 6));
+		account->setSessionKeyTimestamp(sqlite3_column_int(stmt, 6));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -168,7 +168,7 @@ Account* dbGate::getAccountByToken(const char* token) {
 	const char* deviceId;
 	const char* email;
 	const char* sessionKey;
-	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, sessionKey, deviceId, tokenCreated FROM accounts WHERE token = ?1 limit 1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, sessionKey, deviceId, sessionKeyCreated FROM accounts WHERE token = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -207,7 +207,7 @@ Account* dbGate::getAccountByToken(const char* token) {
 		if (sessionKey != NULL) account->setSessionKey(sessionKey);
 		deviceId = (const char*) sqlite3_column_text(stmt, 5);
 		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setTokenTimestamp(sqlite3_column_int(stmt, 6));
+		account->setSessionKeyTimestamp(sqlite3_column_int(stmt, 6));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -221,7 +221,7 @@ Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
 	const char* deviceId;
 	const char* email;
 	const char* token;
-	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token, deviceId, tokenCreated FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token, deviceId, sessionKeyCreated FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -260,7 +260,7 @@ Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
 		if (token != NULL) account->setToken(token);
 		deviceId = (const char*) sqlite3_column_text(stmt, 5);
 		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setTokenTimestamp(sqlite3_column_int(stmt, 6));
+		account->setSessionKeyTimestamp(sqlite3_column_int(stmt, 6));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -274,7 +274,7 @@ Account* dbGate::getAccountByDeviceId(const char* deviceId) {
 	const char* email;
 	const char* token;
 	const char* sessionKey;
-	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token, sessionKey, tokenCreated FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token, sessionKey, sessionKeyCreated FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return NULL;
@@ -313,7 +313,7 @@ Account* dbGate::getAccountByDeviceId(const char* deviceId) {
 		if (token != NULL) account->setToken(token);
 		sessionKey = (const char*) sqlite3_column_text(stmt, 5);
 		if (sessionKey != NULL) account->setSessionKey(sessionKey);
-		account->setTokenTimestamp(sqlite3_column_int(stmt, 6));
+		account->setSessionKeyTimestamp(sqlite3_column_int(stmt, 6));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -366,7 +366,7 @@ Account* dbGate::createAccount(const char* username) {
 
 int dbGate::saveAccount(const Account& account) {
 	sqlite3_stmt* stmt;
-	int ret = sqlite3_prepare(db, "UPDATE accounts SET username = ?1, password = ?2, email = ?3, token = ?4, sessionKey = ?5, deviceId = ?7, tokenCreated = ?8 WHERE aid = ?6;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "UPDATE accounts SET username = ?1, password = ?2, email = ?3, token = ?4, sessionKey = ?5, deviceId = ?7, sessionKeyCreated = ?8 WHERE aid = ?6;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return -3;
@@ -409,7 +409,7 @@ int dbGate::saveAccount(const Account& account) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return -2;
 	}
-	ret = sqlite3_bind_int(stmt, 8, account.getTokenTimestamp());
+	ret = sqlite3_bind_int(stmt, 8, account.getSessionKeyTimestamp());
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return -2;
