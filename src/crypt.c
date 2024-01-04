@@ -25,7 +25,7 @@ int HyvCryptRsaEnc(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 		fprintf(stderr, "Output buffer not provided\n");
 		return -1;
 	}
-	if (key_id >= 5) {
+	if (key_id > 5) {
 		fprintf(stderr, "Invalid key ID\n");
 		return -1;
 	}
