@@ -783,17 +783,12 @@ std::string handleCombo(const char* post) {
 	json_object_object_add(njobj, "combo_token", json_object_new_string(comboToken));
 	json_object_object_add(njobj, "open_id", json_object_new_uint64(aid));
 	json_object_object_add(njobj, "account_type", json_object_new_int(isGuest ? 0 : 1));
-	json_object* njobj2 = json_object_new_object();
-	if (njobj2 != NULL) {
-		json_object_object_add(njobj2, "guest", json_object_new_boolean(isGuest));
-		json_object_object_add(njobj, "data", njobj2);
-	}
+	json_object_object_add(njobj, "data", json_object_new_string(isGuest ? "{\"guest\":true}" : "{\"guest\":false}"));
 	json_object_object_add(njobj, "fatigue_remind", NULL); // CN only; shows in-game reminder if playing too long
 	json_object_object_add(njobj, "heartbeat", json_object_new_boolean(0)); // CN only; forces game to send heartbeats so server can enforce maximum play time
 	ret = "{\"retcode\":0,\"message\":\"ok\",\"data\":";
 	ret += json_object_to_json_string_ext(njobj, JSON_C_TO_STRING_PLAIN);
 	ret += "}";
-	json_object_put(njobj);
 	json_object_put(jobj);
 	json_object_put(dobj2);
 	return ret;
