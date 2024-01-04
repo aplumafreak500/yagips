@@ -648,13 +648,14 @@ std::string handleCombo(const char* post) {
 	}
 	size_t post_len = strlen(post) + 1;
 	struct json_tokener* jtk = json_tokener_new();
+	enum json_tokener_error jerr;
 	unsigned int aid = 0;
 	if (jtk == NULL) {
 		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
 	}
 	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
 	if (jobj == NULL) {
-		enum json_tokener_error jerr = json_tokener_get_error(jtk);
+		jerr = json_tokener_get_error(jtk);
 		if (jerr != json_tokener_continue) {
 			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
 		}
@@ -672,12 +673,45 @@ std::string handleCombo(const char* post) {
 	}
 	struct json_object* dobj2;
 	struct json_object* dobj;
+	const char* data_str = NULL;
+	size_t data_str_len;
 	if (!json_object_object_get_ex(jobj, "data", &dobj2)) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Account data is not set\"}";
 	}
+	data_str = json_object_get_string(dobj2);
+	data_str_len = json_object_get_string_len(dobj2);
+	if (data_str == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account data is not set\"}";
+	}
+	jtk = json_tokener_new();
+	if (jtk == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
+	}
+	dobj2 = json_tokener_parse_ex(jtk, data_str, data_str_len);
+	if (dobj2 == NULL) {
+		jerr = json_tokener_get_error(jtk);
+		if (jerr != json_tokener_continue) {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Login failure: error parsing JSON data\"}";
+	}
+	if (json_tokener_get_parse_end(jtk) < data_str_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(dobj2, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		json_object_put(dobj2);
+		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
+	}
 	if (!json_object_object_get_ex(dobj2, "uid", &dobj)) {
 		json_object_put(jobj);
+		json_object_put(dobj2);
 		return "{\"retcode\":-101,\"message\":\"Account ID is not set\"}";
 	}
 	aid = json_object_get_int(dobj);
@@ -696,36 +730,43 @@ std::string handleCombo(const char* post) {
 	if (isGuest) {
 		if (deviceId == NULL) {
 			json_object_put(jobj);
+			json_object_put(dobj2);
 			return "{\"retcode\":-101,\"message\":\"Device ID is null\"}";
 		}
 		if (strlen(deviceId) == 0) {
 			json_object_put(jobj);
+			json_object_put(dobj2);
 			return "{\"retcode\":-101,\"message\":\"Device ID is empty\"}";
 		}
 	}
 	else {
 		if (token == NULL) {
 			json_object_put(jobj);
+			json_object_put(dobj2);
 			return "{\"retcode\":-101,\"message\":\"Token is null\"}";
 		}
 		if (strlen(token) == 0) {
 			json_object_put(jobj);
+			json_object_put(dobj2);
 			return "{\"retcode\":-101,\"message\":\"Token is empty\"}";
 		}
 	}
 	Account* account = globalDbGate->getAccountByAid(aid);
 	if (account == NULL) {
 		json_object_put(jobj);
+		json_object_put(dobj2);
 		return "{\"retcode\":-101,\"message\":\"Account ID does not exist\"}";
 	}
 	if (!isGuest) {
 		if (strcmp(token, account->getSessionKey().c_str()) != 0) {
 			json_object_put(jobj);
+			json_object_put(dobj2);
 			return "{\"retcode\":-101,\"message\":\"Cached token does not match\"}";
 		}
 #if 0
 		if (deviceId != NULL && strcmp(deviceId, account->getDeviceId().c_str()) != 0) {
 			json_object_put(jobj);
+			json_object_put(dobj2);
 			return "{\"retcode\":-101,\"message\":\"Token was created on another device\"}";
 		}
 #endif
@@ -736,6 +777,7 @@ std::string handleCombo(const char* post) {
 	json_object* njobj = json_object_new_object();
 	if (njobj == NULL) {
 		json_object_put(jobj);
+		json_object_put(dobj2);
 		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON object\"}";
 	}
 	json_object_object_add(njobj, "combo_token", json_object_new_string(comboToken));
@@ -753,6 +795,7 @@ std::string handleCombo(const char* post) {
 	ret += "}";
 	json_object_put(njobj);
 	json_object_put(jobj);
+	json_object_put(dobj2);
 	return ret;
 }
 
