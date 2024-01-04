@@ -452,6 +452,7 @@ std::string handleLogin(const char* post) {
 			return "{\"retcode\":-101,\"message\":\"Device ID is null\"}";
 		}
 		if (strlen(deviceId) == 0) {
+			json_object_put(jobj);
 			return "{\"retcode\":-101,\"message\":\"Device ID is empty\"}";
 		}
 		account = globalDbGate->getAccountByDeviceId(deviceId);
@@ -467,12 +468,14 @@ std::string handleLogin(const char* post) {
 			return "{\"retcode\":-101,\"message\":\"Username is null\"}";
 		}
 		if (strlen(username) == 0) {
+		json_object_put(jobj);
 			return "{\"retcode\":-101,\"message\":\"Username is empty\"}";
 		}
 		account = globalDbGate->getAccountByUsername(username);
 	}
 	if (account == NULL) {
 		// TODO look up auto create an account in config
+		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Username does not exist\"}";
 	}
 	if (!json_object_object_get_ex(jobj, "password", &dobj)) {
@@ -498,6 +501,7 @@ std::string handleLogin(const char* post) {
 	// TODO look up encrypt password in config
 	// TODO HMAC-SHA256
 	if (strcmp(encPassword, account->getPasswordHash().c_str()) != 0) {
+		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Incorrect password\"}";
 	}
 #endif
@@ -506,6 +510,7 @@ std::string handleLogin(const char* post) {
 	std::string ret;
 	json_object* njobj = json_object_new_object();
 	if (njobj == NULL) {
+		json_object_put(jobj);
 		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON object\"}";
 	}
 	json_object_object_add(njobj, "uid", json_object_new_uint64(account->getAccountId()));
@@ -550,6 +555,104 @@ std::string handleLogin(const char* post) {
 	6. If the account object was not changed, return right away, retcode = 0.
 		* Else, globalDbGate->saveAccount(account) and then return, retcode = 0.
 */
+// /session/verify (/hk4e_{cn,global}/mdk/shield/api/verify)
+std::string handleVerify(const char* post) {
+	if (post == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
+	}
+	size_t post_len = strlen(post) + 1;
+	struct json_tokener* jtk = json_tokener_new();
+	unsigned int aid = 0;
+	if (jtk == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
+	}
+	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
+	if (jobj == NULL) {
+		enum json_tokener_error jerr = json_tokener_get_error(jtk);
+		if (jerr != json_tokener_continue) {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		return "{\"retcode\":-101,\"message\":\"Login failure: error parsing JSON data\"}";
+	}
+	if (json_tokener_get_parse_end(jtk) < post_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(jobj, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
+	}
+	struct json_object* dobj;
+	const char* deviceId = NULL;
+	if (json_object_object_get_ex(jobj, "device_id", &dobj)) {
+		deviceId = json_object_get_string(dobj);
+	}
+	if (!json_object_object_get_ex(jobj, "uid", &dobj)) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account ID is not set\"}";
+	}
+	aid = json_object_get_int(dobj);
+	if (!json_object_object_get_ex(jobj, "token", &dobj)) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token is not set\"}";
+	}
+	const char* token = json_object_get_string(dobj);
+	if (token == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token is null\"}";
+	}
+	if (strlen(token) == 0) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token is empty\"}";
+	}
+	Account* account = globalDbGate->getAccountByAid(aid);
+	if (account == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account ID does not exist\"}";
+	}
+	if (strcmp(token, account->getToken().c_str()) != 0) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Cached token does not match\"}";
+	}
+#if 0
+	if (deviceId != NULL && strcmp(deviceId, account->getDeviceId().c_str()) != 0) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token was created on another device\"}";
+	}
+#endif
+	// TODO only do this if the config tells us to
+#if 0
+	// according to config...
+	// regen the token
+	token = account->getNewSessionKey().c_str();
+	// or only regen the timestamp
+	account->setSessionKeyTimestamp();
+	globalDbGate->saveAccount(*account);
+#endif
+	std::string ret;
+	json_object* njobj = json_object_new_object();
+	if (njobj == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON object\"}";
+	}
+	json_object_object_add(njobj, "uid", json_object_new_uint64(aid));
+	// TODO Official servers mask name and email for privacy reasons.
+	json_object_object_add(njobj, "name", json_object_new_string(account->getUsername().c_str()));
+	json_object_object_add(njobj, "email", json_object_new_string(account->getEmail().c_str()));
+	json_object_object_add(njobj, "is_email_verify", json_object_new_boolean(0)); // TODO Unknown what this does.
+	json_object_object_add(njobj, "token", json_object_new_string(token));
+	// Note: country and area_code might get rewritten by PHP, per the client IP address.
+	json_object_object_add(njobj, "country", json_object_new_string("ZZ"));
+	json_object_object_add(njobj, "area_code", NULL);
+	ret = "{\"retcode\":0,\"message\":\"ok\",\"data\":{\"account\":";
+	ret += json_object_to_json_string_ext(njobj, JSON_C_TO_STRING_PLAIN);
+	ret += "}}";
+	json_object_put(njobj);
+	json_object_put(jobj);
+	return ret;
+}
 
 /* TODO /session/combo Roadmap:
 	1. Same as /session/verify
