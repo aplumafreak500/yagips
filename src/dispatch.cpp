@@ -506,6 +506,9 @@ std::string handleLogin(const char* post) {
 	}
 #endif
 	std::string sessionKey = account->getNewSessionKey();
+	if (deviceId != NULL) {
+		account->setDeviceId(deviceId);
+	}
 	globalDbGate->saveAccount(*account);
 	std::string ret;
 	json_object* njobj = json_object_new_object();
@@ -656,7 +659,7 @@ std::string handleVerify(const char* post) {
 
 /* TODO /session/combo Roadmap:
 	1. Same as /session/verify
-	2. account->getNewComboToken()
+	2. account->getNewToken()
 	3. globalDbGate->saveAccount(account)
 	4. retcode = 0 (success)
 */
