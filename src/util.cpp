@@ -65,18 +65,18 @@ std::string hexenc(const std::string& in) {
 	std::string ret = "";
 	size_t isz = in.size();
 	unsigned int i = 0;
-	unsigned int t;
+	unsigned char t;
 	while (isz > 0) {
 		t = (in[i] >> 4) & 0xf;
 		if (t + '0' > '9') {
-			ret += (t + 'a');
+			ret += (t - 10 + 'a');
 		}
 		else {
 			ret += (t + '0');
 		}
 		t = in[i] & 0xf;
 		if (t + '0' > '9') {
-			ret += (t + 'a');
+			ret += (t - 10 + 'a');
 		}
 		else {
 			ret += (t + '0');
