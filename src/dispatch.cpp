@@ -599,7 +599,7 @@ std::string handleVerify(const char* post) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Account ID does not exist\"}";
 	}
-	if (strcmp(token, account->getToken().c_str()) != 0) {
+	if (strcmp(token, account->getSessionKey().c_str()) != 0) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Cached token does not match\"}";
 	}
@@ -714,7 +714,7 @@ std::string handleCombo(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Account ID does not exist\"}";
 	}
 	if (!isGuest) {
-		if (strcmp(token, account->getToken().c_str()) != 0) {
+		if (strcmp(token, account->getSessionKey().c_str()) != 0) {
 			json_object_put(jobj);
 			return "{\"retcode\":-101,\"message\":\"Cached token does not match\"}";
 		}
