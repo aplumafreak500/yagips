@@ -542,22 +542,6 @@ std::string handleLogin(const char* post) {
 	return ret;
 }
 
-/* TODO /session/verify Roadmap:
-	1. globalDbGate->getAccountById(aid)
-		* If null, retcode = 17 (or -101?)
-	2. If the config tells us to check the token's expiration date, do so.
-		* If expired, retcode = 16 (or -101?)
-	3. If the config tells us to check the device ID (or if it's a guest account), do so.
-		* If it's unset and a guest account, retcode = ? (or -101?)
-		* If it's unset and not a guest account, proceed.
-		* If it's set, but there's a mismatch, retcode = 16? (or -101?)
-	4. strcmp(token, account->token)
-		* If nonzero return, retcode = 16 (or -101?)
-	5. If config tells us to regenerate the token, do so.
-		* If not, but it does tell us to refresh expiration dates, do so.
-	6. If the account object was not changed, return right away, retcode = 0.
-		* Else, globalDbGate->saveAccount(account) and then return, retcode = 0.
-*/
 // /session/verify (/hk4e_{cn,global}/mdk/shield/api/verify)
 std::string handleVerify(const char* post) {
 	if (post == NULL) {
@@ -657,12 +641,115 @@ std::string handleVerify(const char* post) {
 	return ret;
 }
 
-/* TODO /session/combo Roadmap:
-	1. Same as /session/verify
-	2. account->getNewToken()
-	3. globalDbGate->saveAccount(account)
-	4. retcode = 0 (success)
-*/
+// /session/combo (/hk4e_{cn,global}/combo/granter/login/v2/login)
+std::string handleCombo(const char* post) {
+	if (post == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
+	}
+	size_t post_len = strlen(post) + 1;
+	struct json_tokener* jtk = json_tokener_new();
+	unsigned int aid = 0;
+	if (jtk == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
+	}
+	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
+	if (jobj == NULL) {
+		enum json_tokener_error jerr = json_tokener_get_error(jtk);
+		if (jerr != json_tokener_continue) {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		return "{\"retcode\":-101,\"message\":\"Login failure: error parsing JSON data\"}";
+	}
+	if (json_tokener_get_parse_end(jtk) < post_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(jobj, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
+	}
+	struct json_object* dobj;
+	if (!json_object_object_get_ex(jobj, "uid", &dobj)) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account ID is not set\"}";
+	}
+	aid = json_object_get_int(dobj);
+	unsigned int isGuest = 0;
+	const char* deviceId = NULL;
+	const char* token = NULL;
+	if (json_object_object_get_ex(jobj, "guest", &dobj)) {
+		isGuest = json_object_get_boolean(dobj);
+	}
+	if (json_object_object_get_ex(jobj, "device_id", &dobj)) {
+		deviceId = json_object_get_string(dobj);
+	}
+	if (json_object_object_get_ex(jobj, "token", &dobj)) {
+		token = json_object_get_string(dobj);
+	}
+	if (isGuest) {
+		if (deviceId == NULL) {
+			json_object_put(jobj);
+			return "{\"retcode\":-101,\"message\":\"Device ID is null\"}";
+		}
+		if (strlen(deviceId) == 0) {
+			json_object_put(jobj);
+			return "{\"retcode\":-101,\"message\":\"Device ID is empty\"}";
+		}
+	}
+	else {
+		if (token == NULL) {
+			json_object_put(jobj);
+			return "{\"retcode\":-101,\"message\":\"Token is null\"}";
+		}
+		if (strlen(token) == 0) {
+			json_object_put(jobj);
+			return "{\"retcode\":-101,\"message\":\"Token is empty\"}";
+		}
+	}
+	Account* account = globalDbGate->getAccountByAid(aid);
+	if (account == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account ID does not exist\"}";
+	}
+	if (!isGuest) {
+		if (strcmp(token, account->getToken().c_str()) != 0) {
+			json_object_put(jobj);
+			return "{\"retcode\":-101,\"message\":\"Cached token does not match\"}";
+		}
+#if 0
+		if (deviceId != NULL && strcmp(deviceId, account->getDeviceId().c_str()) != 0) {
+			json_object_put(jobj);
+			return "{\"retcode\":-101,\"message\":\"Token was created on another device\"}";
+		}
+#endif
+	}
+	const char* comboToken = account->getNewToken().c_str();
+	globalDbGate->saveAccount(*account);
+	std::string ret;
+	json_object* njobj = json_object_new_object();
+	if (njobj == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON object\"}";
+	}
+	json_object_object_add(njobj, "combo_token", json_object_new_string(comboToken));
+	json_object_object_add(njobj, "open_id", json_object_new_uint64(aid));
+	json_object_object_add(njobj, "account_type", json_object_new_int(isGuest ? 0 : 1));
+	json_object* njobj2 = json_object_new_object();
+	if (njobj2 != NULL) {
+		json_object_object_add(njobj2, "guest", json_object_new_boolean(isGuest));
+		json_object_object_add(njobj, "data", njobj2);
+	}
+	json_object_object_add(njobj, "fatigue_remind", NULL); // CN only; shows in-game reminder if playing too long
+	json_object_object_add(njobj, "heartbeat", json_object_new_boolean(0)); // CN only; forces game to send heartbeats so server can enforce maximum play time
+	ret = "{\"retcode\":0,\"message\":\"ok\",\"data\":";
+	ret += json_object_to_json_string_ext(njobj, JSON_C_TO_STRING_PLAIN);
+	ret += "}";
+	json_object_put(njobj);
+	json_object_put(jobj);
+	return ret;
+}
 
 extern "C" {
 	volatile int DispatchServerSignal = 0;
