@@ -83,7 +83,7 @@ Account* dbGate::getAccountByAid(unsigned int aid) {
 	case SQLITE_ROW: // got a hit
 		account = new Account();
 		account->setAccountId(aid);
-		username = (const char*) sqlite3_column_text(stmt, 1);
+		username = (const char*) sqlite3_column_text(stmt, 0);
 		if (username != NULL) {
 			account->setUsername(username);
 			account->setIsGuest(0);
@@ -91,17 +91,17 @@ Account* dbGate::getAccountByAid(unsigned int aid) {
 		else {
 			account->setIsGuest(1);
 		}
-		password = (const char*) sqlite3_column_text(stmt, 2);
+		password = (const char*) sqlite3_column_text(stmt, 1);
 		if (password != NULL) account->setPasswordHash(password);
-		email = (const char*) sqlite3_column_text(stmt, 3);
+		email = (const char*) sqlite3_column_text(stmt, 2);
 		if (email != NULL) account->setEmail(email);
-		token = (const char*) sqlite3_column_text(stmt, 4);
+		token = (const char*) sqlite3_column_text(stmt, 3);
 		if (token != NULL) account->setToken(token);
-		sessionKey = (const char*) sqlite3_column_text(stmt, 5);
+		sessionKey = (const char*) sqlite3_column_text(stmt, 4);
 		if (sessionKey != NULL) account->setSessionKey(sessionKey);
-		deviceId = (const char*) sqlite3_column_text(stmt, 6);
+		deviceId = (const char*) sqlite3_column_text(stmt, 5);
 		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
+		account->setTokenTimestamp(sqlite3_column_int(stmt, 6));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -143,18 +143,18 @@ Account* dbGate::getAccountByUsername(const char* username) {
 	case SQLITE_ROW: // got a hit
 		account = new Account();
 		account->setUsername(username);
-		account->setAccountId(sqlite3_column_int(stmt, 1));
-		password = (const char*) sqlite3_column_text(stmt, 2);
+		account->setAccountId(sqlite3_column_int(stmt, 0));
+		password = (const char*) sqlite3_column_text(stmt, 1);
 		if (password != NULL) account->setPasswordHash(password);
-		email = (const char*) sqlite3_column_text(stmt, 3);
+		email = (const char*) sqlite3_column_text(stmt, 2);
 		if (email != NULL) account->setEmail(email);
-		token = (const char*) sqlite3_column_text(stmt, 4);
+		token = (const char*) sqlite3_column_text(stmt, 3);
 		if (token != NULL) account->setToken(token);
-		sessionKey = (const char*) sqlite3_column_text(stmt, 5);
+		sessionKey = (const char*) sqlite3_column_text(stmt, 4);
 		if (sessionKey != NULL) account->setSessionKey(sessionKey);
-		deviceId = (const char*) sqlite3_column_text(stmt, 6);
+		deviceId = (const char*) sqlite3_column_text(stmt, 5);
 		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
+		account->setTokenTimestamp(sqlite3_column_int(stmt, 6));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -190,8 +190,8 @@ Account* dbGate::getAccountByToken(const char* token) {
 	case SQLITE_ROW: // got a hit
 		account = new Account();
 		account->setToken(token);
-		account->setAccountId(sqlite3_column_int(stmt, 1));
-		username = (const char*) sqlite3_column_text(stmt, 2);
+		account->setAccountId(sqlite3_column_int(stmt, 0));
+		username = (const char*) sqlite3_column_text(stmt, 1);
 		if (username != NULL) {
 			account->setUsername(username);
 			account->setIsGuest(0);
@@ -199,15 +199,15 @@ Account* dbGate::getAccountByToken(const char* token) {
 		else {
 			account->setIsGuest(1);
 		}
-		password = (const char*) sqlite3_column_text(stmt, 3);
+		password = (const char*) sqlite3_column_text(stmt, 2);
 		if (password != NULL) account->setPasswordHash(password);
-		email = (const char*) sqlite3_column_text(stmt, 4);
+		email = (const char*) sqlite3_column_text(stmt, 3);
 		if (email != NULL) account->setEmail(email);
-		sessionKey = (const char*) sqlite3_column_text(stmt, 5);
+		sessionKey = (const char*) sqlite3_column_text(stmt, 4);
 		if (sessionKey != NULL) account->setSessionKey(sessionKey);
-		deviceId = (const char*) sqlite3_column_text(stmt, 6);
+		deviceId = (const char*) sqlite3_column_text(stmt, 5);
 		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
+		account->setTokenTimestamp(sqlite3_column_int(stmt, 6));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -243,8 +243,8 @@ Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
 	case SQLITE_ROW: // got a hit
 		account = new Account();
 		account->setSessionKey(sessionKey);
-		account->setAccountId(sqlite3_column_int(stmt, 1));
-		username = (const char*) sqlite3_column_text(stmt, 2);
+		account->setAccountId(sqlite3_column_int(stmt, 0));
+		username = (const char*) sqlite3_column_text(stmt, 1);
 		if (username != NULL) {
 			account->setUsername(username);
 			account->setIsGuest(0);
@@ -252,15 +252,15 @@ Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
 		else {
 			account->setIsGuest(1);
 		}
-		password = (const char*) sqlite3_column_text(stmt, 3);
+		password = (const char*) sqlite3_column_text(stmt, 2);
 		if (password != NULL) account->setPasswordHash(password);
-		email = (const char*) sqlite3_column_text(stmt, 4);
+		email = (const char*) sqlite3_column_text(stmt, 3);
 		if (email != NULL) account->setEmail(email);
-		token = (const char*) sqlite3_column_text(stmt, 5);
+		token = (const char*) sqlite3_column_text(stmt, 4);
 		if (token != NULL) account->setToken(token);
-		deviceId = (const char*) sqlite3_column_text(stmt, 6);
+		deviceId = (const char*) sqlite3_column_text(stmt, 5);
 		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
+		account->setTokenTimestamp(sqlite3_column_int(stmt, 6));
 		sqlite3_finalize(stmt);
 		return account;
 	}
@@ -296,8 +296,8 @@ Account* dbGate::getAccountByDeviceId(const char* deviceId) {
 	case SQLITE_ROW: // got a hit
 		account = new Account();
 		account->setDeviceId(deviceId);
-		account->setAccountId(sqlite3_column_int(stmt, 1));
-		username = (const char*) sqlite3_column_text(stmt, 2);
+		account->setAccountId(sqlite3_column_int(stmt, 0));
+		username = (const char*) sqlite3_column_text(stmt, 1);
 		if (username != NULL) {
 			account->setUsername(username);
 			account->setIsGuest(0);
@@ -305,15 +305,15 @@ Account* dbGate::getAccountByDeviceId(const char* deviceId) {
 		else {
 			account->setIsGuest(1);
 		}
-		password = (const char*) sqlite3_column_text(stmt, 3);
+		password = (const char*) sqlite3_column_text(stmt, 2);
 		if (password != NULL) account->setPasswordHash(password);
-		email = (const char*) sqlite3_column_text(stmt, 4);
+		email = (const char*) sqlite3_column_text(stmt, 3);
 		if (email != NULL) account->setEmail(email);
-		token = (const char*) sqlite3_column_text(stmt, 5);
+		token = (const char*) sqlite3_column_text(stmt, 4);
 		if (token != NULL) account->setToken(token);
-		sessionKey = (const char*) sqlite3_column_text(stmt, 6);
+		sessionKey = (const char*) sqlite3_column_text(stmt, 5);
 		if (sessionKey != NULL) account->setSessionKey(sessionKey);
-		account->setTokenTimestamp(sqlite3_column_int(stmt, 7));
+		account->setTokenTimestamp(sqlite3_column_int(stmt, 6));
 		sqlite3_finalize(stmt);
 		return account;
 	}
