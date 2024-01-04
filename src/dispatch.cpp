@@ -670,8 +670,13 @@ std::string handleCombo(const char* post) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
 	}
+	struct json_object* dobj2;
 	struct json_object* dobj;
-	if (!json_object_object_get_ex(jobj, "uid", &dobj)) {
+	if (!json_object_object_get_ex(jobj, "data", &dobj2)) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account data is not set\"}";
+	}
+	if (!json_object_object_get_ex(dobj2, "uid", &dobj)) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Account ID is not set\"}";
 	}
@@ -679,13 +684,13 @@ std::string handleCombo(const char* post) {
 	unsigned int isGuest = 0;
 	const char* deviceId = NULL;
 	const char* token = NULL;
-	if (json_object_object_get_ex(jobj, "guest", &dobj)) {
+	if (json_object_object_get_ex(jobj, "device", &dobj)) {
+		deviceId = json_object_get_string(dobj2);
+	}
+	if (json_object_object_get_ex(dobj2, "guest", &dobj)) {
 		isGuest = json_object_get_boolean(dobj);
 	}
-	if (json_object_object_get_ex(jobj, "device_id", &dobj)) {
-		deviceId = json_object_get_string(dobj);
-	}
-	if (json_object_object_get_ex(jobj, "token", &dobj)) {
+	if (json_object_object_get_ex(dobj2, "token", &dobj)) {
 		token = json_object_get_string(dobj);
 	}
 	if (isGuest) {
