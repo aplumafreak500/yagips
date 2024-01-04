@@ -21,6 +21,7 @@ public:
 	Account* getAccountByAid(unsigned int);
 	Account* getAccountByUid(unsigned int);
 	Account* getAccountByUsername(const char*);
+	Account* getAccountByDeviceId(const char*);
 	Account* getAccountByToken(const char*);
 	Account* getAccountBySessionKey(const char*);
 	Account* createAccount(const char*);

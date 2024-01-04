@@ -9,6 +9,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
+#include <time.h>
 #include <sys/random.h>
 #include "dbgate.h"
 #include "account.h"
@@ -31,6 +32,14 @@ const std::string& Account::getUsername() const {
 
 void Account::setUsername(const std::string& u) {
 	username = u;
+}
+
+const std::string& Account::getDeviceId() const {
+	return deviceId;
+}
+
+void Account::setDeviceId(const std::string& d) {
+	deviceId = d;
 }
 
 const std::string& Account::getPasswordHash() const {
@@ -61,6 +70,7 @@ const std::string& Account::getNewToken() {
 	char rawtoken[24]; // for a 32-character token. TODO pull from config
 	getrandom(rawtoken, 24, 0);
 	token = b64enc(std::string(rawtoken, 24));
+	tokenTimestamp = time(NULL);
 	return token;
 }
 
@@ -77,4 +87,24 @@ const std::string& Account::getNewSessionKey() {
 	getrandom(rawtoken, 24, 0);
 	sessionKey = b64enc(std::string(rawtoken, 24));
 	return sessionKey;
+}
+
+long long Account::getTokenTimestamp() const {
+	return tokenTimestamp;
+}
+
+void Account::setTokenTimestamp() {
+	tokenTimestamp = time(NULL);
+}
+
+void Account::setTokenTimestamp(long long t) {
+	tokenTimestamp = t;
+}
+
+unsigned int Account::isGuest() const {
+	return guest ? 1 : 0;
+}
+
+void Account::setIsGuest(unsigned int g) {
+	guest = g ? 1 : 0;
 }
