@@ -336,6 +336,7 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	// TODO: Figure out what to do with the dispatch_seed. Yuuki verifies it as part of determining the client version; Grasscutter merely checks for its existence and uses a hardcoded signature if not present, but doesn't appear to do anything else with it if it is set.
 	// TODO What other parameters do we need to check?
 	// TODO What other parameters does the official server check?
+	json_object_put(jobj);
 set_fields:
 	if (config->regionInfo == NULL) {
 		fprintf(stderr, "Error: Region info is null, check the config\n");
@@ -504,7 +505,6 @@ build_rsp:
 	if (tmpbuf == NULL) {
 		return ret_enc; // fall back to unencrypted buffer
 	}
-	// TODO Get key id from client
 	j = HyvCryptRsaEnc((unsigned char*) ret_enc.c_str(), sz, tmpbuf, bufsz * 2, doEnc);
 	if (j < 0) {
 		free(tmpbuf);
