@@ -498,16 +498,19 @@ build_rsp:
 		}
 	}
 	if (!doEnc) {
+		ret_enc.resize(sz);
 		return ret_enc;
 	}
 	// Default to twice the size of the buffer to account for some crazy small keys.
 	unsigned char* tmpbuf = (unsigned char*) malloc(bufsz * 2);
 	if (tmpbuf == NULL) {
+		ret_enc.resize(sz);
 		return ret_enc; // fall back to unencrypted buffer
 	}
 	j = HyvCryptRsaEnc((unsigned char*) ret_enc.c_str(), sz, tmpbuf, bufsz * 2, doEnc);
 	if (j < 0) {
 		free(tmpbuf);
+		ret_enc.resize(sz);
 		return ret_enc;
 	}
 	ret_enc.assign((const char*) tmpbuf, j);
