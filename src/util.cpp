@@ -25,7 +25,7 @@ std::string b64enc(const std::string& in) {
 	std::string ret = "";
 	size_t isz = in.size();
 	unsigned int i = 0;
-	int t;
+	unsigned int t;
 	while (isz > 0) {
 		t = (in[0 + i] >> 2) & 0x3f;
 		ret += b64tbl[t];
@@ -57,6 +57,32 @@ std::string b64enc(const std::string& in) {
 			isz--;
 			i += 3;
 		}
+	}
+	return ret;
+}
+
+std::string hexenc(const std::string& in) {
+	std::string ret = "";
+	size_t isz = in.size();
+	unsigned int i = 0;
+	unsigned int t;
+	while (isz > 0) {
+		t = (in[i] >> 4) & 0xf;
+		if (t + '0' > '9') {
+			ret += (t + 'a');
+		}
+		else {
+			ret += (t + '0');
+		}
+		t = in[i] & 0xf;
+		if (t + '0' > '9') {
+			ret += (t + 'a');
+		}
+		else {
+			ret += (t + '0');
+		}
+		i++;
+		isz--;
 	}
 	return ret;
 }

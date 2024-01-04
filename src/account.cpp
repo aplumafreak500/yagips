@@ -67,9 +67,9 @@ void Account::setToken(const std::string& t) {
 }
 
 const std::string& Account::getNewToken() {
-	char rawtoken[24]; // for a 32-character token. TODO pull from config
-	getrandom(rawtoken, 24, 0);
-	token = b64enc(std::string(rawtoken, 24));
+	char rawtoken[16]; // for a 32-character token. TODO pull from config
+	getrandom(rawtoken, 16, 0);
+	token = hexenc(std::string(rawtoken, 16));
 	return token;
 }
 
