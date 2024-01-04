@@ -505,7 +505,7 @@ build_rsp:
 		return ret_enc; // fall back to unencrypted buffer
 	}
 	// TODO Get key id from client
-	j = HyvCryptRsaEnc((unsigned char*) ret_enc.c_str(), sz, tmpbuf, bufsz * 2, 4);
+	j = HyvCryptRsaEnc((unsigned char*) ret_enc.c_str(), sz, tmpbuf, bufsz * 2, doEnc);
 	if (j < 0) {
 		free(tmpbuf);
 		return ret_enc;
