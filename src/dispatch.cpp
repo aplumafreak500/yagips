@@ -501,7 +501,7 @@ std::string handleLogin(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Incorrect password\"}";
 	}
 #endif
-	std::string token = account->getNewToken();
+	std::string sessionKey = account->getNewSessionKey();
 	globalDbGate->saveAccount(*account);
 	std::string ret;
 	json_object* njobj = json_object_new_object();
@@ -520,7 +520,7 @@ std::string handleLogin(const char* post) {
 		json_object_object_add(njobj, "name", json_object_new_string(account->getUsername().c_str()));
 		json_object_object_add(njobj, "email", json_object_new_string(account->getEmail().c_str()));
 		json_object_object_add(njobj, "is_email_verify", json_object_new_boolean(0)); // TODO Unknown what this does.
-		json_object_object_add(njobj, "token", json_object_new_string(token.c_str()));
+		json_object_object_add(njobj, "token", json_object_new_string(sessionKey.c_str()));
 		// Note: country and area_code might get rewritten by PHP, per the client IP address.
 		json_object_object_add(njobj, "country", json_object_new_string("ZZ"));
 		json_object_object_add(njobj, "area_code", NULL);

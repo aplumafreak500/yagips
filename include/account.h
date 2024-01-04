@@ -34,9 +34,9 @@ public:
 	void setAccountId(unsigned int);
 	unsigned int isGuest() const;
 	void setIsGuest(unsigned int);
-	long long getTokenTimestamp() const;
-	void setTokenTimestamp();
-	void setTokenTimestamp(long long);
+	long long getSessionKeyTimestamp() const;
+	void setSessionKeyTimestamp();
+	void setSessionKeyTimestamp(long long);
 private:
 	std::string username;
 	std::string password_hash;
@@ -46,6 +46,6 @@ private:
 	std::string sessionKey;
 	unsigned int aid;
 	unsigned int guest;
-	long long tokenTimestamp;
+	long long sessionKeyTimestamp;
 };
 #endif
