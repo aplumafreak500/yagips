@@ -13,7 +13,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #define DISPATCH_H
 #include <string>
 std::string getQueryRegionListHttpRsp(const char*);
-std::string getQueryCurrRegionHttpRsp(std::string&, int);
+std::string getQueryCurrRegionHttpRsp(std::string&, const char*);
 extern "C" {
 	void* DispatchServerMain(void*);
 	extern volatile int DispatchServerSignal;
