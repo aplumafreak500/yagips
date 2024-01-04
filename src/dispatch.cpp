@@ -1056,14 +1056,19 @@ write_rsp:
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();
 					break;
-				// TODO
 				case SDK_CHECK_AUTH_TOKEN:
-				case SDK_CHECK_COMBO_TOKEN:
-					rsp_str = "{\"retcode\":-101,\"message\":\"Endpoint not implemented yet, please be patient\"}";
+					rsp_str = handleVerify(body);
 					mime = "application/json";
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();
 					break;
+				case SDK_CHECK_COMBO_TOKEN:
+					rsp_str = handleCombo(body);
+					mime = "application/json";
+					rsp_body = rsp_str.c_str();
+					rsp_len = rsp_str.size();
+					break;
+				// TODO
 				case SDK_GACHA_HIST:
 				case SDK_GET_PLAYER_DATA:
 				// These additionally require out-of-game client authentication
