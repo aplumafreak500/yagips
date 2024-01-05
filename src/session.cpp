@@ -11,6 +11,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include <stdio.h>
 #include <time.h>
+#include <sys/types.h>
 #include "gameserver.h"
 #include "kcpsession.h"
 #include "session.h"
@@ -24,11 +25,30 @@ Session::Session(Gameserver* gs, sock_t* sock, unsigned long long sid) {
 }
 
 Session::~Session() {
-	close();
+	close(12);
 }
 
-void Session::close() {
-	// TODO
+void Session::close(unsigned int reason) {
+	kcp_handshake_t hs;
+	unsigned long long sid;
+	ssize_t pkt_size;
+	// TODO Better state check
+	if (kcpSession != NULL) {
+		sid = kcpSession->getSessionId();
+		fprintf(stderr, "Closing session 0x%08llx\n", sid);
+		hs.magic1 = htobe32(0x194);
+		hs.sid1 = htobe32(sid & 0xffffffff);
+		hs.sid2 = htobe32(sid >> 32);
+		hs.cmd = htobe32(reason);
+		hs.magic2 = htobe32(0x19419494);
+		pkt_size = kcpSession->sendRaw((const unsigned char*) &hs, sizeof(hs));
+		if (pkt_size != (ssize_t) sizeof(hs)) {
+			fprintf(stderr, "Warning: Failed to send close packet to client\n");
+		}
+		delete kcpSession;
+		kcpSession = NULL;
+	}
+	state = 1; // <some constant idk...>
 }
 
 KcpSession* Session::getKcpSession() {
@@ -62,6 +82,7 @@ extern "C" {
 			kcp->update(50);
 			nanosleep(&w, NULL);
 		}
+		session->close(3);
 		return 0;
 	}
 }

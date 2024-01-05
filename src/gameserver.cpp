@@ -97,7 +97,7 @@ void Gameserver::stop() {
 	for (i = 0; i < maxSessions; i++) {
 		if (sessionList == NULL) break;
 		if (sessionList[i] == NULL) continue;
-		sessionList[i]->close();
+		sessionList[i]->close(6);
 		delete sessionList[i];
 	}
 	// TODO: Wait for a timeout or until all sessions have shut down
@@ -262,17 +262,31 @@ extern "C" {
 						kcpSession = sessionList[i]->getKcpSession();
 						if (kcpSession == NULL) continue;
 						// Check the session ID.
-						if (kcpSession->getSessionId() == sid) {							// There's a match. At this point, forward the packet to the KCP session. The session thread will (hopefully) see the packet in full the next time it calls ikcp_recv.
+						if (kcpSession->getSessionId() == sid) {
+							// There's a match. At this point, forward the packet to the KCP session. The session thread will (hopefully) see the packet in full the next time it calls ikcp_recv.
 							kcpSession->pushToKcp(pkt_buf, pkt_size);
 							break;
 						}
 						// Check 4 bytes ahead in case the client sent a request to close the session, which uses the "handshake" format.
-						sid = (unsigned long long) be32toh(hs->sid1) << 32;
-						sid |= be32toh(hs->sid2);
-						if (kcpSession->getSessionId() != sid) continue;
-						// If there's a match, send a signal to close the session.
-						sessionList[i]->close();
-						break;
+						sid = (unsigned long long) be32toh(hs->sid2) << 32;
+						sid |= be32toh(hs->sid1);
+						if (kcpSession->getSessionId() != sid) {							// Client sometimes sends shutdown requests with the highest 32 bits of the session ID unset.
+							if (sid & 0xffffffff != be32toh(hs->sid1) && be32toh(hs->sid2) != 0) {
+								continue;
+							}
+						}
+						// Check for a shutdown request
+						if (hs->magic1 == htobe32(0x194) && hs->magic2 == htobe32(0x19419494)) {
+							sessionList[i]->close(be32toh(hs->cmd));
+							// TODO Once we check state constants, don't do this anymore
+							delete sessionList[i];
+							sessionList[i] = NULL;
+							break;
+						}
+						// Unknown "handshake format" packet
+						fprintf(stderr, "Debug: Hexdump of Packet:\n");
+						DbgHexdump(pkt_buf, pkt_size);
+						continue;
 					}
 					if (i >= maxSessions) {
 						// No existing sessions matched. Try to see if a client is trying to open a new session. (Note that it's entirely possible that a client can send an oversized but still valid handshake packet.)
@@ -280,8 +294,8 @@ extern "C" {
 							getrandom(&sid, sizeof(unsigned long long), 0);
 							// Open a new session.
 							hs->magic1 = htobe32(0x145);
-							hs->sid1 = htobe32(sid >> 32);
-							hs->sid2 = htobe32(sid & 0xffffffff);
+							hs->sid1 = htobe32(sid & 0xffffffff);
+							hs->sid2 = htobe32(sid >> 32);
 							hs->cmd = htobe32(1234567890);
 							hs->magic2 = htobe32(0x14514545);
 							pkt_size = gs->send(&client, pkt_buf, sizeof(kcp_handshake_t));
@@ -296,7 +310,16 @@ extern "C" {
 								}
 								if (i >= maxSessions) {
 									fprintf(stderr, "Reached the max amount of sessions, cannot accept a new one.\n");
-									// TODO Send a close packet
+									hs->magic1 = htobe32(0x194);
+									hs->sid1 = htobe32(sid & 0xffffffff);
+									hs->sid2 = htobe32(sid >> 32);
+									hs->cmd = htobe32(5);
+									hs->magic2 = htobe32(0x19419494);
+									pkt_size = gs->send(&client, pkt_buf, sizeof(kcp_handshake_t));
+									if (pkt_size < (ssize_t) sizeof(kcp_handshake_t)) {
+										inet_ntop(AF_INET6, client.sin6_addr.s6_addr, (char*) addr_buf, 128);
+										fprintf(stderr, "Failed to send close packet to client at %s:%d.\n", addr_buf, client.sin6_port);
+									}
 								}
 								else {
 									sessionList[i] = new Session(gs, &client, sid);
@@ -308,14 +331,20 @@ extern "C" {
 						}
 						else if (pkt_size >= 28) { // Unfortunately, if a packet is sized bigger than KCP's header, there's no viable way to check for valid KCP headers that don't belong to a connected client, compared to completely invalid packets altogether.
 							fprintf(stderr, "Warning: Invalid packet received (or session id is not registered)\n");
+							//fprintf(stderr, "Hexdump of Packet:\n");
+							//DbgHexdump(pkt_buf, pkt_size);
 						}
 						else { // We know for sure the packet is bogus if it's not a valid handshake and its size is smaller than KCP's header.
 							fprintf(stderr, "Warning: Invalid packet received.\n");
+							//fprintf(stderr, "Hexdump of Packet:\n");
+							//DbgHexdump(pkt_buf, pkt_size);
 						}
 					}
 				}
 				else { // Smaller than even a handshake packet, so it's definitely bogus
 					fprintf(stderr, "Warning: Invalid packet received.\n");
+					//fprintf(stderr, "Hexdump of Packet:\n");
+					//DbgHexdump(pkt_buf, pkt_size);
 				}
 			}
 			// else pkt_size == 0 (no-op)
