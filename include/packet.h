@@ -11,9 +11,30 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #ifndef PACKET_H
 #define PACKET_H
-extern "C" {
-	typedef struct {
-		
-	} packet_t;
-}
+#include <string>
+#include "session.h"
+
+#define PACKET_MAGIC1 0x4567
+#define PACKET_MAGIC2 0x89ab
+
+class Packet {
+public:
+	Packet();
+	~Packet();
+	int parse(const unsigned char*, size_t);
+	int build(unsigned char*, size_t*) const;
+	const std::string& getHeader() const;
+	const std::string& buildHeader(unsigned int);
+	void setHeader(const std::string&);
+	const std::string& getData() const;
+	void setData(const std::string&);
+	unsigned short getOpcode() const;
+	void setOpcode(unsigned short);
+private:
+	unsigned short opcode;
+	std::string header;
+	std::string data;
+	int encrypted;
+	int useDispatchKey;
+};
 #endif
