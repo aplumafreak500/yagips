@@ -10,11 +10,11 @@ AM_CFLAGS = $(PROTOBUF_CFLAGS) $(LIBCRYPTO_CFLAGS) $(SQLITE3_CFLAGS) $(JSON_C_CF
 AM_CXXFLAGS = $(PROTOBUF_CFLAGS) $(LIBCRYPTO_CFLAGS) $(SQLITE3_CFLAGS) $(JSON_C_CFLAGS)
 bin_PROGRAMS = yagips
 yagips_SOURCES = yagips.cpp gameserver.cpp session.cpp packet.cpp account.cpp kcpsession.cpp dispatch.cpp dbgate.cpp config.cpp util.cpp http.c toml.c mt19937-64.c crypt.c kcp.c keys.c
-nodist_yagips_SOURCES = $(builddir)/proto/dispatch.pb.cc
+nodist_yagips_SOURCES = $(builddir)/proto/dispatch.pb.cc $(builddir)/proto/packet_head.pb.cc
 yagips_LDADD = $(PROTOBUF_LIBS) $(LIBCRYPTO_LIBS) $(SQLITE3_LIBS) $(JSON_C_LIBS)
-BUILT_SOURCES = $(builddir)/proto/dispatch.pb.h
-CLEANFILES = $(builddir)/proto/dispatch.pb.cc $(builddir)/proto/dispatch.pb.h
-dist_noinst_DATA = proto/dispatch.proto
+BUILT_SOURCES = $(builddir)/proto/dispatch.pb.h $(builddir)/proto/packet_head.pb.h
+CLEANFILES = $(builddir)/proto/dispatch.pb.cc $(builddir)/proto/dispatch.pb.h $(builddir)/proto/packet_head.pb.cc $(builddir)/proto/packet_head.pb.h
+dist_noinst_DATA = proto/dispatch.proto proto/packet_head.proto
 
 %.pb.cc %.pb.h: %.proto
 	$(PROTOC) --proto_path=$(srcdir)/proto --cpp_out=$(builddir)/proto $^

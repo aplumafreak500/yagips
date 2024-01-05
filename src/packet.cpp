@@ -9,8 +9,11 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
+#include <string.h>
 #include <sys/types.h>
+#include <time.h>
 #include "packet.h"
+#include "packet_head.pb.h"
 
 Packet::Packet() {}
 Packet::~Packet() {}
@@ -42,3 +45,63 @@ int Packet::parse(const unsigned char* buf, size_t sz) {
 	return 0;
 }
 
+int Packet::build(unsigned char* buf, size_t* sz) const {
+	if (buf == NULL) return -1;
+	if (sz == NULL) return -1;
+	if (header.empty()) return -1;
+	*sz = 10 + header.size() + data.size();
+	unsigned char* pos = buf;
+	*(unsigned short*) pos = htobe16(PACKET_MAGIC1);
+	pos += sizeof(short);
+	*(unsigned short*) pos = htobe16(opcode);
+	pos += sizeof(short);
+	*(unsigned short*) pos = htobe16(header.size());
+	pos += sizeof(short);
+	*(unsigned int*) pos = htobe32(data.size());
+	pos += sizeof(int);
+	memcpy(pos, header.c_str(), header.size());
+	pos += header.size();
+	memcpy(pos, data.c_str(), data.size());
+	pos += data.size();
+	*(unsigned short*) pos = htobe16(PACKET_MAGIC2);
+	// TODO Encrypt
+	return 0;
+}
+
+const std::string& Packet::getHeader() const {
+	return header;
+}
+
+void Packet::setHeader(const std::string& hdr) {
+	header = hdr;
+}
+
+const std::string& Packet::buildHeader(unsigned int seq) {
+	if (!header.empty() && seq == 0) {
+		return header;
+	}
+	proto::PacketHead head_p;
+	std::string ret;
+	head_p.set_client_sequence_id(seq);
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	head_p.set_sent_ms((ts.tv_sec * 1000) + (ts.tv_nsec / 1000000));
+	if (head_p.SerializeToString(&ret)) header = ret;
+	return header;
+}
+
+const std::string& Packet::getData() const {
+	return data;
+}
+
+void Packet::setData(const std::string& d) {
+	data = d;
+}
+
+unsigned short Packet::getOpcode() const {
+	return opcode;
+}
+
+void Packet::setOpcode(unsigned short opc) {
+	opcode = opc;
+}
