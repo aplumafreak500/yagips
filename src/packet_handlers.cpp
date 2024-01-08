@@ -9,39 +9,21 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#ifndef PACKET_H
-#define PACKET_H
 #include <string>
 #include "session.h"
+#include "packet.h"
+// TODO Use a file full of enum constants that can be auto generated. This is due to the fact that opcode IDs (usually) change from one client version to the next.
 
-#define PACKET_MAGIC1 0x4567
-#define PACKET_MAGIC2 0x89ab
+extern int handlePingReq(Session&, std::string&, std::string&);
 
-class Packet {
-public:
-	Packet();
-	Packet(unsigned short);
-	~Packet();
-	int parse(const unsigned char*, size_t);
-	int build();
-	int build(unsigned char*, size_t*);
-	const std::string& getHeader() const;
-	const std::string& buildHeader(unsigned int);
-	void setHeader(const std::string&);
-	const std::string& getData() const;
-	void setData(const std::string&);
-	unsigned short getOpcode() const;
-	void setOpcode(unsigned short);
-	const unsigned char* getBuffer(size_t*) const;
-private:
-	unsigned short opcode;
-	std::string header;
-	std::string data;
-	int encrypted;
-	int useDispatchKey;
-	unsigned char* rawpkt_buf;
-	size_t rawpkt_sz;
-};
-
-int processPacket(Session&, Packet&);
-#endif
+int processPacket(Session& session, Packet& packet) {
+	unsigned int opcode = packet.getOpcode();
+	std::string header = packet.getHeader();
+	std::string data = packet.getData();
+	switch (opcode) {
+	default:
+		return -1;
+	case 7:
+		return handlePingReq(session, header, data);
+	}
+}

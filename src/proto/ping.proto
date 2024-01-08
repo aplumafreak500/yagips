@@ -1,0 +1,45 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+message PingReq {
+    uint32 client_time = 12;
+    float ue_time = 14;
+    double total_tick_time = 6;
+    bytes sc_data = 10;
+    uint32 seq = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 7;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message PingRsp {
+    uint32 client_time = 15;
+    int32 retcode = 6;
+    uint32 seq = 13;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 21;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}

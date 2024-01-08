@@ -9,39 +9,32 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#ifndef PACKET_H
-#define PACKET_H
 #include <string>
+#include "packet.h"
 #include "session.h"
+#include "packet_head.pb.h"
+#include "ping.pb.h"
 
-#define PACKET_MAGIC1 0x4567
-#define PACKET_MAGIC2 0x89ab
-
-class Packet {
-public:
-	Packet();
-	Packet(unsigned short);
-	~Packet();
-	int parse(const unsigned char*, size_t);
-	int build();
-	int build(unsigned char*, size_t*);
-	const std::string& getHeader() const;
-	const std::string& buildHeader(unsigned int);
-	void setHeader(const std::string&);
-	const std::string& getData() const;
-	void setData(const std::string&);
-	unsigned short getOpcode() const;
-	void setOpcode(unsigned short);
-	const unsigned char* getBuffer(size_t*) const;
-private:
-	unsigned short opcode;
-	std::string header;
-	std::string data;
-	int encrypted;
-	int useDispatchKey;
-	unsigned char* rawpkt_buf;
-	size_t rawpkt_sz;
-};
-
-int processPacket(Session&, Packet&);
-#endif
+int handlePingReq(Session& session, std::string& header, std::string& data) {
+	proto::PacketHead pkt_head;
+	proto::PingReq req;
+	proto::PingRsp rsp;
+	Packet rsp_pkt(21);
+	if (!pkt_head.ParseFromString(header)) {
+		return -1;
+	}
+	if (!req.ParseFromString(data)) {
+		return -1;
+	}
+	// TODO Update session last ping time (from req.client_time()
+	rsp.set_seq(pkt_head.client_sequence_id());
+	if (!rsp.SerializeToString(&data)) {
+		return -1;
+	}
+	rsp_pkt.setHeader(header);
+	rsp_pkt.setData(data);
+	if (rsp_pkt.build() < 0) return -1;
+	size_t rawsz;
+	const unsigned char* rawbuf = rsp_pkt.getBuffer(&rawsz);
+	return session.getKcpSession()->send(rawbuf, rawsz) < 0 ? -1 : 0;
+}

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2023 Alex Pensinger (ArcticLuma113)
+©2024 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -68,15 +68,23 @@ extern "C" {
 		__attribute__((aligned(256))) static unsigned char pkt_buf[16 * 1024];
 		ssize_t pkt_size = 0;
 		KcpSession* kcp = session->getKcpSession();
+		Packet packet;
+		std::string pkt_data;
 		fprintf(stderr, "Session 0x%08llx thread started\n", kcp->getSessionId());
 		const struct timespec w = {0, 50000000}; // 50 ms
 		// TODO null checks
 		while(session->getState() != 1 /*TODO session close signal constant*/) {
 			pkt_size = kcp->recv(pkt_buf, 16 * 1024);
 			if (pkt_size >= 0) {
-				fprintf(stderr, "Debug: Hexdump of Packet:\n");
-				DbgHexdump(pkt_buf, pkt_size);
-				// TODO Process the packet
+				if (packet.parse(pkt_buf, pkt_size) < 0) {
+					fprintf(stderr, "Warning: Invalid packet received.\n");
+				}
+				if (processPacket(*session, packet) < 0) {
+					fprintf(stderr, "Warning: Unhandled packet with ID %d\n", packet.getOpcode());
+					pkt_data = packet.getData();
+					fprintf(stderr, "Hexdump of Packet Payload:\n");
+					DbgHexdump((const unsigned char*) pkt_data.c_str(), pkt_data.size());
+				}
 			}
 			// Else less than 0 - either no packets in queue, or an error occured
 			kcp->update(50);

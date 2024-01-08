@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2023 Alex Pensinger (ArcticLuma113)
+©2024 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -15,7 +15,18 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "packet.h"
 #include "packet_head.pb.h"
 
-Packet::Packet() {}
+Packet::Packet() {
+	rawpkt_buf = NULL;
+	rawpkt_sz = 0;
+	opcode = 0;
+}
+
+Packet::Packet(unsigned short opc) {
+	rawpkt_buf = NULL;
+	rawpkt_sz = 0;
+	opcode = opc;
+}
+
 Packet::~Packet() {}
 
 int Packet::parse(const unsigned char* buf, size_t sz) {
@@ -40,12 +51,19 @@ int Packet::parse(const unsigned char* buf, size_t sz) {
 	}
 	header.assign((const char*) buf + 8, hdr_sz);
 	data.assign((const char*) buf + hdr_sz + 8, data_sz);
+	rawpkt_buf = (unsigned char*) buf;
+	rawpkt_sz = sz;
 	encrypted = 0;
 	useDispatchKey = 0;
 	return 0;
 }
 
-int Packet::build(unsigned char* buf, size_t* sz) const {
+int Packet::build() {
+	if (rawpkt_buf == NULL) return -1;
+	return build(rawpkt_buf, &rawpkt_sz);
+}
+
+int Packet::build(unsigned char* buf, size_t* sz) {
 	if (buf == NULL) return -1;
 	if (sz == NULL) return -1;
 	if (header.empty()) return -1;
@@ -104,4 +122,11 @@ unsigned short Packet::getOpcode() const {
 
 void Packet::setOpcode(unsigned short opc) {
 	opcode = opc;
+}
+
+const unsigned char* Packet::getBuffer(size_t* sz) const {
+	if (sz != NULL) {
+		*sz = rawpkt_sz;
+	}
+	return rawpkt_buf;
 }
