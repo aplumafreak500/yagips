@@ -19,7 +19,7 @@ extern "C" {
 	static int sendFromKcp(const unsigned char*, int, ikcpcb*, KcpSession*);
 }
 
-KcpSession::KcpSession(unsigned long id, sock_t* _client, Gameserver* _gs) {
+KcpSession::KcpSession(unsigned long long id, sock_t* _client, Gameserver* _gs) {
 	if (_gs == NULL) {
 		throw std::invalid_argument("Gameserver reference missing.");
 	}
@@ -41,6 +41,7 @@ KcpSession::KcpSession(unsigned long id, sock_t* _client, Gameserver* _gs) {
 
 KcpSession::~KcpSession() {
 	if (kcp != NULL) ikcp_release(kcp);
+	kcp = NULL;
 }
 
 ssize_t KcpSession::send(const unsigned char* buf, size_t len) {

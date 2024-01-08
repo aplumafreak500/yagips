@@ -25,7 +25,7 @@ int HyvCryptRsaEnc(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 		fprintf(stderr, "Output buffer not provided\n");
 		return -1;
 	}
-	if (key_id >= 5) {
+	if (key_id > 5) {
 		fprintf(stderr, "Invalid key ID\n");
 		return -1;
 	}
@@ -70,7 +70,7 @@ int HyvCryptRsaEnc(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 	size_t ibs = obs - 11; /* 3 byte padding format + 64 bit random data */
 	size_t i = 0;
 	while ((ssize_t) ilen > 0 && (ssize_t) olen > 0) {
-		if (EVP_PKEY_encrypt(ctx, obuf, &obs, ibuf, ibs) <= 0) {
+		if (EVP_PKEY_encrypt(ctx, obuf, &obs, ibuf, ilen < ibs ? ilen : ibs) <= 0) {
 			fprintf(stderr, "Unable to encrypt the data; libcrypto errors follow\n");
 			ERR_print_errors_fp(stderr);
 			EVP_PKEY_CTX_free(ctx);

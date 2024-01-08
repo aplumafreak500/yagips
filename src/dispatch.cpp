@@ -202,35 +202,142 @@ build_rsp:
 	return ret_enc;
 }
 
-// TODO pass in a struct containing the HTTP GET parameters
-std::string getQueryCurrRegionHttpRsp(std::string& sign, int doEnc) {
-	/* TODO Roadmap:
-		1. Parse JSON, as in query_region_list
-		2. If version is set, verify it, using the version set in the config for the region with index 0. (config.cpp does its own checks regarding the configured client version supported by the server.) Otherwise, fall back to said configure-time defaults.
-			* If there's a mismatch, send back a negative response with `msg` and `retcode` set appropriately. (TODO should we also set `resVersionConfig`-related stuff too in that case?)
-			* Grasscutter actually uses stopServer responses to report version mismatches. (TODO are there any other ways to do the same?)
-		3. If key_id is set, verify that it's either negative, 0, or in range [2,5]. If not, error out.
-			* Negative, 0, or unset means bypass the encryption step.
-		4. Parse aid and check it. If negative, unset, or non-numeric, continue. Else, check that it exists in the db. If not, continue. Else, check for a ban. If there is one and it hasn't expired, send back a negative response with `msg` and `retcode` set appropriately. (TODO should we also set `resVersionConfig`-related stuff too in that case?) If it has expired, delete it from the db and then continue.
-		5. (TODO Figure out what to do with	the dispatch_seed. Yuuki verifies it as part of determining the client version; Grasscutter merely checks for its existence and uses a hardcoded signature if not present, but doesn't appear to do anything else with it if it is set.)
-		6. If (non-vanilla) parameter `skipSign` is present and nonzero, skip the signing step altogether and return an empty string as the signature. The caller should see this and omit the signature from the outer json response.
-		7. (TODO What other parameters do we need to check?)
-		8. (TODO What other parameters does the official server check?)
-		9. Set the proto fields according to the config. (TODO On the official server, if retcode is not 0, due to eg. a ban or an error, are resVersionConfig fields set too?)
-		10. Check sendStopServerOrForceUpdate and apply the corresponding proto field if it is set. (TODO On the official server, if forceUpdate is set, are resVersionConfig fields set too?)
-		11. Proceed from the line `if (!ret.SerializeToString(&ret_enc))`.
-	*/
+std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
+	int doResVersionConfig = 0;
+	int doGateserver = 0;
 	int doSign = 1;
+	int doEnc = 0;
 	proto::QueryCurrRegionHttpRsp ret;
 	proto::RegionInfo* region;
 	proto::ResVersionConfig* res;
+	proto::ResVersionConfig* resNext;
+	proto::StopServerInfo* stop;
+	proto::ForceUpdateInfo* upd;
 	std::string ret_enc;
-	/* Unknown Fields TODO
-		* client_secret_key - ECB seed struct. At least on Yuuki, this is actually different from the one given in the region list. Unknown what this is actually used for, but it's likely that, once derived, it's the same as the secretKey we already have.
-		* region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one below, or with the one from query_cur_region
-		* client_region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one above, or with the one from query_cur_region
-	*/
-	const config_t* config = globalConfig->getConfig();
+	const config_t* config;
+	size_t post_len;
+	struct json_tokener* jtk;
+	enum json_tokener_error jerr;
+	struct json_object* jobj;
+	const char* data;
+	struct json_object* dobj;
+	unsigned int major = 0;
+	unsigned int minor = 0;
+	unsigned int patch = 0;
+	int client, iregion;
+	char sclient[32];
+	char sregion[3];
+	int sret;
+	config = globalConfig->getConfig();
+	// These will get overwritten later if an error occurs.
+	ret.set_retcode(0);
+	ret.set_msg("ok");
+	if (post == NULL) {
+		ret.set_retcode(-1);
+		ret.set_msg("Client is missing POST data");
+		goto set_fields;
+	}
+	post_len = strlen(post) + 1;
+	jtk = json_tokener_new();
+	if (jtk == NULL) {
+		ret.set_retcode(-1);
+		ret.set_msg("JSON tokener alloc fail");
+		goto set_fields;
+	}
+	jobj = json_tokener_parse_ex(jtk, post, post_len);
+	if (jobj == NULL) {
+		jerr = json_tokener_get_error(jtk);
+		if (jerr == json_tokener_continue) {
+			fprintf(stderr, "Error: JSON in POST data is incomplete\n");
+		}
+		else {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		ret.set_retcode(-1);
+		ret.set_msg("JSON parse error");
+		goto set_fields;
+	}
+	if (json_tokener_get_parse_end(jtk) < post_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(jobj, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		ret.set_retcode(-1);
+		ret.set_msg("JSON POST data is not an object");
+		goto set_fields;
+	}
+	if (!json_object_object_get_ex(jobj, "version", &dobj)) {
+		// Version isn't even present
+		json_object_put(jobj);
+		ret.set_retcode(-1);
+		ret.set_msg("Version is not set");
+		goto set_fields;
+	}
+	data = json_object_get_string(dobj);
+	if (data == NULL) {
+		// Version is present, but set to null
+		json_object_put(jobj);
+		ret.set_retcode(-1);
+		ret.set_msg("Version is null");
+		goto set_fields;
+	}
+	memset(sregion, '\0', 3);
+	memset(sclient, '\0', 32);
+	sret = sscanf(data, "%2cREL%31[^0-9.]%d.%d.%d", sregion, sclient, &major, &minor, &patch);
+	if (sret == EOF || sret < 5) {
+		// Version is present, but in an invalid format
+		json_object_put(jobj);
+		ret.set_retcode(-1);
+		ret.set_msg("Version format is invalid");
+		goto set_fields;
+	}
+	if (strncmp(sregion, "OS", 3) == 0) iregion = REGION_OS;
+	else if (strncmp(sregion, "CN", 3) == 0) iregion = REGION_CN;
+	else iregion = REGION_UNK;
+	if (strncmp(sclient, "Win", 31) == 0) client = CLIENT_PC;
+	else if (strncmp(sclient, "Android", 31) == 0) client = CLIENT_ANDROID;
+	else if (strncmp(sclient, "iOS", 31) == 0) client = CLIENT_IOS;
+	// TODO PS4 and PS5 version ID's?
+	// else if (strncmp(sclient, "PS4", 31) == 0) client = CLIENT_PS4;
+	// else if (strncmp(sclient, "PS5", 31) == 0) client = CLIENT_PS5;
+	else client = CLIENT_UNK;
+	if (
+		(client <= CLIENT_UNK || client >= CLIENT_CNT) ||
+		(iregion <= REGION_UNK || iregion >= REGION_CNT) ||
+		// TODO Pull from index 0 of RegionListEntry array
+		major != CUR_MAJOR || minor != CUR_MINOR ||
+		// TODO: Does any live version have a patch value above 1?
+		// Deny beta clients (for now).
+		patch > 1
+	) {
+		json_object_put(jobj);
+		ret.set_retcode(-1);
+		ret.set_msg("Version mismatch");
+		// TODO Also send force_update_url and/or stop_server? GC does the latter in cases of version mismatch.
+		goto set_fields;
+	}
+	doResVersionConfig = 1;
+	doGateserver = 1;
+	if (json_object_object_get_ex(jobj, "skipSign", &dobj)) {
+		doSign = (~json_object_get_boolean(dobj)) & 1;
+	}
+	if (json_object_object_get_ex(jobj, "key_id", &dobj)) {
+		doEnc = json_object_get_int(dobj);
+	}
+	if (doEnc == 1 || doEnc > 5) {
+		ret.set_retcode(-1);
+		ret.set_msg("Invalid key ID");
+		doEnc = 0;
+	}
+	/* TODO Parse aid and check it. If negative, unset, or non-numeric, continue. Else, check that it exists in the db. If not, continue. Else, check for a ban. If there is one and it hasn't expired, send back a negative response with `msg` and `retcode` set appropriately. (Skip setting the gateserver and ResVersionConfig fields here.) If it has expired, delete it from the db and then continue. */
+	// TODO: Figure out what to do with the dispatch_seed. Yuuki verifies it as part of determining the client version; Grasscutter merely checks for its existence and uses a hardcoded signature if not present, but doesn't appear to do anything else with it if it is set.
+	// TODO What other parameters do we need to check?
+	// TODO What other parameters does the official server check?
+	json_object_put(jobj);
+set_fields:
 	if (config->regionInfo == NULL) {
 		fprintf(stderr, "Error: Region info is null, check the config\n");
 		ret.set_retcode(-1); // TODO more specific error code?
@@ -238,22 +345,22 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, int doEnc) {
 		goto build_rsp;
 	}
 	region = new proto::RegionInfo;
-	if (config->regionInfo->gateserverIp == NULL || config->regionInfo->gateserverPort == 0) {
-		fprintf(stderr, "Error: Gateserver IP or port is null, check the config\n");
-		ret.set_retcode(-1); // TODO more specific error code?
-		ret.set_msg("Server is missing region data");
-	}
-	else {
-		if (config->regionInfo->gateserverIpIsDomainName) {
-			region->set_use_gateserver_domain_name(1);
-			region->set_gateserver_domain_name(config->regionInfo->gateserverIp);
+	if (doGateserver) {
+		if (config->regionInfo->gateserverIp == NULL || config->regionInfo->gateserverPort == 0) {
+			fprintf(stderr, "Error: Gateserver IP or port is null, check the config\n");
+			ret.set_retcode(-1); // TODO more specific error code?
+			ret.set_msg("Server is missing region data");
 		}
 		else {
-			region->set_gateserver_ip(config->regionInfo->gateserverIp);
+			if (config->regionInfo->gateserverIpIsDomainName) {
+				region->set_use_gateserver_domain_name(1);
+				region->set_gateserver_domain_name(config->regionInfo->gateserverIp);
+			}
+			else {
+				region->set_gateserver_ip(config->regionInfo->gateserverIp);
+			}
+			region->set_gateserver_port(config->regionInfo->gateserverPort);
 		}
-		region->set_gateserver_port(config->regionInfo->gateserverPort);
-		ret.set_retcode(0);
-		ret.set_msg("ok");
 	}
 	if (config->regionInfo->feedbackUrl != NULL) {
 		region->set_feedback_url(config->regionInfo->feedbackUrl);
@@ -282,97 +389,98 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, int doEnc) {
 	if (config->regionInfo->payCbUrl != NULL) {
 		region->set_pay_callback_url(config->regionInfo->payCbUrl);
 	}
-	if (config->regionInfo->res != NULL) {
-		if (config->regionInfo->res->resourceUrl != NULL) {
-			region->set_resource_url(config->regionInfo->res->resourceUrl);
+	if (doResVersionConfig) {
+		if (config->regionInfo->res != NULL) {
+			if (config->regionInfo->res->resourceUrl != NULL) {
+				region->set_resource_url(config->regionInfo->res->resourceUrl);
+			}
+			if (config->regionInfo->res->dataUrl != NULL) {
+				region->set_data_url(config->regionInfo->res->dataUrl);
+			}
+			region->set_client_data_version(config->regionInfo->res->dataVersion);
+			if (config->regionInfo->res->dataSuffix != NULL) {
+				region->set_client_version_suffix(config->regionInfo->res->dataSuffix);
+			}
+			if (config->regionInfo->res->dataRes != NULL) {
+				region->set_client_data_md5(config->regionInfo->res->dataRes);
+			}
+			region->set_client_silence_data_version(config->regionInfo->res->silenceVersion);
+			if (config->regionInfo->res->silenceSuffix != NULL) {
+				region->set_client_silence_version_suffix(config->regionInfo->res->silenceSuffix);
+			}
+			if (config->regionInfo->res->silenceRes != NULL) {
+				region->set_client_silence_data_md5(config->regionInfo->res->silenceRes);
+			}
+			res = new proto::ResVersionConfig;
+			res->set_version(config->regionInfo->res->resVersion);
+			if (config->regionInfo->res->resourceSuffix != NULL) {
+				res->set_version_suffix(config->regionInfo->res->resourceSuffix);
+			}
+			if (config->regionInfo->res->resourceRes != NULL) {
+				res->set_md5(config->regionInfo->res->resourceRes);
+			}
+			if (config->regionInfo->res->branch != NULL) {
+				res->set_branch(config->regionInfo->res->branch);
+			}
+			// TODO also read config->regionInfo->res->scriptVersion?
+			if (config->regionInfo->res->releaseTotalSize != NULL) {
+				res->set_release_total_size(config->regionInfo->res->releaseTotalSize);
+			}
+			res->set_relogin(config->regionInfo->res->relogin);
+			region->set_allocated_res_version_config(res);
 		}
-		if (config->regionInfo->res->dataUrl != NULL) {
-			region->set_data_url(config->regionInfo->res->dataUrl);
+		if (config->regionInfo->resNext != NULL) {
+			if (config->regionInfo->resNext->resourceUrl != NULL) {
+				region->set_next_resource_url(config->regionInfo->resNext->resourceUrl);
+			}
+			resNext = new proto::ResVersionConfig;
+			resNext->set_version(config->regionInfo->resNext->resVersion);
+			if (config->regionInfo->resNext->resourceSuffix != NULL) {
+				resNext->set_version_suffix(config->regionInfo->resNext->resourceSuffix);
+			}
+			if (config->regionInfo->resNext->resourceRes != NULL) {
+				resNext->set_md5(config->regionInfo->resNext->resourceRes);
+			}
+			if (config->regionInfo->resNext->branch != NULL) {
+				resNext->set_branch(config->regionInfo->resNext->branch);
+			}
+			if (config->regionInfo->resNext->releaseTotalSize != NULL) {
+				resNext->set_release_total_size(config->regionInfo->resNext->releaseTotalSize);
+			}
+			resNext->set_relogin(config->regionInfo->resNext->relogin);
+			if (config->regionInfo->resNext->scriptVersion != NULL) {
+				resNext->set_next_script_version(config->regionInfo->resNext->scriptVersion);
+			}
+			region->set_allocated_next_res_version_config(resNext);
 		}
-		region->set_client_data_version(config->regionInfo->res->dataVersion);
-		if (config->regionInfo->res->dataSuffix != NULL) {
-			region->set_client_version_suffix(config->regionInfo->res->dataSuffix);
-		}
-		if (config->regionInfo->res->dataRes != NULL) {
-			region->set_client_data_md5(config->regionInfo->res->dataRes);
-		}
-		region->set_client_silence_data_version(config->regionInfo->res->silenceVersion);
-		if (config->regionInfo->res->silenceSuffix != NULL) {
-			region->set_client_silence_version_suffix(config->regionInfo->res->silenceSuffix);
-		}
-		if (config->regionInfo->res->silenceRes != NULL) {
-			region->set_client_silence_data_md5(config->regionInfo->res->silenceRes);
-		}
-		res = new proto::ResVersionConfig;
-		res->set_version(config->regionInfo->res->resVersion);
-		if (config->regionInfo->res->resourceSuffix != NULL) {
-			res->set_version_suffix(config->regionInfo->res->resourceSuffix);
-		}
-		if (config->regionInfo->res->resourceRes != NULL) {
-			res->set_md5(config->regionInfo->res->resourceRes);
-		}
-		if (config->regionInfo->res->branch != NULL) {
-			res->set_branch(config->regionInfo->res->branch);
-		}
-		// TODO also read config->regionInfo->res->scriptVersion?
-		if (config->regionInfo->res->releaseTotalSize != NULL) {
-			res->set_release_total_size(config->regionInfo->res->releaseTotalSize);
-		}
-		res->set_relogin(config->regionInfo->res->relogin);
-		region->set_allocated_res_version_config(res);
 	}
-	// TODO "Grab from config" rewrite stops here
-	/* Start Next Resource Config */
-	// proto::ResVersionConfig* resNext = new proto::ResVersionConfig;
-	/* Resource revision */
-	// TODO 3.3's proper value
-	// resNext->set_version(0);
-	/* Resource hash suffix. Unknown how this is generated (at least on vanilla). */
-	// TODO 3.3's proper value
-	// resNext->set_version_suffix("0000000000");
-	/* JSON object containing name, MD5, and size of resource file lists, one line per file. On vanilla, the list of files are: res_versions_{external,medium,streaming} and base_revision. Preloads also list audio_diff_versions. */
-	// TODO 3.3's proper values
-	/*resNext->set_md5(
-		"{\"remoteName\":\"res_versions_external\",\"md5\":\"\",\"fileSize\":0}\n"
-		"{\"remoteName\":\"res_versions_medium\",\"md5\":\"\",\"fileSize\":0}\n"
-		"{\"remoteName\":\"res_versions_streaming\",\"md5\":\"\",\"fileSize\":0}\n"
-		"{\"remoteName\":\"base_revision\",\"md5\":\"\",\"fileSize\":0}\n"
-		"{\"remoteName\":\"audio_diff_versions_32-33\",\"md5\":\"\",\"fileSize\":0}"
-	);*/
-	/* Branch name */
-	// resNext->set_branch("3.3_live");
-	/* TODO Unknown what exactly this does. */
-	// resNext->set_release_total_size("0");
-	/* TODO Unknown what exactly this does. */
-	// resNext->set_relogin(0);
-	/* Script version string. Normally not set in current resource config. TODO Unknown what exactly this does. But it may have to do with where the client places the preload data. */
-	// resNext->set_next_script_version("3.3.0");
-	/* End Next Resource Config */
-	// region->set_allocated_next_res_version_config(resNext);
-	/* End Region Info */
 	ret.set_allocated_region_info(region);
-	/* Start Server Stop Data */
-	// proto::StopServerInfo* stop = new proto::StopServerInfo;
-	/* Start of maintenance as Unix timestamp */
-	// stop->set_stop_begin_time(0);
-	/* End of maintenance as Unix timestamp */
-	// stop->set_stop_end_time();
-	/* a URL; iirc this is where clients go when a "more information" button is clicked TODO verify */
-	// stop->set_url("http://discord.yuuki.me");
-	/* Return message. On vanilla this just tells people to go to HoyoLAB (TODO verify), whereas on Grasscutter it also reports what client version(s) the server supports. */
-	// stop->set_content_msg("");
-	/* End Server Stop Data */
-	// ret.set_allocated_stop_server(stop);
-	/* Start Force Update */
-	// proto::ForceUpdateInfo* upd = new proto::ForceUpdateInfo;
-	/* I'm pretty sure the client gets sent this if they need to update after a new major version releases. TODO Verify */
-	// upd->set_force_update_url("http://ps.yuuki.me/game/genshin-impact");
-	/* End Force Update */
-	// ret.set_allocated_stop_server(upd);
+	if (config->regionInfo->sendStopServerOrForceUpdate == 1 && config->regionInfo->stopServer != NULL) {
+		stop = new proto::StopServerInfo;
+		stop->set_stop_begin_time(config->regionInfo->stopServer->start);
+		stop->set_stop_end_time(config->regionInfo->stopServer->end);
+		if (config->regionInfo->stopServer->url != NULL) {
+			stop->set_url(config->regionInfo->stopServer->url);
+		}
+		if (config->regionInfo->stopServer->msg != NULL) {
+			stop->set_content_msg(config->regionInfo->stopServer->msg);
+		}
+		ret.set_allocated_stop_server(stop);
+	}
+	if (config->regionInfo->sendStopServerOrForceUpdate == 2 && config->regionInfo->forceUpdateUrl != NULL) {
+		upd = new proto::ForceUpdateInfo;
+		upd->set_force_update_url(config->regionInfo->forceUpdateUrl);
+		ret.set_allocated_force_udpate(upd);
+	}
+	/* Unknown Fields TODO
+		* client_secret_key - ECB seed struct. At least on Yuuki, this is actually different from the one given in the region list. Unknown what this is actually used for, but it's likely that, once derived, it's the same as the secretKey we already have.
+		* region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one below, or with the one from query_cur_region
+		* client_region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one above, or with the one from query_cur_region
+	*/
 build_rsp:
 	if (!ret.SerializeToString(&ret_enc)) {
-		sign = "";
-		return "";
+		// Bypass Protobuf and encode a response ourselves. Note that this eventually gets base64 encoded, hence the raw hex string.
+		ret_enc = ""; // TODO build a default response
 	}
 	size_t sz = ret_enc.size();
 	size_t bufsz = ((sz / 256) + 1) * 256;
@@ -390,17 +498,19 @@ build_rsp:
 		}
 	}
 	if (!doEnc) {
+		ret_enc.resize(sz);
 		return ret_enc;
 	}
 	// Default to twice the size of the buffer to account for some crazy small keys.
 	unsigned char* tmpbuf = (unsigned char*) malloc(bufsz * 2);
 	if (tmpbuf == NULL) {
+		ret_enc.resize(sz);
 		return ret_enc; // fall back to unencrypted buffer
 	}
-	// TODO Get key id from client
-	j = HyvCryptRsaEnc((unsigned char*) ret_enc.c_str(), sz, tmpbuf, bufsz * 2, 4);
+	j = HyvCryptRsaEnc((unsigned char*) ret_enc.c_str(), sz, tmpbuf, bufsz * 2, doEnc);
 	if (j < 0) {
 		free(tmpbuf);
+		ret_enc.resize(sz);
 		return ret_enc;
 	}
 	ret_enc.assign((const char*) tmpbuf, j);
@@ -452,6 +562,7 @@ std::string handleLogin(const char* post) {
 			return "{\"retcode\":-101,\"message\":\"Device ID is null\"}";
 		}
 		if (strlen(deviceId) == 0) {
+			json_object_put(jobj);
 			return "{\"retcode\":-101,\"message\":\"Device ID is empty\"}";
 		}
 		account = globalDbGate->getAccountByDeviceId(deviceId);
@@ -467,12 +578,14 @@ std::string handleLogin(const char* post) {
 			return "{\"retcode\":-101,\"message\":\"Username is null\"}";
 		}
 		if (strlen(username) == 0) {
+		json_object_put(jobj);
 			return "{\"retcode\":-101,\"message\":\"Username is empty\"}";
 		}
 		account = globalDbGate->getAccountByUsername(username);
 	}
 	if (account == NULL) {
 		// TODO look up auto create an account in config
+		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Username does not exist\"}";
 	}
 	if (!json_object_object_get_ex(jobj, "password", &dobj)) {
@@ -498,14 +611,19 @@ std::string handleLogin(const char* post) {
 	// TODO look up encrypt password in config
 	// TODO HMAC-SHA256
 	if (strcmp(encPassword, account->getPasswordHash().c_str()) != 0) {
+		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Incorrect password\"}";
 	}
 #endif
-	std::string token = account->getNewToken();
+	std::string sessionKey = account->getNewSessionKey();
+	if (deviceId != NULL) {
+		account->setDeviceId(deviceId);
+	}
 	globalDbGate->saveAccount(*account);
 	std::string ret;
 	json_object* njobj = json_object_new_object();
 	if (njobj == NULL) {
+		json_object_put(jobj);
 		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON object\"}";
 	}
 	json_object_object_add(njobj, "uid", json_object_new_uint64(account->getAccountId()));
@@ -520,7 +638,7 @@ std::string handleLogin(const char* post) {
 		json_object_object_add(njobj, "name", json_object_new_string(account->getUsername().c_str()));
 		json_object_object_add(njobj, "email", json_object_new_string(account->getEmail().c_str()));
 		json_object_object_add(njobj, "is_email_verify", json_object_new_boolean(0)); // TODO Unknown what this does.
-		json_object_object_add(njobj, "token", json_object_new_string(token.c_str()));
+		json_object_object_add(njobj, "token", json_object_new_string(sessionKey.c_str()));
 		// Note: country and area_code might get rewritten by PHP, per the client IP address.
 		json_object_object_add(njobj, "country", json_object_new_string("ZZ"));
 		json_object_object_add(njobj, "area_code", NULL);
@@ -534,29 +652,257 @@ std::string handleLogin(const char* post) {
 	return ret;
 }
 
-/* TODO /session/verify Roadmap:
-	1. globalDbGate->getAccountById(aid)
-		* If null, retcode = 17 (or -101?)
-	2. If the config tells us to check the token's expiration date, do so.
-		* If expired, retcode = 16 (or -101?)
-	3. If the config tells us to check the device ID (or if it's a guest account), do so.
-		* If it's unset and a guest account, retcode = ? (or -101?)
-		* If it's unset and not a guest account, proceed.
-		* If it's set, but there's a mismatch, retcode = 16? (or -101?)
-	4. strcmp(token, account->token)
-		* If nonzero return, retcode = 16 (or -101?)
-	5. If config tells us to regenerate the token, do so.
-		* If not, but it does tell us to refresh expiration dates, do so.
-	6. If the account object was not changed, return right away, retcode = 0.
-		* Else, globalDbGate->saveAccount(account) and then return, retcode = 0.
-*/
+// /session/verify (/hk4e_{cn,global}/mdk/shield/api/verify)
+std::string handleVerify(const char* post) {
+	if (post == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
+	}
+	size_t post_len = strlen(post) + 1;
+	struct json_tokener* jtk = json_tokener_new();
+	unsigned int aid = 0;
+	if (jtk == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
+	}
+	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
+	if (jobj == NULL) {
+		enum json_tokener_error jerr = json_tokener_get_error(jtk);
+		if (jerr != json_tokener_continue) {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		return "{\"retcode\":-101,\"message\":\"Login failure: error parsing JSON data\"}";
+	}
+	if (json_tokener_get_parse_end(jtk) < post_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(jobj, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
+	}
+	struct json_object* dobj;
+	const char* deviceId = NULL;
+	if (json_object_object_get_ex(jobj, "device_id", &dobj)) {
+		deviceId = json_object_get_string(dobj);
+	}
+	if (!json_object_object_get_ex(jobj, "uid", &dobj)) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account ID is not set\"}";
+	}
+	aid = json_object_get_int(dobj);
+	if (!json_object_object_get_ex(jobj, "token", &dobj)) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token is not set\"}";
+	}
+	const char* token = json_object_get_string(dobj);
+	if (token == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token is null\"}";
+	}
+	if (strlen(token) == 0) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token is empty\"}";
+	}
+	Account* account = globalDbGate->getAccountByAid(aid);
+	if (account == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account ID does not exist\"}";
+	}
+	if (strcmp(token, account->getSessionKey().c_str()) != 0) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Cached token does not match\"}";
+	}
+#if 0
+	if (deviceId != NULL && strcmp(deviceId, account->getDeviceId().c_str()) != 0) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token was created on another device\"}";
+	}
+#endif
+	// TODO only do this if the config tells us to
+#if 0
+	// according to config...
+	// regen the token
+	token = account->getNewSessionKey().c_str();
+	// or only regen the timestamp
+	account->setSessionKeyTimestamp();
+	globalDbGate->saveAccount(*account);
+#endif
+	std::string ret;
+	json_object* njobj = json_object_new_object();
+	if (njobj == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON object\"}";
+	}
+	json_object_object_add(njobj, "uid", json_object_new_uint64(aid));
+	// TODO Official servers mask name and email for privacy reasons.
+	json_object_object_add(njobj, "name", json_object_new_string(account->getUsername().c_str()));
+	json_object_object_add(njobj, "email", json_object_new_string(account->getEmail().c_str()));
+	json_object_object_add(njobj, "is_email_verify", json_object_new_boolean(0)); // TODO Unknown what this does.
+	json_object_object_add(njobj, "token", json_object_new_string(token));
+	// Note: country and area_code might get rewritten by PHP, per the client IP address.
+	json_object_object_add(njobj, "country", json_object_new_string("ZZ"));
+	json_object_object_add(njobj, "area_code", NULL);
+	ret = "{\"retcode\":0,\"message\":\"ok\",\"data\":{\"account\":";
+	ret += json_object_to_json_string_ext(njobj, JSON_C_TO_STRING_PLAIN);
+	ret += "}}";
+	json_object_put(njobj);
+	json_object_put(jobj);
+	return ret;
+}
 
-/* TODO /session/combo Roadmap:
-	1. Same as /session/verify
-	2. account->getNewComboToken()
-	3. globalDbGate->saveAccount(account)
-	4. retcode = 0 (success)
-*/
+// /session/combo (/hk4e_{cn,global}/combo/granter/login/v2/login)
+std::string handleCombo(const char* post) {
+	if (post == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
+	}
+	size_t post_len = strlen(post) + 1;
+	struct json_tokener* jtk = json_tokener_new();
+	enum json_tokener_error jerr;
+	unsigned int aid = 0;
+	if (jtk == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
+	}
+	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
+	if (jobj == NULL) {
+		jerr = json_tokener_get_error(jtk);
+		if (jerr != json_tokener_continue) {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		return "{\"retcode\":-101,\"message\":\"Login failure: error parsing JSON data\"}";
+	}
+	if (json_tokener_get_parse_end(jtk) < post_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(jobj, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
+	}
+	struct json_object* dobj2;
+	struct json_object* dobj;
+	const char* data_str = NULL;
+	size_t data_str_len;
+	if (!json_object_object_get_ex(jobj, "data", &dobj2)) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account data is not set\"}";
+	}
+	data_str = json_object_get_string(dobj2);
+	data_str_len = json_object_get_string_len(dobj2);
+	if (data_str == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account data is not set\"}";
+	}
+	jtk = json_tokener_new();
+	if (jtk == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
+	}
+	dobj2 = json_tokener_parse_ex(jtk, data_str, data_str_len);
+	if (dobj2 == NULL) {
+		jerr = json_tokener_get_error(jtk);
+		if (jerr != json_tokener_continue) {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Login failure: error parsing JSON data\"}";
+	}
+	if (json_tokener_get_parse_end(jtk) < data_str_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(dobj2, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		json_object_put(dobj2);
+		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
+	}
+	if (!json_object_object_get_ex(dobj2, "uid", &dobj)) {
+		json_object_put(jobj);
+		json_object_put(dobj2);
+		return "{\"retcode\":-101,\"message\":\"Account ID is not set\"}";
+	}
+	aid = json_object_get_int(dobj);
+	unsigned int isGuest = 0;
+	const char* deviceId = NULL;
+	const char* token = NULL;
+	if (json_object_object_get_ex(jobj, "device", &dobj)) {
+		deviceId = json_object_get_string(dobj2);
+	}
+	if (json_object_object_get_ex(dobj2, "guest", &dobj)) {
+		isGuest = json_object_get_boolean(dobj);
+	}
+	if (json_object_object_get_ex(dobj2, "token", &dobj)) {
+		token = json_object_get_string(dobj);
+	}
+	if (isGuest) {
+		if (deviceId == NULL) {
+			json_object_put(jobj);
+			json_object_put(dobj2);
+			return "{\"retcode\":-101,\"message\":\"Device ID is null\"}";
+		}
+		if (strlen(deviceId) == 0) {
+			json_object_put(jobj);
+			json_object_put(dobj2);
+			return "{\"retcode\":-101,\"message\":\"Device ID is empty\"}";
+		}
+	}
+	else {
+		if (token == NULL) {
+			json_object_put(jobj);
+			json_object_put(dobj2);
+			return "{\"retcode\":-101,\"message\":\"Token is null\"}";
+		}
+		if (strlen(token) == 0) {
+			json_object_put(jobj);
+			json_object_put(dobj2);
+			return "{\"retcode\":-101,\"message\":\"Token is empty\"}";
+		}
+	}
+	Account* account = globalDbGate->getAccountByAid(aid);
+	if (account == NULL) {
+		json_object_put(jobj);
+		json_object_put(dobj2);
+		return "{\"retcode\":-101,\"message\":\"Account ID does not exist\"}";
+	}
+	if (!isGuest) {
+		if (strcmp(token, account->getSessionKey().c_str()) != 0) {
+			json_object_put(jobj);
+			json_object_put(dobj2);
+			return "{\"retcode\":-101,\"message\":\"Cached token does not match\"}";
+		}
+#if 0
+		if (deviceId != NULL && strcmp(deviceId, account->getDeviceId().c_str()) != 0) {
+			json_object_put(jobj);
+			json_object_put(dobj2);
+			return "{\"retcode\":-101,\"message\":\"Token was created on another device\"}";
+		}
+#endif
+	}
+	const char* comboToken = account->getNewToken().c_str();
+	globalDbGate->saveAccount(*account);
+	std::string ret;
+	json_object* njobj = json_object_new_object();
+	if (njobj == NULL) {
+		json_object_put(jobj);
+		json_object_put(dobj2);
+		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON object\"}";
+	}
+	json_object_object_add(njobj, "combo_token", json_object_new_string(comboToken));
+	json_object_object_add(njobj, "open_id", json_object_new_uint64(aid));
+	json_object_object_add(njobj, "account_type", json_object_new_int(isGuest ? 0 : 1));
+	json_object_object_add(njobj, "data", json_object_new_string(isGuest ? "{\"guest\":true}" : "{\"guest\":false}"));
+	json_object_object_add(njobj, "fatigue_remind", NULL); // CN only; shows in-game reminder if playing too long
+	json_object_object_add(njobj, "heartbeat", json_object_new_boolean(0)); // CN only; forces game to send heartbeats so server can enforce maximum play time
+	ret = "{\"retcode\":0,\"message\":\"ok\",\"data\":";
+	ret += json_object_to_json_string_ext(njobj, JSON_C_TO_STRING_PLAIN);
+	ret += "}";
+	json_object_put(jobj);
+	json_object_put(dobj2);
+	return ret;
+}
 
 extern "C" {
 	volatile int DispatchServerSignal = 0;
@@ -849,7 +1195,7 @@ write_rsp:
 					break;
 				case SDK_QUERY_CURR_REGION:
 					// Notes: PHP frontend converts GET (or POST) parameters to JSON before sending it to us in a POST. This string is thus passed to getQueryCurrRegionHttpRsp.
-					rsp_str = "{\"content\":\"" + b64enc(getQueryCurrRegionHttpRsp(sign, 1)) + "\"";
+					rsp_str = "{\"content\":\"" + b64enc(getQueryCurrRegionHttpRsp(sign, body)) + "\"";
 					// TODO What to do if there's no signature?
 					if (!sign.empty()) rsp_str += ",\"sign\":\"" + b64enc(sign) + "\"";
 					rsp_str += "}";
@@ -863,14 +1209,19 @@ write_rsp:
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();
 					break;
-				// TODO
 				case SDK_CHECK_AUTH_TOKEN:
-				case SDK_CHECK_COMBO_TOKEN:
-					rsp_str = "{\"retcode\":-101,\"message\":\"Endpoint not implemented yet, please be patient\"}";
+					rsp_str = handleVerify(body);
 					mime = "application/json";
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();
 					break;
+				case SDK_CHECK_COMBO_TOKEN:
+					rsp_str = handleCombo(body);
+					mime = "application/json";
+					rsp_body = rsp_str.c_str();
+					rsp_len = rsp_str.size();
+					break;
+				// TODO
 				case SDK_GACHA_HIST:
 				case SDK_GET_PLAYER_DATA:
 				// These additionally require out-of-game client authentication

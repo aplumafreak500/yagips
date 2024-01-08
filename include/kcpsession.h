@@ -16,7 +16,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 class KcpSession {
 public:
-	KcpSession(unsigned long, sock_t*, Gameserver*);
+	KcpSession(unsigned long long, sock_t*, Gameserver*);
 	~KcpSession();
 	ssize_t send(const unsigned char*, size_t);
 	ssize_t recv(unsigned char*, size_t);

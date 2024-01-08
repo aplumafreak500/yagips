@@ -21,7 +21,7 @@ public:
 	Session(Gameserver*, sock_t*, unsigned long long);
 	~Session();
 	void update();
-	void close();
+	void close(unsigned int);
 	KcpSession* getKcpSession();
 	unsigned int getState();
 	void setState(unsigned int);
