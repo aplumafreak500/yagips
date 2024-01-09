@@ -9,34 +9,20 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#ifndef DBGATE_H
-#define DBGATE_H
-#include <sqlite3.h>
+#ifndef PLAYER_H
+#define PLAYER_H
 #include "account.h"
-#include "player.h"
-class dbGate {
+class Player {
 public:
-	dbGate(const char*);
-	~dbGate();
-	/* Account manager */
-	Account* getAccountByAid(unsigned int);
-	Account* getAccountByUid(unsigned int);
-	Account* getAccountByUsername(const char*);
-	Account* getAccountByDeviceId(const char*);
-	Account* getAccountByToken(const char*);
-	Account* getAccountBySessionKey(const char*);
-	Account* createAccount(const char*);
-	int saveAccount(const Account&);
-	int deleteAccount(const Account&);
-	/* Player manager */
-	Player* getPlayerByAccount(const Account&);
-	Player* getPlayerByAid(unsigned int);
-	Player* getPlayerByUid(unsigned int);
-	Player* newPlayer();
-	int savePlayer(const Player&);
-	int deletePlayer(const Player&);
+	Player();
+	~Player();
+	const Account* getAccount() const;
+	void setAccount(const Account*);
+	unsigned long getUid() const;
+	void setUid(unsigned long);
+	int saveToDb() const;
 private:
-	sqlite3* db;
+	const Account* account;
+	unsigned long uid;
 };
-extern dbGate* globalDbGate;
 #endif

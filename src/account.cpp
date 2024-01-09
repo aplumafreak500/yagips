@@ -108,3 +108,7 @@ unsigned int Account::isGuest() const {
 void Account::setIsGuest(unsigned int g) {
 	guest = g ? 1 : 0;
 }
+
+int Account::saveToDb() const {
+	return globalDbGate->saveAccount(*this);
+}
