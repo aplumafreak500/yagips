@@ -78,9 +78,14 @@ extern "C" {
 			if (pkt_size >= 0) {
 				if (packet.parse(pkt_buf, pkt_size) < 0) {
 					fprintf(stderr, "Warning: Invalid packet received.\n");
+					fprintf(stderr, "Hexdump of Packet Payload:\n");
+					DbgHexdump((const unsigned char*) pkt_buf, pkt_size);
 				}
-				if (processPacket(*session, packet) < 0) {
+				else if (processPacket(*session, packet) < 0) {
 					fprintf(stderr, "Warning: Unhandled packet with ID %d\n", packet.getOpcode());
+					pkt_data = packet.getHeader();
+					fprintf(stderr, "Hexdump of Packet Header:\n");
+					DbgHexdump((const unsigned char*) pkt_data.c_str(), pkt_data.size());
 					pkt_data = packet.getData();
 					fprintf(stderr, "Hexdump of Packet Payload:\n");
 					DbgHexdump((const unsigned char*) pkt_data.c_str(), pkt_data.size());

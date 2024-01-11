@@ -9,6 +9,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
+#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
@@ -30,27 +31,39 @@ Packet::Packet(unsigned short opc) {
 Packet::~Packet() {}
 
 int Packet::parse(const unsigned char* buf, size_t sz) {
-	if (buf == NULL) return -1;
-	if (sz < 8) return -1;
+	if (buf == NULL) {
+		fprintf(stderr, "Buffer is null\n");
+		return -1;
+	}
+	if (sz < 10) {
+		fprintf(stderr, "Invalid packet size 0x%08lx\n", sz);
+		return -1;
+	}
 	// TODO Decrypt
-	if (((unsigned short*) buf)[0] != htobe16(PACKET_MAGIC1)) {
+	unsigned short magic = be16toh(((unsigned short*) buf)[0]);
+	if (magic != PACKET_MAGIC1) {
+		fprintf(stderr, "Invalid magic constant 0x%04x (expected 0x%04x)\n", magic, PACKET_MAGIC1);
 		return -1;
 	}
 	opcode = be16toh(((unsigned short*) buf)[1]);
 	size_t hdr_sz = be16toh(((unsigned short*) buf)[2]);
-	if (sz < hdr_sz + 8) {
+	if (sz < hdr_sz + 10) {
+		fprintf(stderr, "Invalid packet size 0x%08lx\n", sz);
 		return -1;
 	}
 	// NASTY. TODO Find a better way to do this
 	size_t data_sz = be32toh(*(unsigned int*)(&((unsigned short*) buf)[3]));
-	if (sz < data_sz + hdr_sz + 10) {
+	if (sz < data_sz + hdr_sz + 12) {
+		fprintf(stderr, "Invalid packet size 0x%08lx\n", sz);
 		return -1;
 	}
-	if (((unsigned short*) buf)[data_sz + hdr_sz + 8] != htobe16(PACKET_MAGIC2)) {
+	magic = be16toh(*(unsigned short*)(&((unsigned char*) buf)[data_sz + hdr_sz + 10]));
+	if (magic != PACKET_MAGIC2) {
+		fprintf(stderr, "Invalid magic constant 0x%04x (expected 0x%04x)\n", magic, PACKET_MAGIC2);
 		return -1;
 	}
-	header.assign((const char*) buf + 8, hdr_sz);
-	data.assign((const char*) buf + hdr_sz + 8, data_sz);
+	header.assign((const char*) buf + 10, hdr_sz);
+	data.assign((const char*) buf + hdr_sz + 10, data_sz);
 	rawpkt_buf = (unsigned char*) buf;
 	rawpkt_sz = sz;
 	encrypted = 0;
@@ -67,7 +80,7 @@ int Packet::build(unsigned char* buf, size_t* sz) {
 	if (buf == NULL) return -1;
 	if (sz == NULL) return -1;
 	if (header.empty()) return -1;
-	*sz = 10 + header.size() + data.size();
+	*sz = 12 + header.size() + data.size();
 	unsigned char* pos = buf;
 	*(unsigned short*) pos = htobe16(PACKET_MAGIC1);
 	pos += sizeof(short);

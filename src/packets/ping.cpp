@@ -9,6 +9,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
+#include <stdio.h>
 #include <string>
 #include "packet.h"
 #include "session.h"
@@ -21,20 +22,32 @@ int handlePingReq(Session& session, std::string& header, std::string& data) {
 	proto::PingRsp rsp;
 	Packet rsp_pkt(21);
 	if (!pkt_head.ParseFromString(header)) {
+		fprintf(stderr, "Error parsing packet header\n");
 		return -1;
 	}
 	if (!req.ParseFromString(data)) {
+		fprintf(stderr, "Error parsing packet data\n");
 		return -1;
 	}
 	// TODO Update session last ping time (from req.client_time()
 	rsp.set_seq(pkt_head.client_sequence_id());
 	if (!rsp.SerializeToString(&data)) {
+		fprintf(stderr, "Error building packet data\n");
 		return -1;
 	}
 	rsp_pkt.setHeader(header);
 	rsp_pkt.setData(data);
-	if (rsp_pkt.build() < 0) return -1;
+	static unsigned char rsp_pkt_buf[1024];
+	size_t rsp_pkt_sz = 1024;
+	if (rsp_pkt.build(rsp_pkt_buf, &rsp_pkt_sz) < 0) {
+		fprintf(stderr, "Error building packet\n");
+		return -1;
+	}
 	size_t rawsz;
 	const unsigned char* rawbuf = rsp_pkt.getBuffer(&rawsz);
-	return session.getKcpSession()->send(rawbuf, rawsz) < 0 ? -1 : 0;
+	if (session.getKcpSession()->send(rawbuf, rawsz) < 0) {
+		fprintf(stderr, "Error sending packet\n");
+		return -1;
+	}
+	return 0;
 }

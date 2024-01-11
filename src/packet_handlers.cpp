@@ -9,6 +9,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
+#include <stdio.h>
 #include <string>
 #include "session.h"
 #include "packet.h"
@@ -22,6 +23,7 @@ int processPacket(Session& session, Packet& packet) {
 	std::string data = packet.getData();
 	switch (opcode) {
 	default:
+		fprintf(stderr, "Don't know how to handle opcode %d\n", opcode);
 		return -1;
 	case 7:
 		return handlePingReq(session, header, data);
