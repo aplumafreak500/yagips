@@ -37,6 +37,7 @@ public:
 	long long getSessionKeyTimestamp() const;
 	void setSessionKeyTimestamp();
 	void setSessionKeyTimestamp(long long);
+	int saveToDb() const;
 private:
 	std::string username;
 	std::string password_hash;
