@@ -271,7 +271,7 @@ extern "C" {
 						sid = (unsigned long long) be32toh(hs->sid2) << 32;
 						sid |= be32toh(hs->sid1);
 						if (kcpSession->getSessionId() != sid) {							// Client sometimes sends shutdown requests with the highest 32 bits of the session ID unset.
-							if (sid & 0xffffffff != be32toh(hs->sid1) && be32toh(hs->sid2) != 0) {
+							if ((sid & 0xffffffff) != be32toh(hs->sid1) && be32toh(hs->sid2) != 0) {
 								continue;
 							}
 						}
