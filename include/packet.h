@@ -37,7 +37,6 @@ private:
 	unsigned short opcode;
 	std::string header;
 	std::string data;
-	int encrypted;
 	int useDispatchKey;
 	unsigned char* rawpkt_buf;
 	size_t rawpkt_sz;

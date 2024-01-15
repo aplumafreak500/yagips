@@ -66,7 +66,6 @@ int Packet::parse(const unsigned char* buf, size_t sz) {
 	data.assign((const char*) buf + hdr_sz + 10, data_sz);
 	rawpkt_buf = (unsigned char*) buf;
 	rawpkt_sz = sz;
-	encrypted = 0;
 	useDispatchKey = 0;
 	return 0;
 }

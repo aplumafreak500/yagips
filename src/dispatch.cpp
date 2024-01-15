@@ -269,6 +269,7 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 		ret.set_msg("JSON POST data is not an object");
 		goto set_fields;
 	}
+	// TODO enforce ip-level bans (origin ip passed in by php)
 	if (!json_object_object_get_ex(jobj, "version", &dobj)) {
 		// Version isn't even present
 		json_object_put(jobj);
@@ -332,7 +333,7 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 		ret.set_msg("Invalid key ID");
 		doEnc = 0;
 	}
-	/* TODO Parse aid and check it. If negative, unset, or non-numeric, continue. Else, check that it exists in the db. If not, continue. Else, check for a ban. If there is one and it hasn't expired, send back a negative response with `msg` and `retcode` set appropriately. (Skip setting the gateserver and ResVersionConfig fields here.) If it has expired, delete it from the db and then continue. */
+	/* TODO Parse aid and check it. If negative, unset, or non-numeric, continue. Else, check that it exists in the db. If not, continue. Else, check for a ban. If there is one and it hasn't expired, send back a negative response with `msg` and `retcode` set appropriately. (Skip setting the gateserver and ResVersionConfig fields here.) If it has expired, delete it from the db and then continue. (is aid even sent by query_curr_region?) */
 	// TODO: Figure out what to do with the dispatch_seed. Yuuki verifies it as part of determining the client version; Grasscutter merely checks for its existence and uses a hardcoded signature if not present, but doesn't appear to do anything else with it if it is set.
 	// TODO What other parameters do we need to check?
 	// TODO What other parameters does the official server check?
@@ -547,6 +548,7 @@ std::string handleLogin(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
 	}
 	struct json_object* dobj;
+	// TODO enforce ip-level bans (origin ip passed in by php)
 	unsigned int isGuest = 0;
 	if (json_object_object_get_ex(jobj, "is_guest", &dobj)) {
 		isGuest = json_object_get_boolean(dobj);
@@ -554,6 +556,7 @@ std::string handleLogin(const char* post) {
 	const char* deviceId = NULL;
 	if (json_object_object_get_ex(jobj, "device_id", &dobj)) {
 		deviceId = json_object_get_string(dobj);
+		// TODO enforce device id level bans
 	}
 	Account* account;
 	if (isGuest) {
@@ -588,6 +591,7 @@ std::string handleLogin(const char* post) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Username does not exist\"}";
 	}
+	// TODO enforce aid-level bans
 	if (!json_object_object_get_ex(jobj, "password", &dobj)) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Password is not set\"}";
@@ -682,15 +686,18 @@ std::string handleVerify(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
 	}
 	struct json_object* dobj;
+	// TODO enforce ip-level bans (origin ip passed in by php)
 	const char* deviceId = NULL;
 	if (json_object_object_get_ex(jobj, "device_id", &dobj)) {
 		deviceId = json_object_get_string(dobj);
+		// TODO enforce device id level bans
 	}
 	if (!json_object_object_get_ex(jobj, "uid", &dobj)) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Account ID is not set\"}";
 	}
 	aid = json_object_get_int(dobj);
+	// TODO enforce aid-level bans
 	if (!json_object_object_get_ex(jobj, "token", &dobj)) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Token is not set\"}";
@@ -782,6 +789,7 @@ std::string handleCombo(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
 	}
 	struct json_object* dobj2;
+	// TODO enforce ip-level bans (origin ip passed in by php)
 	struct json_object* dobj;
 	const char* data_str = NULL;
 	size_t data_str_len;
@@ -825,11 +833,13 @@ std::string handleCombo(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Account ID is not set\"}";
 	}
 	aid = json_object_get_int(dobj);
+	// TODO enforce aid-level bans
 	unsigned int isGuest = 0;
 	const char* deviceId = NULL;
 	const char* token = NULL;
 	if (json_object_object_get_ex(jobj, "device", &dobj)) {
 		deviceId = json_object_get_string(dobj2);
+		// TODO enforce device id level bans
 	}
 	if (json_object_object_get_ex(dobj2, "guest", &dobj)) {
 		isGuest = json_object_get_boolean(dobj);

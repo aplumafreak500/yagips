@@ -38,6 +38,8 @@ extern "C" {
 
 	extern volatile int GameserverSignal;
 
+	Session* getSessionById(unsigned long long);
+	Session* getSessionByUid(unsigned int);
 	void* GameserverMain(void*);
 }
 
@@ -51,12 +53,14 @@ public:
 	ssize_t recv(sock_t*, unsigned char*, size_t);
 	ssize_t send(sock_t*, const unsigned char*, size_t);
 	int canRecv(unsigned long);
-	unsigned long getKcpInterval();
+	unsigned long getKcpInterval() const;
 	void setKcpInterval(unsigned long);
-	unsigned int getMaxSessions();
+	unsigned int getMaxSessions() const;
 	void setMaxSessions(unsigned int);
-	Session** getSessions();
-	Session* getSession(unsigned int);
+	Session** getSessions() const;
+	Session* getSession(unsigned int) const;
+	Session* getSessionById(unsigned long long) const;
+	Session* getSessionByUid(unsigned int) const;
 private:
 	const char* ip;
 	unsigned short port;

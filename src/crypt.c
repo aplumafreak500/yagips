@@ -29,6 +29,7 @@ int HyvCryptRsaEnc(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 		fprintf(stderr, "Invalid key ID\n");
 		return -1;
 	}
+	// 0: Signing 1: Auth TODO
 	const unsigned char* const key = DispatchKeys[key_id];
 	if (key == NULL) {
 		fprintf(stderr, "Invalid key ID\n");

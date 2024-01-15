@@ -15,12 +15,15 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "gameserver.h"
 #include "kcpsession.h"
 #include "session.h"
+#include "player.h"
 #include "packet.h"
 #include "util.h"
 
 Session::Session(Gameserver* gs, sock_t* sock, unsigned long long sid) {
 	// TODO Null check on gs and sock
+	// TODO enforce ip-level bans (send the close packet ourselves instead of calling close() since the kcp object won't have been created yet) (in addition to disapatch responses)
 	kcpSession = new KcpSession(sid, sock, gs);
+	player = NULL;
 	// state = <some constant idk...>
 }
 
@@ -32,7 +35,6 @@ void Session::close(unsigned int reason) {
 	kcp_handshake_t hs;
 	unsigned long long sid;
 	ssize_t pkt_size;
-	// TODO Better state check
 	if (kcpSession != NULL) {
 		sid = kcpSession->getSessionId();
 		fprintf(stderr, "Closing session 0x%08llx\n", sid);
@@ -48,19 +50,33 @@ void Session::close(unsigned int reason) {
 		delete kcpSession;
 		kcpSession = NULL;
 	}
+	player = NULL;
 	state = 1; // <some constant idk...>
 }
 
-KcpSession* Session::getKcpSession() {
+KcpSession* Session::getKcpSession() const {
 	return kcpSession;
 }
 
-unsigned int Session::getState() {
+unsigned int Session::getState() const {
 	return state;
 }
 
 void Session::setState(unsigned int i) {
 	state = i;
+}
+
+Player* Session::getPlayer() const {
+	return player;
+}
+
+const Account* Session::getAccount() const {
+	if (player == NULL) return NULL;
+	return player->getAccount();
+}
+
+void Session::setPlayer(Player* p) {
+	player = p;
 }
 
 extern "C" {

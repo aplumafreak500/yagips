@@ -10,6 +10,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 #include <stdio.h>
+#include <arpa/inet.h>
 #include <stdexcept>
 #include "gameserver.h"
 #include "kcpsession.h"
@@ -45,7 +46,6 @@ KcpSession::~KcpSession() {
 }
 
 ssize_t KcpSession::send(const unsigned char* buf, size_t len) {
-	if (client == NULL) return -1;
 	if (buf == NULL && len != 0) return -1;
 	if (kcp == NULL) return sendRaw(buf, len);
 	return ikcp_send(kcp, (char*) buf, len);
@@ -70,15 +70,19 @@ ssize_t KcpSession::recvRaw(unsigned char* buf, size_t len) {
 	return gs->recv(buf, len);
 }
 
-ssize_t KcpSession::pushToKcp(unsigned char* buf, size_t len) {
+ssize_t KcpSession::pushToKcp(const unsigned char* buf, size_t len) {
 	if (buf == NULL && len != 0) return -1;
 	if (kcp == NULL) return -1;
-	return ikcp_input(kcp, (char*) buf, len);
+	return ikcp_input(kcp, (const char*) buf, len);
 }
 
-unsigned long long KcpSession::getSessionId() {
+unsigned long long KcpSession::getSessionId() const {
 	if (kcp == NULL) return 0;
 	return kcp->conv;
+}
+
+struct in6_addr* KcpSession::getClientIPAddress() const {
+	return &(client->sin6_addr);
 }
 
 void KcpSession::update() {
