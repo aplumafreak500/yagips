@@ -9,7 +9,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(builddir)/proto -DCONFDIR=\"$(sysconfd
 AM_CFLAGS = $(PROTOBUF_CFLAGS) $(LIBCRYPTO_CFLAGS) $(SQLITE3_CFLAGS) $(JSON_C_CFLAGS)
 AM_CXXFLAGS = $(PROTOBUF_CFLAGS) $(LIBCRYPTO_CFLAGS) $(SQLITE3_CFLAGS) $(JSON_C_CFLAGS)
 bin_PROGRAMS = yagips
-yagips_SOURCES = yagips.cpp gameserver.cpp session.cpp packet.cpp packet_handlers.cpp account.cpp player.cpp kcpsession.cpp dispatch.cpp dbgate.cpp config.cpp util.cpp http.c toml.c mt19937-64.c crypt.c kcp.c keys.c packets/ping.cpp packets/player_token.cpp
+yagips_SOURCES = yagips.cpp gameserver.cpp session.cpp packet.cpp packet_handlers.cpp account.cpp player.cpp kcpsession.cpp dispatch.cpp dbgate.cpp config.cpp ec2b.cpp util.cpp http.c toml.c mt19937-64.c crypt.c kcp.c keys.c packets/ping.cpp packets/player_token.cpp
 nodist_yagips_SOURCES = $(builddir)/proto/dispatch.pb.cc $(builddir)/proto/packet_head.pb.cc $(builddir)/proto/ping.pb.cc $(builddir)/proto/player_token.pb.cc
 yagips_LDADD = $(PROTOBUF_LIBS) $(LIBCRYPTO_LIBS) $(SQLITE3_LIBS) $(JSON_C_LIBS)
 BUILT_SOURCES = $(builddir)/proto/dispatch.pb.h $(builddir)/proto/packet_head.pb.h $(builddir)/proto/ping.pb.h $(builddir)/proto/player_token.pb.h

@@ -30,10 +30,15 @@ public:
 	Player* getPlayer() const;
 	void setPlayer(Player*);
 	const Account* getAccount() const;
+	unsigned long long getSessionSeed() const;
+	const unsigned char* getSessionKey() const;
+	void generateSessionKey();
 private:
 	KcpSession* kcpSession;
 	Player* player;
 	unsigned int state;
+	unsigned long long sessionSeed;
+	unsigned char sessionKey[4096];
 };
 
 extern "C" {

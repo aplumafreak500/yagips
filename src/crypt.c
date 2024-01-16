@@ -145,3 +145,11 @@ int HyvCryptRsaSign(const unsigned char* ibuf, size_t ilen, unsigned char* obuf,
 	EVP_MD_CTX_free(mctx);
 	return olen;
 }
+
+int HyvCryptXor(unsigned char* ibuf, size_t ilen, const unsigned char* kbuf, size_t klen) {
+	unsigned int i;
+	for (i = 0; i < ilen; i++) {
+		ibuf[i] = kbuf[i % klen];
+	}
+	return ilen;
+}

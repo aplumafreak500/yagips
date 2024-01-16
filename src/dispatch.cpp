@@ -74,7 +74,10 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	char configBuf[1024];
 	const char* config;
 	size_t config_sz;
+	const config_t* config_p;
 	size_t i;
+	unsigned int actualRegionCnt = 0;
+	char tmpBuf[1024];
 	if (post == NULL) {
 		ret.set_retcode(-1);
 		goto build_rsp;
@@ -171,29 +174,93 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 		4. Grab "custom config", seed, and enable_login_pc from config, apply to the proto if present
 			* If no seed is configured, send -1 to the client and an error to the log
 	*/
+	json_object_put(jobj);
+	config_p = globalConfig->getConfig();
+	if (config_p->regionCnt != 0 || config_p->regions == NULL) {
+		// No regions configured, so supply our own
+		actualRegionCnt = 1;
+		pregion = ret.add_region_list();
+		pregion->set_name("os_usa");
+		pregion->set_title("yagips");
+		pregion->set_type("DEV_PUBLIC");
+		// TODO Grab external ip instead of hardcoding the domain
+		pregion->set_dispatch_url("http://osusadispatch.yuanshen.com/query_curr_region");
+	}
+	else {
+		// TODO Assert that at least one of these regions is us
+		for (i = 0; i < config_p->regionCnt; i++) {
+			if (config_p->regions[i] != NULL) {
+				if (i == 0 && config_p->regions[i]->url == NULL) continue; // allow missing url for index 0 because usually that's actually us
+				if (config_p->regions[i]->version != NULL) {
+					snprintf(tmpBuf, 1024, "%d.%d", major, minor);
+					if (strncmp(tmpBuf, config_p->regions[i]->version, 1024) != 0) continue;
+				}
+				actualRegionCnt++;
+				pregion = ret.add_region_list();
+				// If any of these are null, present some defaults.
+				if (config_p->regions[i]->name != NULL) {
+					pregion->set_name(config_p->regions[i]->name);
+				}
+				else {
+					if (i == 0) pregion->set_name("os_usa");
+					else {
+						snprintf(tmpBuf, 1024, "os_usa.%ld", i);
+						pregion->set_name(tmpBuf);
+					}
+				}
+				if (config_p->regions[i]->title != NULL) {
+					pregion->set_name(config_p->regions[i]->title);
+				}
+				else {
+					if (i == 0) pregion->set_title("yagips");
+					else {
+						snprintf(tmpBuf, 1024, "yagips %ld", i);
+						pregion->set_title(tmpBuf);
+					}
+				}
+				if (config_p->regions[i]->type != NULL) {
+					pregion->set_type(config_p->regions[i]->type);
+				}
+				else {
+					pregion->set_type("DEV_PUBLIC");
+				}
+				if (config_p->regions[i]->url != NULL) {
+					pregion->set_dispatch_url(config_p->regions[i]->url);
+				}
+				else {
+					// TODO Grab external ip instead of hardcoding the domain
+					pregion->set_dispatch_url("http://osusadispatch.yuanshen.com/query_curr_region");
+				}
+			}
+		}
+	}
+	if (actualRegionCnt == 0) {
+		fprintf(stderr, "No regions have been configured.\n");
+		ret.set_retcode(-1);
+		goto build_rsp;
+	}
+	// TODO Grab from config
 	// TODO Unknown what these do
+	// TODO CNREL sdkenv needs to be 0
 	config = "{\"sdkenv\":\"2\",\"checkdevice\":false,\"loadPatch\":false,\"showexception\":false,\"regionConfig\":\"pm|fk|add\",\"downloadMode\":0,\"codeSwitch\":[0]}";
 	config_sz = strlen(config);
-	for (i = 0; i < config_sz; i++) {
-		configBuf[i] = config[i] ^ dispatchKey[i % 4096];
+	if (hasDispatchSeed) {
+		for (i = 0; i < config_sz; i++) {
+			configBuf[i] = config[i] ^ dispatchKey[i % 4096];
+		}
+		/* Dispatch seed (used to derive xor key) */
+		seed.assign((const char*) &dispatchSeed, 2076);
+		ret.set_client_secret_key(seed);
+		cconfig.assign(configBuf, config_sz);
+		ret.set_client_custom_config_encrypted(cconfig);
 	}
-	pregion = ret.add_region_list();
-	/* Text ID of the region */
-	pregion->set_name("os_usa");
-	/* Name of the region (displayed in client) */
-	pregion->set_title("yagips test");
-	/* Server type (TODO unknown what this does) */
-	pregion->set_type("DEV_PUBLIC");
-	/* Query current region URL */
-	pregion->set_dispatch_url("http://ps.yuuki.me/query_curr_region"); // TODO Temporary value!
-	/* Dispatch seed (used to derive xor key) */
-	seed.assign((const char*) dispatchSeed, 2076);
-	ret.set_client_secret_key(seed);
+	else {
+		// TODO what does the client do? null key? internal default? or just ignore?
+		ret.set_client_custom_config_encrypted(config);
+	}
+	// TODO Grab from config
 	/* TODO Unknown what this does. */
 	ret.set_enable_login_pc(1);
-	/* Encrypted json config object. */
-	cconfig.assign(configBuf, config_sz);
-	ret.set_client_custom_config_encrypted(cconfig);
 build_rsp:
 	if (!ret.SerializeToString(&ret_enc)) {
 		// Bypass Protobuf and encode a response ourselves. Note that this eventually gets base64 encoded, hence the raw hex string.
@@ -455,6 +522,7 @@ set_fields:
 			region->set_allocated_next_res_version_config(resNext);
 		}
 	}
+	// TODO Load and set secret_key (on Yuuki, same as dispatch seed, but could be different). Unknown what this is actually used for.
 	ret.set_allocated_region_info(region);
 	if (config->regionInfo->sendStopServerOrForceUpdate == 1 && config->regionInfo->stopServer != NULL) {
 		stop = new proto::StopServerInfo;
@@ -474,7 +542,7 @@ set_fields:
 		ret.set_allocated_force_udpate(upd);
 	}
 	/* Unknown Fields TODO
-		* client_secret_key - ECB seed struct. At least on Yuuki, this is actually different from the one given in the region list. Unknown what this is actually used for, but it's likely that, once derived, it's the same as the secretKey we already have.
+		* client_secret_key - ECB seed struct. At least on Yuuki, this is actually different from the one given in the region list. Unknown what this is actually used for, but it's likely that, once derived, it's the same as the secretKey we already have. (On the other hand, on Grasscutter, this *is* the same as the region list seed.) Notably, if unset, GetPlayerTokenReq/Rsp isn't encrypted (or is at least processed with a null key).
 		* region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one below, or with the one from query_cur_region
 		* client_region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one above, or with the one from query_cur_region
 	*/
