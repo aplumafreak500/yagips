@@ -120,7 +120,7 @@ extern "C" {
 		KcpSession* kcp = session->getKcpSession();
 		Packet packet;
 		std::string pkt_data;
-		const char* key = NULL;
+		unsigned const char* key = NULL;
 		fprintf(stderr, "Session 0x%08llx thread started\n", kcp->getSessionId());
 		const struct timespec w = {0, 50000000}; // 50 ms
 		// TODO null checks
@@ -128,7 +128,7 @@ extern "C" {
 			pkt_size = kcp->recv(pkt_buf, 16 * 1024);
 			if (pkt_size >= 0) {
 				if (session->useSecretKey()) {
-					key = session->getSecretKey();
+					key = session->getSessionKey();
 				}
 #if 0
 				// TODO: verify that the key being used is in fact query_curr_region->client_secret_key before using this.

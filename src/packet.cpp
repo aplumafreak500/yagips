@@ -65,7 +65,6 @@ int Packet::parse(const unsigned char* buf, size_t sz) {
 	data.assign((const char*) buf + hdr_sz + 10, data_sz);
 	rawpkt_buf = (unsigned char*) buf;
 	rawpkt_sz = sz;
-	useDispatchKey = 0;
 	return 0;
 }
 
@@ -134,25 +133,9 @@ void Packet::setOpcode(unsigned short opc) {
 	opcode = opc;
 }
 
-const unsigned char* Packet::getBuffer(size_t* sz) const {
+unsigned char* Packet::getBuffer(size_t* sz) const {
 	if (sz != NULL) {
 		*sz = rawpkt_sz;
 	}
 	return rawpkt_buf;
-}
-
-unsigned int Packet::useDispatchKey() const {
-	return use_dispatch_key ? 1 : 0;
-}
-
-void Packet::setUseDispatchKey() {
-	use_dispatch_key = 1;
-}
-
-void Packet::setUseDispatchKey(unsigned int i) {
-	use_dispatch_key = i ? 1 : 0;
-}
-
-void Packet::clearUseDispatchKey() {
-	use_dispatch_key = 0;
 }

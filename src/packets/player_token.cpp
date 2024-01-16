@@ -12,7 +12,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <stdio.h>
 #include <string>
 #include "packet.h"
-#include "ession.h"
+#include "session.h"
 #include "crypt.h"
 #include "keys.h"
 #include "packet_head.pb.h"
@@ -171,7 +171,7 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 		return -1;
 	}
 	size_t rawsz;
-	const unsigned char* rawbuf = rsp_pkt.getBuffer(&rawsz);
+	unsigned char* rawbuf = rsp_pkt.getBuffer(&rawsz);
 #if 0
 	// TODO: verify that the key being used is in fact query_curr_region->client_secret_key before using this.
 	const unsigned char* key = NULL;
