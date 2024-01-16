@@ -11,12 +11,16 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #ifndef KEYS_H
 #define KEYS_H
+#include "ec2b.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern const unsigned char dispatchKey[4096];
-extern const unsigned char dispatchSeed[2076];
-extern const unsigned char secretKey[4096];
+extern unsigned char dispatchKey[4096];
+extern ec2b_t dispatchSeed;
+extern unsigned long long dispatchXorSeed;
+extern unsigned int hasDispatchSeed;
+
+extern const unsigned char defaultSecretKey[4096];
 extern const unsigned char secretKeyBuf[32];
 extern const unsigned char authPrivKey[608];
 extern const unsigned char signPrivKey[1193];

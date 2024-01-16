@@ -20,6 +20,8 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "dispatch.h"
 #include "dbgate.h"
 #include "config.h"
+#include "ec2b.h"
+#include "keys.h"
 
 extern "C" {
 	static int exitSignal = 0;
@@ -39,6 +41,28 @@ extern "C" {
 			}
 		}
 		exitSignal = sig;
+	}
+
+	int loadKeys(const char* basePath) {
+		char keyPathBuf[4096];
+		keyPathBuf[4095] = '\0';
+		FILE* fp;
+		snprintf(keyPathBuf, 4095, "%s/keys/dispatchSeed.bin", basePath);
+		fp = fopen(keyPathBuf, "rb");
+		if (fp == NULL) {
+			fprintf(stderr, "Can't open %s: %d (%s)\n", keyPathBuf, errno, strerror(errno));
+		}
+		else {
+			fread(&dispatchSeed, sizeof(ec2b_t), 1, fp);
+			fclose(fp);
+			Ec2b* ec2b = new Ec2b(dispatchSeed);
+			memcpy(dispatchKey, ec2b->getXorpad().c_str(), 4096);
+			dispatchXorSeed = ec2b->getSeed();
+			hasDispatchSeed = 1;
+			delete ec2b;
+		}
+		// TODO: Signing/auth rsa keys
+		return 0;
 	}
 
 	int main(int argc, char** argv) {
@@ -80,6 +104,7 @@ extern "C" {
 		// TODO Path from command line arg
 		globalConfig = new Config();
 		// TODO Null check
+		loadKeys(globalConfig->getConfig()->dataPath);
 		globalDbGate = new dbGate(globalConfig->getConfig()->dbPath);
 		// TODO Null check
 		// TODO Thread attributes

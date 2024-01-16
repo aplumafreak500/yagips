@@ -244,17 +244,23 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	// TODO CNREL sdkenv needs to be 0
 	config = "{\"sdkenv\":\"2\",\"checkdevice\":false,\"loadPatch\":false,\"showexception\":false,\"regionConfig\":\"pm|fk|add\",\"downloadMode\":0,\"codeSwitch\":[0]}";
 	config_sz = strlen(config);
-	for (i = 0; i < config_sz; i++) {
-		configBuf[i] = config[i] ^ dispatchKey[i % 4096];
+	if (hasDispatchSeed) {
+		for (i = 0; i < config_sz; i++) {
+			configBuf[i] = config[i] ^ dispatchKey[i % 4096];
+		}
+		/* Dispatch seed (used to derive xor key) */
+		seed.assign((const char*) &dispatchSeed, 2076);
+		ret.set_client_secret_key(seed);
+		cconfig.assign(configBuf, config_sz);
+		ret.set_client_custom_config_encrypted(cconfig);
 	}
-	/* Dispatch seed (used to derive xor key) */
-	seed.assign((const char*) dispatchSeed, 2076);
-	ret.set_client_secret_key(seed);
+	else {
+		// TODO what does the client do? null key? internal default? or just ignore?
+		ret.set_client_custom_config_encrypted(config);
+	}
 	// TODO Grab from config
 	/* TODO Unknown what this does. */
 	ret.set_enable_login_pc(1);
-	cconfig.assign(configBuf, config_sz);
-	ret.set_client_custom_config_encrypted(cconfig);
 build_rsp:
 	if (!ret.SerializeToString(&ret_enc)) {
 		// Bypass Protobuf and encode a response ourselves. Note that this eventually gets base64 encoded, hence the raw hex string.

@@ -11,9 +11,10 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #ifndef EC2B_H
 #define EC2B_H
-#include <stdio.h>
-#include <string>
-
+#include <stddef.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 typedef struct {
 	unsigned int magic;
 	unsigned int keyLen;
@@ -21,6 +22,13 @@ typedef struct {
 	unsigned int dataLen;
 	unsigned char data[2048];
 } ec2b_t;
+
+void genXorpadFromSeed(unsigned long long, char*, size_t);
+#ifdef __cplusplus
+}
+
+#include <stdio.h>
+#include <string>
 
 class Ec2b {
 public:
@@ -49,8 +57,5 @@ private:
 	unsigned long long seed;
 	void deriveXor();
 };
-
-extern "C" {
-	void genXorpadFromSeed(unsigned long long, char*, size_t);
-}
+#endif
 #endif
