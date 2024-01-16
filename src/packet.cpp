@@ -39,7 +39,6 @@ int Packet::parse(const unsigned char* buf, size_t sz) {
 		fprintf(stderr, "Invalid packet size 0x%08lx\n", sz);
 		return -1;
 	}
-	// TODO Decrypt
 	unsigned short magic = be16toh(((unsigned short*) buf)[0]);
 	if (magic != PACKET_MAGIC1) {
 		fprintf(stderr, "Invalid magic constant 0x%04x (expected 0x%04x)\n", magic, PACKET_MAGIC1);
@@ -94,7 +93,6 @@ int Packet::build(unsigned char* buf, size_t* sz) {
 	memcpy(pos, data.c_str(), data.size());
 	pos += data.size();
 	*(unsigned short*) pos = htobe16(PACKET_MAGIC2);
-	// TODO Encrypt
 	return 0;
 }
 
@@ -141,4 +139,20 @@ const unsigned char* Packet::getBuffer(size_t* sz) const {
 		*sz = rawpkt_sz;
 	}
 	return rawpkt_buf;
+}
+
+unsigned int Packet::useDispatchKey() const {
+	return use_dispatch_key ? 1 : 0;
+}
+
+void Packet::setUseDispatchKey() {
+	use_dispatch_key = 1;
+}
+
+void Packet::setUseDispatchKey(unsigned int i) {
+	use_dispatch_key = i ? 1 : 0;
+}
+
+void Packet::clearUseDispatchKey() {
+	use_dispatch_key = 0;
 }

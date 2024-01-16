@@ -33,11 +33,15 @@ public:
 	unsigned short getOpcode() const;
 	void setOpcode(unsigned short);
 	const unsigned char* getBuffer(size_t*) const;
+	unsigned int useDispatchKey() const;
+	void setUseDispatchKey();
+	void setUseDispatchKey(unsigned int);
+	void clearUseDispatchKey();
 private:
 	unsigned short opcode;
 	std::string header;
 	std::string data;
-	int useDispatchKey;
+	unsigned int use_dispatch_key;
 	unsigned char* rawpkt_buf;
 	size_t rawpkt_sz;
 };
