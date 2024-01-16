@@ -13,6 +13,8 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string>
 #include "packet.h"
 #include "session.h"
+#include "crypt.h"
+#include "keys.h"
 #include "packet_head.pb.h"
 #include "ping.pb.h"
 
@@ -45,6 +47,19 @@ int handlePingReq(Session& session, std::string& header, std::string& data) {
 	}
 	size_t rawsz;
 	const unsigned char* rawbuf = rsp_pkt.getBuffer(&rawsz);
+	const unsigned char* key = NULL;
+	if (session.useSecretKey()) {
+		key = session.getSecretKey();
+	}
+#if 0
+	// TODO: verify that the key being used is in fact query_curr_region->client_secret_key before using this.
+	else {
+		if (hasDispatchKey) key = dispatchKey;
+	}
+#endif
+	if (key != NULL) {
+		HyvCryptXor(rawbuf, rawsz, key, 4096);
+	}
 	if (session.getKcpSession()->send(rawbuf, rawsz) < 0) {
 		fprintf(stderr, "Error sending packet\n");
 		return -1;

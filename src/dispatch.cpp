@@ -244,6 +244,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	// TODO CNREL sdkenv needs to be 0
 	config = "{\"sdkenv\":\"2\",\"checkdevice\":false,\"loadPatch\":false,\"showexception\":false,\"regionConfig\":\"pm|fk|add\",\"downloadMode\":0,\"codeSwitch\":[0]}";
 	config_sz = strlen(config);
+	// TODO Using the main dispatch seed for now. Ideally, we should load a separate ec2b file ourselves, bypassing the global seed, even if the seed files themselves are identical.
 	if (hasDispatchSeed) {
 		for (i = 0; i < config_sz; i++) {
 			configBuf[i] = config[i] ^ dispatchKey[i % 4096];
@@ -541,8 +542,8 @@ set_fields:
 		upd->set_force_update_url(config->regionInfo->forceUpdateUrl);
 		ret.set_allocated_force_udpate(upd);
 	}
+	// TODO Send off the global-level dispatchSeed if present, as `client_secret_key`
 	/* Unknown Fields TODO
-		* client_secret_key - ECB seed struct. At least on Yuuki, this is actually different from the one given in the region list. Unknown what this is actually used for, but it's likely that, once derived, it's the same as the secretKey we already have. (On the other hand, on Grasscutter, this *is* the same as the region list seed.) Notably, if unset, GetPlayerTokenReq/Rsp isn't encrypted (or is at least processed with a null key).
 		* region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one below, or with the one from query_cur_region
 		* client_region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one above, or with the one from query_cur_region
 	*/

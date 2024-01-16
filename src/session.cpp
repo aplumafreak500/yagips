@@ -19,6 +19,8 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "player.h"
 #include "packet.h"
 #include "ec2b.h"
+#include "crypt.h"
+#include "keys.h"
 #include "util.h"
 
 Session::Session(Gameserver* gs, sock_t* sock, unsigned long long sid) {
@@ -118,12 +120,25 @@ extern "C" {
 		KcpSession* kcp = session->getKcpSession();
 		Packet packet;
 		std::string pkt_data;
+		const char* key = NULL;
 		fprintf(stderr, "Session 0x%08llx thread started\n", kcp->getSessionId());
 		const struct timespec w = {0, 50000000}; // 50 ms
 		// TODO null checks
 		while(session->getState() != 1 /*TODO session close signal constant*/) {
 			pkt_size = kcp->recv(pkt_buf, 16 * 1024);
 			if (pkt_size >= 0) {
+				if (session->useSecretKey()) {
+					key = session->getSecretKey();
+				}
+#if 0
+				// TODO: verify that the key being used is in fact query_curr_region->client_secret_key before using this.
+				else {
+					if (hasDispatchKey) key = dispatchKey;
+				}
+#endif
+				if (key != NULL) {
+					HyvCryptXor(pkt_buf, pkt_size, key, 4096);
+				}
 				if (packet.parse(pkt_buf, pkt_size) < 0) {
 					fprintf(stderr, "Warning: Invalid packet received.\n");
 					fprintf(stderr, "Hexdump of Packet Payload:\n");
