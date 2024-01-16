@@ -26,8 +26,7 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 	proto::PacketHead pkt_head;
 	proto::GetPlayerTokenReq req;
 	proto::GetPlayerTokenRsp rsp;
-	// TODO Move to session class and also randomize it
-	const unsigned long long encryptSeed = 0x9f26b217615fc8d0;
+	unsigned long long encryptSeed;
 	Packet rsp_pkt(198);
 	// TODO Set use dispatch key
 	if (!pkt_head.ParseFromString(header)) {
@@ -99,7 +98,9 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 		player->saveToDb();
 	}
 	session.setPlayer(player);
-	// TODO Set use secret key
+	session.generateSessionKey();
+	encryptSeed = session.getSessionSeed();
+	session.setUseSecretKey();
 	// TODO Set session state: awaiting login
 	rsp.set_retcode(0);
 	rsp.set_msg("ok");
@@ -121,7 +122,8 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 	// TODO Grasscutter checks for avatar count (ie. whether you've created the Traveler's avatar object or not) to determine if this should be set. Figure out if we should do the same.
 	rsp.set_is_proficient_player(0);
 	rsp.set_secret_key_seed(encryptSeed);
-	rsp.set_security_cmd_buffer((const char*) secretKeyBuf);
+	std::string encryptSeedBuf((const char*) secretKeyBuf, 32);
+	rsp.set_security_cmd_buffer(encryptSeedBuf);
 	if (req.key_id() > 0) {
 /*
 		std::string clientRandKeyEnc = b64dec(req.client_rand_key());
@@ -152,7 +154,6 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 		}
 		std::string serverRandKeyS(serverRandKeyBuf, serverRandKeySz);
 		std::string serverRandKeySignS(serverRandKeySignBuf, serverRandKeySignSz);
-		std::string encryptSeedBuf(secretKeyBuf, 32);
 		rsp.set_server_rand_key(b64enc(serverRandKeyS));
 		rsp.set_sign(b64enc(serverRandKeySignS));
 */
