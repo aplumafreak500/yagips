@@ -26,6 +26,7 @@ Session::Session(Gameserver* gs, sock_t* sock, unsigned long long sid) {
 	// TODO enforce ip-level bans (send the close packet ourselves instead of calling close() since the kcp object won't have been created yet) (in addition to disapatch responses)
 	kcpSession = new KcpSession(sid, sock, gs);
 	player = NULL;
+	use_secret_key = 0;
 	// state = <some constant idk...>
 }
 
@@ -92,6 +93,22 @@ const unsigned char* Session::getSessionKey() const {
 void Session::generateSessionKey() {
 	getrandom(&sessionSeed, sizeof(long long), 0);
 	genXorpadFromSeed(sessionSeed, sessionKey, 4096);
+}
+
+unsigned int Session::useSecretKey() const {
+	return use_secret_key ? 1 : 0;
+}
+
+void Session::setUseSecretKey() {
+	use_secret_key = 1;
+}
+
+void Session::setUseSecretKey(unsigned int i) {
+	use_secret_key = i ? 1 : 0;
+}
+
+void Session::clearUseSecretKey() {
+	use_secret_key = 0;
 }
 
 extern "C" {

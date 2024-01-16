@@ -33,10 +33,15 @@ public:
 	unsigned long long getSessionSeed() const;
 	const unsigned char* getSessionKey() const;
 	void generateSessionKey();
+	unsigned int useSecretKey() const;
+	void setUseSecretKey();
+	void setUseSecretKey(unsigned int);
+	void clearUseSecretKey();
 private:
 	KcpSession* kcpSession;
 	Player* player;
 	unsigned int state;
+	unsigned int use_secret_key;
 	unsigned long long sessionSeed;
 	unsigned char sessionKey[4096];
 };
