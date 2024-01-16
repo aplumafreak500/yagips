@@ -25,9 +25,14 @@ public:
 	KcpSession* getKcpSession();
 	unsigned int getState();
 	void setState(unsigned int);
+	unsigned long long getSessionSeed() const;
+	const unsigned char* getSessionKey() const;
+	void generateSessionKey();
 private:
 	KcpSession* kcpSession;
 	unsigned int state;
+	unsigned long long sessionSeed;
+	unsigned char sessionKey[4096];
 };
 
 extern "C" {
