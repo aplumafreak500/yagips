@@ -12,10 +12,12 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <stdio.h>
 #include <time.h>
 #include <sys/types.h>
+#include <sys/random.h>
 #include "gameserver.h"
 #include "kcpsession.h"
 #include "session.h"
 #include "packet.h"
+#include "ec2b.h"
 #include "util.h"
 
 Session::Session(Gameserver* gs, sock_t* sock, unsigned long long sid) {
@@ -61,6 +63,19 @@ unsigned int Session::getState() {
 
 void Session::setState(unsigned int i) {
 	state = i;
+}
+
+unsigned long long Session::getSessionSeed() const {
+	return sessionSeed;
+}
+
+const unsigned char* Session::getSessionKey() const {
+	return sessionKey;
+}
+
+void Session::generateSessionKey() {
+	getrandom(&sessionSeed, sizeof(long long), 0);
+	genXorpadFromSeed(sessionSeed, sessionKey, 4096);
 }
 
 extern "C" {

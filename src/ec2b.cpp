@@ -176,7 +176,7 @@ Ec2b::operator std::string() const {
 }
 
 void Ec2b::deriveXor() {
-	char _xorpad[4096];
+	unsigned char _xorpad[4096];
 	unsigned char k[16];
 	memcpy(k, key.c_str(), 16);
 	scrambleKey(k);
@@ -191,7 +191,7 @@ void Ec2b::deriveXor() {
 	}
 	seed = _seed;
 	genXorpadFromSeed(seed, _xorpad, 4096);
-	xorpad.assign(_xorpad, 4096);
+	xorpad.assign((const char*) _xorpad, 4096);
 }
 
 extern "C" {
@@ -374,7 +374,7 @@ extern "C" {
 		}
 	}
 
-	void genXorpadFromSeed(unsigned long long seed, char* _xorpad, size_t sz) {
+	void genXorpadFromSeed(unsigned long long seed, unsigned char* _xorpad, size_t sz) {
 		if (_xorpad == NULL) return;
 		unsigned int i;
 		unsigned long long* xorpad = (unsigned long long*) _xorpad;
