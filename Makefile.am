@@ -7,5 +7,5 @@
 
 SUBDIRS = src
 dist_doc_DATA = Readme.md Changelog License.md License-Contrib.md
-nobase_dist_data_DATA = keys/dispatchSeed.bin
+nobase_dist_data_DATA = keys/regionListSeed.bin
 EXTRA_DIST = include

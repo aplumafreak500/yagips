@@ -56,7 +56,6 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	proto::QueryRegionListHttpRsp ret;
 	proto::RegionSimpleInfo* pregion;
 	std::string ret_enc;
-	std::string seed;
 	std::string cconfig;
 	size_t post_len;
 	struct json_tokener* jtk;
@@ -77,7 +76,11 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	const config_t* config_p;
 	size_t i;
 	unsigned int actualRegionCnt = 0;
-	char tmpBuf[1024];
+	static int hasRegionListSeed = -1;
+	char tmpBuf[4096];
+	Ec2b* regionListKey = NULL;
+	FILE* regionListSeed_p;
+	static ec2b_t regionListSeed;
 	if (post == NULL) {
 		ret.set_retcode(-1);
 		goto build_rsp;
@@ -192,7 +195,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 			if (config_p->regions[i] != NULL) {
 				if (i == 0 && config_p->regions[i]->url == NULL) continue; // allow missing url for index 0 because usually that's actually us
 				if (config_p->regions[i]->version != NULL) {
-					snprintf(tmpBuf, 1024, "%d.%d", major, minor);
+					snprintf(tmpBuf, 4096, "%d.%d", major, minor);
 					if (strncmp(tmpBuf, config_p->regions[i]->version, 1024) != 0) continue;
 				}
 				actualRegionCnt++;
@@ -204,7 +207,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 				else {
 					if (i == 0) pregion->set_name("os_usa");
 					else {
-						snprintf(tmpBuf, 1024, "os_usa.%ld", i);
+						snprintf(tmpBuf, 4096, "os_usa.%ld", i);
 						pregion->set_name(tmpBuf);
 					}
 				}
@@ -214,7 +217,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 				else {
 					if (i == 0) pregion->set_title("yagips");
 					else {
-						snprintf(tmpBuf, 1024, "yagips %ld", i);
+						snprintf(tmpBuf, 4096, "yagips %ld", i);
 						pregion->set_title(tmpBuf);
 					}
 				}
@@ -244,14 +247,29 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	// TODO CNREL sdkenv needs to be 0
 	config = "{\"sdkenv\":\"2\",\"checkdevice\":false,\"loadPatch\":false,\"showexception\":false,\"regionConfig\":\"pm|fk|add\",\"downloadMode\":0,\"codeSwitch\":[0]}";
 	config_sz = strlen(config);
+	if (hasRegionListSeed < 0) {
+		tmpBuf[4095] = '\0';
+		snprintf(tmpBuf, 4095, "%s/keys/regionListSeed.bin", globalConfig->getConfig()->dataPath);
+		regionListSeed_p = fopen(tmpBuf, "rb");
+		if (regionListSeed_p == NULL) {
+			fprintf(stderr, "Warning: Can't open %s (errno %d: %s)\n", tmpBuf, errno, strerror(errno));
+			hasRegionListSeed = 0;
+		}
+		else {
+			fread(&regionListSeed, sizeof(ec2b_t), 1, regionListSeed_p);
+			fclose(regionListSeed_p);
+			hasRegionListSeed = 1;
+		}
+	}
 	// TODO Using the main dispatch seed for now. Ideally, we should load a separate ec2b file ourselves, bypassing the global seed, even if the seed files themselves are identical.
-	if (hasDispatchSeed) {
+	if (hasRegionListSeed > 0) {
+		regionListKey = new Ec2b(regionListSeed);
 		for (i = 0; i < config_sz; i++) {
-			configBuf[i] = config[i] ^ dispatchKey[i % 4096];
+			configBuf[i] = config[i] ^ regionListKey->getXorpad().c_str()[i % 4096];
 		}
 		/* Dispatch seed (used to derive xor key) */
-		seed.assign((const char*) &dispatchSeed, 2076);
-		ret.set_client_secret_key(seed);
+		ret.set_client_secret_key(regionListKey->getXorpad());
+		delete regionListKey;
 		cconfig.assign(configBuf, config_sz);
 		ret.set_client_custom_config_encrypted(cconfig);
 	}
