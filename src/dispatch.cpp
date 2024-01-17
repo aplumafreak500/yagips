@@ -261,7 +261,6 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 			hasRegionListSeed = 1;
 		}
 	}
-	// TODO Using the main dispatch seed for now. Ideally, we should load a separate ec2b file ourselves, bypassing the global seed, even if the seed files themselves are identical.
 	if (hasRegionListSeed > 0) {
 		regionListKey = new Ec2b(regionListSeed);
 		for (i = 0; i < config_sz; i++) {
@@ -300,6 +299,7 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	proto::StopServerInfo* stop;
 	proto::ForceUpdateInfo* upd;
 	std::string ret_enc;
+	std::string clientSecretKey;
 	const config_t* config;
 	size_t post_len;
 	struct json_tokener* jtk;
@@ -314,6 +314,11 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	char sclient[32];
 	char sregion[3];
 	int sret;
+	static int hasRegionSeed = -1;
+	char pathBuf[4096];
+	Ec2b* regionKey = NULL;
+	FILE* regionSeed_p;
+	static ec2b_t regionSeed;
 	config = globalConfig->getConfig();
 	// These will get overwritten later if an error occurs.
 	ret.set_retcode(0);
@@ -541,7 +546,25 @@ set_fields:
 			region->set_allocated_next_res_version_config(resNext);
 		}
 	}
-	// TODO Load and set secret_key (on Yuuki, same as dispatch seed, but could be different). Unknown what this is actually used for.
+	if (hasRegionSeed < 0) {
+		pathBuf[4095] = '\0';
+		snprintf(pathBuf, 4095, "%s/keys/regionSeed.bin", globalConfig->getConfig()->dataPath);
+		regionSeed_p = fopen(pathBuf, "rb");
+		if (regionSeed_p == NULL) {
+			fprintf(stderr, "Warning: Can't open %s (errno %d: %s)\n", pathBuf, errno, strerror(errno));
+			hasRegionSeed = 0;
+		}
+		else {
+			fread(&regionSeed, sizeof(ec2b_t), 1, regionSeed_p);
+			fclose(regionSeed_p);
+			hasRegionSeed = 1;
+		}
+	}
+	if (hasRegionSeed > 0) {
+		regionKey = new Ec2b(regionSeed);
+		region->set_secret_key(regionKey->getXorpad());
+		delete regionKey;
+	}
 	ret.set_allocated_region_info(region);
 	if (config->regionInfo->sendStopServerOrForceUpdate == 1 && config->regionInfo->stopServer != NULL) {
 		stop = new proto::StopServerInfo;
@@ -560,7 +583,12 @@ set_fields:
 		upd->set_force_update_url(config->regionInfo->forceUpdateUrl);
 		ret.set_allocated_force_udpate(upd);
 	}
-	// TODO Send off the global-level dispatchSeed if present, as `client_secret_key`
+#if 0
+	if (hasDispatchSeed) {
+		clientSecretKey.assign((const char*) &dispatchSeed, sizeof(ec2b_t));
+		ret.set_client_secret_key(clientSecretKey);
+	}
+#endif
 	/* Unknown Fields TODO
 		* region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one below, or with the one from query_cur_region
 		* client_region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one above, or with the one from query_cur_region
