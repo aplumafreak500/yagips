@@ -203,12 +203,6 @@ Config::Config(const char* path) {
 				config.regionInfo->clientRegionCustomConfig = val.ok ? val.u.s : NULL;
 				val = toml_table_int(subConfig, "sendStopServerOrForceUpdate");
 				config.regionInfo->sendStopServerOrForceUpdate = val.ok ? val.u.i > 2u ? val.u.i : 0 : 0;
-				val = toml_table_bool(subConfig, "sendSecretKey");
-				config.regionInfo->sendSecretKey = val.ok ? val.u.b : 0;
-				val = toml_table_bool(subConfig, "sendClientSecretKey");
-				config.regionInfo->sendClientSecretKey = val.ok ? val.u.b : 0;
-				val = toml_table_bool(subConfig, "sendDispatchSeed");
-				config.regionInfo->sendDispatchSeed = val.ok ? val.u.b : 1;
 				// Section `dispatch.res` - ResVersionConfig
 				const toml_table_t* dispatchSubConfig = toml_table_table(subConfig, "res");
 				if (dispatchSubConfig != NULL) {

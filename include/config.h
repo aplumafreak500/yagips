@@ -80,9 +80,6 @@ struct RegionInfo {
 	struct ResVersionConfig* resNext;
 	const char* gameBiz;
 	const char* areaType;
-	unsigned int sendSecretKey;
-	unsigned int sendClientSecretKey;
-	unsigned int sendDispatchSeed;
 	const char* forceUpdateUrl;
 	const char* regionCustomConfig;
 	const char* clientRegionCustomConfig;
