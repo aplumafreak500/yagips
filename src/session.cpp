@@ -113,6 +113,20 @@ void Session::clearUseSecretKey() {
 	use_secret_key = 0;
 }
 
+unsigned long long Session::getLastPingTime() const {
+	return lastPingTime;
+}
+
+void Session::setLastPingTime(unsigned long long ping) {
+	lastPingTime = ping;
+}
+
+void Session::updateLastPingTime() {
+	struct timespec ping;
+	clock_gettime(CLOCK_REALTIME, &ping);
+	lastPingTime = (ping.tv_sec * 1000) + (ping.tv_nsec / 1000000);
+}
+
 extern "C" {
 	int SessionMain(Session* session) {
 		__attribute__((aligned(256))) static unsigned char pkt_buf[16 * 1024];
@@ -123,6 +137,8 @@ extern "C" {
 		unsigned const char* key = NULL;
 		fprintf(stderr, "Session 0x%08llx thread started\n", kcp->getSessionId());
 		const struct timespec w = {0, 50000000}; // 50 ms
+		struct timespec ping;
+		unsigned long long curms;
 		// TODO null checks
 		while(session->getState() != 1 /*TODO session close signal constant*/) {
 			pkt_size = kcp->recv(pkt_buf, 16 * 1024);
@@ -156,6 +172,14 @@ extern "C" {
 			}
 			// Else less than 0 - either no packets in queue, or an error occured
 			kcp->update(50);
+			clock_gettime(CLOCK_REALTIME, &ping);
+			curms = (ping.tv_sec * 1000) + (ping.tv_nsec / 1000000);
+			// TODO Get ping timeout from config. for now, use a value of 30 seconds
+			if (session->getLastPingTime() + (30 * 1000) > curms) {
+				fprintf(stderr, "Session 0x%08lx ping timeout", kcp->getSessionId());
+				session->close(10);
+				return 0;
+			}
 			nanosleep(&w, NULL);
 		}
 		session->close(3);

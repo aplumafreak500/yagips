@@ -37,12 +37,16 @@ public:
 	void setUseSecretKey();
 	void setUseSecretKey(unsigned int);
 	void clearUseSecretKey();
+	unsigned long long getLastPingTime() const;
+	void setLastPingTime(unsigned long long);
+	void updateLastPingTime();
 private:
 	KcpSession* kcpSession;
 	Player* player;
 	unsigned int state;
 	unsigned int use_secret_key;
 	unsigned long long sessionSeed;
+	unsigned long long lastPingTime;
 	unsigned char sessionKey[4096];
 };
 

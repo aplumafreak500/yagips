@@ -31,7 +31,8 @@ int handlePingReq(Session& session, std::string& header, std::string& data) {
 		fprintf(stderr, "Error parsing packet data\n");
 		return -1;
 	}
-	// TODO Update session last ping time (from req.client_time()
+	session.updateLastPingTime();
+	// TODO what to do with `client_time`?
 	rsp.set_seq(pkt_head.client_sequence_id());
 	if (!rsp.SerializeToString(&data)) {
 		fprintf(stderr, "Error building packet data\n");
