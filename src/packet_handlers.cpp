@@ -16,6 +16,7 @@ You should have received a copy of the GNU Affero General Public License along w
 // TODO Use a file full of enum constants that can be auto generated. This is due to the fact that opcode IDs (usually) change from one client version to the next.
 
 extern int handlePingReq(Session&, std::string&, std::string&);
+extern int handleGetPlayerTokenReq(Session&, std::string&, std::string&);
 
 int processPacket(Session& session, Packet& packet) {
 	unsigned int opcode = packet.getOpcode();
@@ -27,5 +28,7 @@ int processPacket(Session& session, Packet& packet) {
 		return -1;
 	case 7:
 		return handlePingReq(session, header, data);
+	case 198:
+		return handleGetPlayerTokenReq(session, header, data);
 	}
 }
