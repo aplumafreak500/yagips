@@ -53,9 +53,8 @@ extern "C" {
 			fprintf(stderr, "Can't open %s: %d (%s)\n", keyPathBuf, errno, strerror(errno));
 		}
 		else {
-			fread(&dispatchSeed, sizeof(ec2b_t), 1, fp);
+			Ec2b* ec2b = new Ec2b(fp);
 			fclose(fp);
-			Ec2b* ec2b = new Ec2b(dispatchSeed);
 			memcpy(dispatchKey, ec2b->getXorpad().c_str(), 4096);
 			dispatchXorSeed = ec2b->getSeed();
 			hasDispatchSeed = 1;
