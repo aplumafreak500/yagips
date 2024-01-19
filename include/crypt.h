@@ -16,6 +16,7 @@ You should have received a copy of the GNU Affero General Public License along w
 extern "C" {
 #endif
 int HyvCryptRsaEnc(const unsigned char*, size_t, unsigned char*, size_t, unsigned int);
+int HyvCryptRsaDec(const unsigned char*, size_t, unsigned char*, size_t, unsigned int);
 int HyvCryptRsaSign(const unsigned char*, size_t, unsigned char*, size_t);
 int HyvCryptXor(unsigned char*, size_t, const unsigned char*, size_t);
 #ifdef __cplusplus

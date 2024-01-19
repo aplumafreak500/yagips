@@ -29,6 +29,7 @@ int HyvCryptRsaEnc(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 		fprintf(stderr, "Invalid key ID\n");
 		return -1;
 	}
+	// 0: Signing 1: Auth TODO
 	const unsigned char* const key = DispatchKeys[key_id];
 	if (key == NULL) {
 		fprintf(stderr, "Invalid key ID\n");
@@ -84,6 +85,77 @@ int HyvCryptRsaEnc(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 	}
 	EVP_PKEY_CTX_free(ctx);
 	fprintf(stderr, "Successfully encrypted %d blocks of data\n", i);
+	return i * obs;
+}
+
+int HyvCryptRsaDec(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, size_t olen, unsigned int key_id) {
+	if (ibuf == NULL || ilen == 0) {
+		fprintf(stderr, "Input buffer not provided\n");
+		return -1;
+	}
+	if (obuf == NULL || olen == 0) {
+		fprintf(stderr, "Output buffer not provided\n");
+		return -1;
+	}
+	if (key_id > 5) {
+		fprintf(stderr, "Invalid key ID\n");
+		return -1;
+	}
+	// 0: Signing 1: Auth TODO
+	const unsigned char* const key = DispatchKeys[key_id];
+	if (key == NULL) {
+		fprintf(stderr, "Invalid key ID\n");
+		return -1;
+	}
+	/* TODO Don't hardcode the key buffer length */
+	EVP_PKEY* pkey = d2i_PrivateKey(EVP_PKEY_RSA, NULL, (const unsigned char**) &key, 1192);
+	if (pkey == NULL) {
+		fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
+		ERR_print_errors_fp(stderr);
+		return -1;
+	}
+	EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+	if (ctx == NULL) {
+		fprintf(stderr, "Unable to allocate the decryption context; libcrypto errors follow\n");
+		ERR_print_errors_fp(stderr);
+		return -1;
+	}
+	if (EVP_PKEY_decrypt_init(ctx) <= 0) {
+		fprintf(stderr, "Unable to init the decryption context; libcrypto errors follow\n");
+		ERR_print_errors_fp(stderr);
+		EVP_PKEY_CTX_free(ctx);
+		return -1;
+	}
+	if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0) {
+		fprintf(stderr, "Unable to set the padding mode; libcrypto errors follow\n");
+		ERR_print_errors_fp(stderr);
+		EVP_PKEY_CTX_free(ctx);
+		return -1;
+	}
+	size_t obs;
+	if (EVP_PKEY_decrypt(ctx, NULL, &obs, ibuf, 1) <= 0) {
+		fprintf(stderr, "Unable to get step size for decrypted data; libcrypto errors follow\n");
+		ERR_print_errors_fp(stderr);
+		EVP_PKEY_CTX_free(ctx);
+		return -1;
+	}
+	size_t ibs = obs - 11;
+	size_t i = 0;
+	while ((ssize_t) ilen > 0 && (ssize_t) olen > 0) {
+		if (EVP_PKEY_decrypt(ctx, obuf, &obs, ibuf, ilen < ibs ? ilen : ibs) <= 0) {
+			fprintf(stderr, "Unable to decrypt the data; libcrypto errors follow\n");
+			ERR_print_errors_fp(stderr);
+			EVP_PKEY_CTX_free(ctx);
+			return -1;
+		}
+		i++;
+		ibuf += ibs;
+		obuf += obs;
+		ilen -= ibs;
+		olen -= obs;
+	}
+	EVP_PKEY_CTX_free(ctx);
+	fprintf(stderr, "Successfully decrypted %d blocks of data\n", i);
 	return i * obs;
 }
 
