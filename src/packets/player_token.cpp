@@ -31,7 +31,7 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 		// TODO should we send a response packet?
 		return -1;
 	}
-	const char* aid_str = rsp.account_uid().c_str();
+	const char* aid_str = req.account_uid().c_str();
 	char* aid_str_tail;
 	errno = 0;
 	unsigned int aid = strtoul(aid_str, &aid_str_tail, 0);
