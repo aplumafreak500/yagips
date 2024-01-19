@@ -31,7 +31,7 @@ int processPacket(Session& session, Packet& packet) {
 		return handlePingReq(session, header, data);
 	case 112:
 		return handlePlayerLoginReq(session, header, data);
-	case 198:
+	case 172:
 		return handleGetPlayerTokenReq(session, header, data);
 	}
 }
