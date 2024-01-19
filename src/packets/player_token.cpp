@@ -156,7 +156,7 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 		fprintf(stderr, "Error building packet data\n");
 		return -1;
 	}
-	rsp_pkt.setHeader(header);
+	rsp_pkt.buildHeader(session.nextSeq());
 	rsp_pkt.setData(data);
 	static unsigned char rsp_pkt_buf[1024];
 	size_t rsp_pkt_sz = 1024;

@@ -29,6 +29,7 @@ Session::Session(Gameserver* gs, sock_t* sock, unsigned long long sid) {
 	kcpSession = new KcpSession(sid, sock, gs);
 	player = NULL;
 	use_secret_key = 0;
+	sequence = 10;
 	// state = <some constant idk...>
 }
 
@@ -127,6 +128,19 @@ void Session::updateLastPingTime() {
 	lastPingTime = (ping.tv_sec * 1000) + (ping.tv_nsec / 1000000);
 }
 
+unsigned int Session::getSeq() const {
+	return sequence;
+}
+
+void Session::setSeq(unsigned int seq) {
+	sequence = seq;
+}
+
+unsigned int Session::nextSeq() {
+	sequence++;
+	return sequence;
+}
+
 extern "C" {
 	int SessionMain(Session* session) {
 		__attribute__((aligned(256))) static unsigned char pkt_buf[16 * 1024];
@@ -176,7 +190,7 @@ extern "C" {
 			curms = (ping.tv_sec * 1000) + (ping.tv_nsec / 1000000);
 			// TODO Get ping timeout from config. for now, use a value of 30 seconds
 			if (session->getLastPingTime() + (30 * 1000) > curms) {
-				fprintf(stderr, "Session 0x%08lx ping timeout", kcp->getSessionId());
+				fprintf(stderr, "Session 0x%08llx ping timeout\n", kcp->getSessionId());
 				session->close(10);
 				return 0;
 			}
