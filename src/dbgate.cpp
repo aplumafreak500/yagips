@@ -578,7 +578,7 @@ int dbGate::savePlayer(const Player& player) {
 	// TODO Set aid to 0 rather than return immediately once more data needs to be saved
 	if (account == NULL) return -1;
 	sqlite3_stmt* stmt;
-	int ret = sqlite3_prepare(db, "UPDATE players SET aid = ?1 WHERE uid = ?1;", -1, &stmt, NULL);
+	int ret = sqlite3_prepare(db, "UPDATE players SET aid = ?1 WHERE uid = ?2;", -1, &stmt, NULL);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return -3;
