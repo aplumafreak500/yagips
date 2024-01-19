@@ -15,7 +15,6 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "session.h"
 #include "crypt.h"
 #include "keys.h"
-#include "packet_head.pb.h"
 #include "player_token.pb.h"
 #include <stdlib.h>
 #include <errno.h>
@@ -23,16 +22,10 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "dbgate.h"
 
 int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& data) {
-	proto::PacketHead pkt_head;
 	proto::GetPlayerTokenReq req;
 	proto::GetPlayerTokenRsp rsp;
 	unsigned long long encryptSeed;
 	Packet rsp_pkt(198);
-	// TODO Set use dispatch key
-	if (!pkt_head.ParseFromString(header)) {
-		fprintf(stderr, "Error parsing packet header\n");
-		return -1;
-	}
 	if (!req.ParseFromString(data)) {
 		fprintf(stderr, "Error parsing packet data\n");
 		// TODO should we send a response packet?
@@ -64,6 +57,7 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 	// TODO aid-level bans are handled here (in addition to dispatch responses)
 	// TODO Config entry to check whether the token matches the account. Disabling it would let external dispatch servers work without needing to sync account data between them. yagips and Grasscutter use different protocols for this, and extra work would need to be done for GIO's SDK server to exchange account data.
 	// For now, we enforce it so everything can be in one place until the relevant protocols and storage structs are finalized.
+	// TODO If that config entry is disabled, we need to sync the token to db so that PlayerLoginReq works properly
 #if 1
 	std::string ctoken = account->getToken();
 	if (ctoken.empty()) {

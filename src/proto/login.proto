@@ -1,0 +1,141 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "block_info.proto";
+import "dispatch.proto";
+
+message TrackingIOInfo {
+    string rydevicetype = 11;
+    string mac = 6;
+    string deviceid = 9;
+    string client_tz = 5;
+    string current_caid = 7;
+    string cached_caid = 15;
+    string appid = 1;
+}
+
+message AdjustTrackingInfo {
+    string event_token = 9;
+    string adid = 4;
+    string idfa = 2;
+    string app_token = 14;
+    string gps_adid = 3;
+    string fire_adid = 13;
+}
+
+message PlayerLoginReq {
+    uint32 language_type = 6;
+    uint32 reg_platform = 615;
+    TrackingIOInfo tracking_io_info = 1660;
+    uint32 account_type = 13;
+    string token = 15;
+    bytes extra_bin_data = 1458;
+    uint32 channel_id = 1314;
+    uint32 client_data_version = 688;
+    string account_uid = 2;
+    string client_version = 12;
+    string security_library_md5 = 772;
+    string country_code = 2000;
+    string psn_id = 1268;
+    uint32 client_port = 431;
+    string device_name = 9;
+    string cps = 1163;
+    uint64 login_rand = 3;
+    uint32 target_home_param = 984;
+    AdjustTrackingInfo adjust_tracking_info = 1816;
+    bool is_transfer = 908;
+    uint32 tag = 1787;
+    bool is_guest = 5;
+    bytes environment_error_code = 2026;
+    string online_id = 903;
+    bool is_editor = 8;
+    string checksum_client_version = 861;
+    bytes security_cmd_reply = 1995;
+    string security_library_version = 1213;
+    string birthday = 1652;
+    string device_uuid = 4;
+    uint32 client_token = 1546;
+    uint32 sub_channel_id = 23;
+    uint32 target_uid = 11;
+    string device_info = 1;
+    string client_verison_hash = 1707;
+    string checksum = 1532;
+    uint32 platform_type = 14;
+    uint32 target_home_owner_uid = 1864;
+    uint32 cloud_client_ip = 1335;
+    uint32 gm_uid = 612;
+    string system_version = 10;
+    string platform = 7;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 112;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message ShortAbilityHashPair {
+    sfixed32 ability_config_hash = 15;
+    sfixed32 ability_name_hash = 1;
+}
+
+message PlayerLoginRsp {
+    uint32 client_data_version = 1;
+    bool is_sc_open = 1429;
+    int32 retcode = 15;
+    map<uint32, BlockInfo> block_info_map = 571;
+    bool is_audit = 1685;
+    bool is_transfer = 2018;
+    string client_silence_md5 = 1746;
+    ResVersionConfig next_res_version_config = 1573;
+    uint32 client_silence_data_version = 6;
+    uint64 login_rand = 4;
+    bool is_new_player = 8;
+    string client_version_suffix = 1047;
+    string game_biz = 5;
+    string next_resource_url = 621;
+    bool is_relogin = 10;
+    double total_tick_time = 125;
+    bool is_enable_client_hash_debug = 932;
+    bytes sc_info = 2024;
+    int32 ability_hash_code = 12;
+    string register_cps = 2040;
+    bool is_login_rsp_split = 1649;
+    bool is_use_ability_hash = 2;
+    map<string, int32> ability_hash_map = 11;
+    repeated ShortAbilityHashPair short_ability_hash_map = 250;
+    string client_md5 = 1830;
+    string country_code = 1900;
+    bool is_data_need_relogin = 951;
+    ResVersionConfig res_version_config = 1969;
+    repeated FeatureBlockInfo feature_block_info_list = 1352;
+    string birthday = 624;
+    uint32 target_uid = 14;
+    bytes player_data = 13;
+    string client_silence_version_suffix = 1299;
+    uint32 target_home_owner_uid = 553;
+    uint32 player_data_version = 7;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 135;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
