@@ -267,7 +267,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 			configBuf[i] = config[i] ^ regionListKey->getXorpad().c_str()[i % 4096];
 		}
 		/* Dispatch seed (used to derive xor key) */
-		ret.set_client_secret_key(regionListKey->getXorpad());
+		ret.set_client_secret_key(*regionListKey);
 		delete regionListKey;
 		cconfig.assign(configBuf, config_sz);
 		ret.set_client_custom_config_encrypted(cconfig);
@@ -563,7 +563,7 @@ set_fields:
 	}
 	if (hasRegionSeed > 0) {
 		regionKey = new Ec2b(regionSeed);
-		region->set_secret_key(regionKey->getXorpad());
+		region->set_secret_key(*regionKey);
 		delete regionKey;
 	}
 	// End TODO Split into separate function
