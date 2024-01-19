@@ -70,14 +70,12 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 	}
 	rsp_pkt.setHeader(header);
 	rsp_pkt.setData(data);
-	static unsigned char rsp_pkt_buf[1024];
-	size_t rsp_pkt_sz = 1024;
-	if (rsp_pkt.build(rsp_pkt_buf, &rsp_pkt_sz) < 0) {
+	static unsigned char rsp_buf[1024];
+	size_t rsp_sz = 1024;
+	if (rsp_pkt.build(rsp_buf, &rsp_sz) < 0) {
 		fprintf(stderr, "Error building packet\n");
 		return -1;
 	}
-	size_t rawsz;
-	unsigned char* rawbuf = rsp_pkt.getBuffer(&rawsz);
 	const unsigned char* key = NULL;
 	// for whatever reason, despite req using the session key, this packet uses the dispatch key... weird
 #if 0
@@ -87,9 +85,9 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 	}
 #endif
 	if (key != NULL) {
-		HyvCryptXor(rawbuf, rawsz, key, 4096);
+		HyvCryptXor(rsp_buf, rsp_sz, key, 4096);
 	}
-	if (session.getKcpSession()->send(rawbuf, rawsz) < 0) {
+	if (session.getKcpSession()->send(rsp_buf, rsp_sz) < 0) {
 		fprintf(stderr, "Error sending packet\n");
 		return -1;
 	}
