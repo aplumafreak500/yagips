@@ -61,6 +61,108 @@ std::string b64enc(const std::string& in) {
 	return ret;
 }
 
+std::string b64dec(const std::string& in) {
+	std::string ret = "";
+	const int b64itbl[128] = {
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+		-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,
+		52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,
+		-1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+		15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
+		-1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+		41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1
+	};
+	size_t isz = in.size();
+	unsigned int i = 0;
+	unsigned char t;
+	unsigned char e;
+	while (isz > 0) {
+idx0:
+		t = in[i + 0];
+		if (t > 128) {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx0;
+		}
+		if (b64itbl[t] == -1) {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx0;
+		}
+		e = b64itbl[t] << 2;
+		isz--;
+		if (!isz) {
+			ret += e;
+			break;
+		}
+idx1:
+		t = in[i + 1];
+		if (t > 128) {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx1;
+		}
+		if (b64itbl[t] == -1) {
+			i++;
+			isz--;
+			goto idx1;
+		}
+		e |= b64itbl[t] >> 6;
+		ret += e;
+		e = b64itbl[t] << 4;
+		isz--;
+		if (!isz) {
+			ret += e;
+			break;
+		}
+idx2:
+		t = in[i + 2];
+		if (t > 128) {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx2;
+		}
+		if (b64itbl[t] == -1) {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx2;
+		}
+		e |= b64itbl[t] >> 4;
+		ret += e;
+		e = b64itbl[t] << 6;
+		isz--;
+		if (!isz) {
+			ret += e;
+			break;
+		}
+idx3:
+		t = in[i + 3];
+		if (t > 128) {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx3;
+		}
+		if (b64itbl[t] == -1) {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx3;
+		}
+		e |= b64itbl[t];
+		ret += e;
+		i += 4;
+		isz--;
+	}
+	return ret;
+}
+
 std::string hexenc(const std::string& in) {
 	std::string ret = "";
 	size_t isz = in.size();
@@ -87,6 +189,72 @@ std::string hexenc(const std::string& in) {
 	return ret;
 }
 
+std::string hexdec(const std::string& in) {
+	std::string ret = "";
+	size_t isz = in.size();
+	unsigned int i = 0;
+	unsigned char t;
+	unsigned char e;
+	while (isz > 0) {
+idx0:
+		t = in[i + 0];
+		if (t < '0' || t > 'f') {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx0;
+		}
+		if (t >= 'a') t -= 0x20;
+		if (t > 'F') {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx0;
+		}
+		if (t > '9') t -= 7;
+		t -= '0';
+		if (t > 16) {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx0;
+		}
+		e = t << 4;
+		isz--;
+		if (!isz) {
+			ret += e;
+			break;
+		}
+idx1:
+		t = in[i + 1];
+		if (t < '0' || t > 'f') {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx1;
+		}
+		if (t >= 'a') t -= 0x20;
+		if (t > 'F') {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx1;
+		}
+		if (t > '9') t -= 7;
+		t -= '0';
+		if (t > 16) {
+			i++;
+			isz--;
+			if (!isz) break;
+			goto idx1;
+		}
+		e |= t;
+		ret += e;
+		isz--;
+	}
+	return ret;
+}
+
 extern "C" {
 	void DbgHexdump(const unsigned char* buf, size_t sz) {
 		size_t off;
@@ -96,9 +264,9 @@ extern "C" {
 		for (off = 0; off < sz; off++) {
 			if (off % 16 == 0) {
 				if (off != 0) {
-					fprintf(stderr, "\t%s\n", abuf);
+					fprintf(stderr, " %s\n", abuf);
 				}
-				fprintf(stderr, "%04lx \t", off);
+				fprintf(stderr, "%08lx: ", off);
 			}
 			fprintf(stderr, "%02x ", buf[off]);
 			if (buf[off] < ' ' || buf[off] > '~') {
@@ -112,7 +280,7 @@ extern "C" {
 		for (off %=16; off < 16; off++) {
 			fprintf(stderr, "   ");
 		}
-		fprintf(stderr, "\t%s\n", abuf);
+		fprintf(stderr, "  %s\n", abuf);
 	}
 
 	#define rotl(x, k) ((x << k) | (x >> (64 - k)))
