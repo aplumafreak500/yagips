@@ -20,6 +20,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <errno.h>
 #include "account.h"
 #include "dbgate.h"
+#include "util.h"
 
 int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& data) {
 	proto::GetPlayerTokenReq req;
@@ -119,38 +120,36 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 	std::string encryptSeedBuf((const char*) secretKeyBuf, 32);
 	rsp.set_security_cmd_buffer(encryptSeedBuf);
 	if (req.key_id() > 0) {
-/*
 		std::string clientRandKeyEnc = b64dec(req.client_rand_key());
-		char clientRandKeyBuf[4096];
-		ssize_t clientRandKeySz = HyvCryptRsaDec(clientRandKeyEnc.c_str(), clientRandKeyEnc.size(), clientRandKeyBuf, 4096, 0);
+		unsigned char clientRandKeyBuf[1024];
+		ssize_t clientRandKeySz = HyvCryptRsaDec((const unsigned char*) clientRandKeyEnc.c_str(), clientRandKeyEnc.size(), clientRandKeyBuf, 1024, 0);
 		if (clientRandKeySz < 0) {
 			// TODO modify and then send the response packet
-			session.close();
+			session.close(12);
 			return -1;
 		}
 		// TODO assert size == sizeof(long long)
 		// TODO figure out endianness
 		unsigned long long clientRandKey = *(unsigned long long*) clientRandKeyBuf;
 		unsigned long long serverRandKey = clientRandKey ^ encryptSeed;
-		char serverRandKeyBuf[4096];
-		ssize_t serverRandKeySz = HyvCryptRsaEnc((const char*) serverRandKey, sizeof(long long), serverRandKeyBuf, 4096, req.key_id());
+		unsigned char serverRandKeyBuf[1024];
+		ssize_t serverRandKeySz = HyvCryptRsaEnc((const unsigned char*) &serverRandKey, sizeof(long long), serverRandKeyBuf, 1024, req.key_id());
 		if (serverRandKeySz < 0) {
 			// TODO modify and then send the response packet
-			session.close();
+			session.close(12);
 			return -1;
 		}
-		char serverRandKeySignBuf[4096];
-		ssize_t serverRandKeySignSz = HyvCryptRsaSign((const char*) serverRandKey, sizeof(long long), servetRandKeySignBuf, 4096);
+		static unsigned char serverRandKeySignBuf[4096];
+		ssize_t serverRandKeySignSz = HyvCryptRsaSign((const unsigned char*) &serverRandKey, sizeof(long long), serverRandKeySignBuf, 4096);
 		if (serverRandKeySignSz < 0) {
 			// TODO modify and then send the response packet
-			session.close();
+			session.close(12);
 			return -1;
 		}
-		std::string serverRandKeyS(serverRandKeyBuf, serverRandKeySz);
-		std::string serverRandKeySignS(serverRandKeySignBuf, serverRandKeySignSz);
+		std::string serverRandKeyS((const char*) serverRandKeyBuf, serverRandKeySz);
+		std::string serverRandKeySignS((const char*) serverRandKeySignBuf, serverRandKeySignSz);
 		rsp.set_server_rand_key(b64enc(serverRandKeyS));
 		rsp.set_sign(b64enc(serverRandKeySignS));
-*/
 	}
 	if (!rsp.SerializeToString(&data)) {
 		fprintf(stderr, "Error building packet data\n");
