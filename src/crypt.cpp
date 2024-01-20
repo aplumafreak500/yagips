@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2023 Alex Pensinger (ArcticLuma113)
+©2024 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -10,12 +10,17 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
 #include <openssl/err.h>
+#include <openssl/decoder.h>
 #include "crypt.h"
 #include "keys.h"
+#include "config.h"
 
+extern "C" {
 int HyvCryptRsaEnc(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, size_t olen, unsigned int key_id) {
 	if (ibuf == NULL || ilen == 0) {
 		fprintf(stderr, "Input buffer not provided\n");
@@ -25,18 +30,77 @@ int HyvCryptRsaEnc(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 		fprintf(stderr, "Output buffer not provided\n");
 		return -1;
 	}
-	if (key_id > 5) {
-		fprintf(stderr, "Invalid key ID\n");
+	char path_buf[4096];
+	path_buf[4095] = '\0';
+	const config_t* config = globalConfig->getConfig();
+	FILE* fp = NULL;
+	EVP_PKEY* pkey = NULL;
+	OSSL_DECODER_CTX* fctx = OSSL_DECODER_CTX_new_for_pkey(&pkey, NULL, NULL, "RSA", 0, NULL, NULL);
+	const unsigned char* key;
+	size_t keylen;
+	if (fctx == NULL) {
+		fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
+		ERR_print_errors_fp(stderr);
 		return -1;
 	}
-	// 0: Signing 1: Auth TODO
-	const unsigned char* const key = DispatchKeys[key_id];
-	if (key == NULL) {
+	// 0: Signing 1: Auth 2+: Dispatch
+	switch (key_id) {
+	case 2 ... 5:
+		key = DispatchKeys[key_id];
+		/* TODO Don't hardcode the key buffer length */
+		keylen = 1192;
+		if (key == NULL) {
+			fprintf(stderr, "Invalid key ID\n");
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		if (!OSSL_DECODER_from_data(fctx, &key, &keylen)) {
+			fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
+			ERR_print_errors_fp(stderr);
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		break;
+	case 0:
+		snprintf(path_buf, 4095, "%s/keys/signingKey.pem", config->dataPath);
+		fp = fopen(path_buf, "rb");
+		if (fp == NULL) {
+			fprintf(stderr, "Unable to open %s (%s)\n", path_buf, strerror(errno));
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		if (!OSSL_DECODER_from_fp(fctx, fp)) {
+			fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
+			ERR_print_errors_fp(stderr);
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		fclose(fp);
+		fp = NULL;
+		break;
+	case 1:
+		snprintf(path_buf, 4095, "%s/keys/authKey.pem", config->dataPath);
+		fp = fopen(path_buf, "rb");
+		if (fp == NULL) {
+			fprintf(stderr, "Unable to open %s (%s)\n", path_buf, strerror(errno));
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		if (!OSSL_DECODER_from_fp(fctx, fp)) {
+			fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
+			ERR_print_errors_fp(stderr);
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		fclose(fp);
+		fp = NULL;
+		break;
+	default:
 		fprintf(stderr, "Invalid key ID\n");
+		OSSL_DECODER_CTX_free(fctx);
 		return -1;
 	}
-	/* TODO Don't hardcode the key buffer length */
-	EVP_PKEY* pkey = d2i_PrivateKey(EVP_PKEY_RSA, NULL, (const unsigned char**) &key, 1192);
+	OSSL_DECODER_CTX_free(fctx);
 	if (pkey == NULL) {
 		fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
 		ERR_print_errors_fp(stderr);
@@ -97,18 +161,77 @@ int HyvCryptRsaDec(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 		fprintf(stderr, "Output buffer not provided\n");
 		return -1;
 	}
-	if (key_id > 5) {
-		fprintf(stderr, "Invalid key ID\n");
+	char path_buf[4096];
+	path_buf[4095] = '\0';
+	const config_t* config = globalConfig->getConfig();
+	FILE* fp = NULL;
+	EVP_PKEY* pkey = NULL;
+	OSSL_DECODER_CTX* fctx = OSSL_DECODER_CTX_new_for_pkey(&pkey, NULL, NULL, "RSA", 0, NULL, NULL);
+	const unsigned char* key;
+	size_t keylen;
+	if (fctx == NULL) {
+		fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
+		ERR_print_errors_fp(stderr);
 		return -1;
 	}
-	// 0: Signing 1: Auth TODO
-	const unsigned char* const key = DispatchKeys[key_id];
-	if (key == NULL) {
+	// 0: Signing 1: Auth 2+: Dispatch
+	switch (key_id) {
+	case 2 ... 5:
+		key = DispatchKeys[key_id];
+		/* TODO Don't hardcode the key buffer length */
+		keylen = 1192;
+		if (key == NULL) {
+			fprintf(stderr, "Invalid key ID\n");
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		if (!OSSL_DECODER_from_data(fctx, &key, &keylen)) {
+			fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
+			ERR_print_errors_fp(stderr);
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		break;
+	case 0:
+		snprintf(path_buf, 4095, "%s/keys/signingKey.key", config->dataPath);
+		fp = fopen(path_buf, "rb");
+		if (fp == NULL) {
+			fprintf(stderr, "Unable to open %s (%s)\n", path_buf, strerror(errno));
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		if (!OSSL_DECODER_from_fp(fctx, fp)) {
+			fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
+			ERR_print_errors_fp(stderr);
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		fclose(fp);
+		fp = NULL;
+		break;
+	case 1:
+		snprintf(path_buf, 4095, "%s/keys/authKey.key", config->dataPath);
+		fp = fopen(path_buf, "rb");
+		if (fp == NULL) {
+			fprintf(stderr, "Unable to open %s (%s)\n", path_buf, strerror(errno));
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		if (!OSSL_DECODER_from_fp(fctx, fp)) {
+			fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
+			ERR_print_errors_fp(stderr);
+			OSSL_DECODER_CTX_free(fctx);
+			return -1;
+		}
+		fclose(fp);
+		fp = NULL;
+		break;
+	default:
 		fprintf(stderr, "Invalid key ID\n");
+		OSSL_DECODER_CTX_free(fctx);
 		return -1;
 	}
-	/* TODO Don't hardcode the key buffer length */
-	EVP_PKEY* pkey = d2i_PrivateKey(EVP_PKEY_RSA, NULL, (const unsigned char**) &key, 1192);
+	OSSL_DECODER_CTX_free(fctx);
 	if (pkey == NULL) {
 		fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
 		ERR_print_errors_fp(stderr);
@@ -168,9 +291,32 @@ int HyvCryptRsaSign(const unsigned char* ibuf, size_t ilen, unsigned char* obuf,
 		fprintf(stderr, "Output buffer not provided\n");
 		return -1;
 	}
-	const unsigned char* key = signPrivKey;
-	/* TODO Don't hardcode the key buffer length */
-	EVP_PKEY* pkey = d2i_PrivateKey(EVP_PKEY_RSA, NULL, &key, 1193);
+	char path_buf[4096];
+	path_buf[4095] = '\0';
+	const config_t* config = globalConfig->getConfig();
+	EVP_PKEY* pkey = NULL;
+	OSSL_DECODER_CTX* fctx = OSSL_DECODER_CTX_new_for_pkey(&pkey, NULL, NULL, "RSA", 0, NULL, NULL);
+	if (fctx == NULL) {
+		fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
+		ERR_print_errors_fp(stderr);
+		return -1;
+	}
+	snprintf(path_buf, 4095, "%s/keys/signingKey.key", config->dataPath);
+	FILE* fp = fopen(path_buf, "rb");
+	if (fp == NULL) {
+		fprintf(stderr, "Unable to open %s (%s)\n", path_buf, strerror(errno));
+		OSSL_DECODER_CTX_free(fctx);
+		return -1;
+	}
+	if (!OSSL_DECODER_from_fp(fctx, fp)) {
+		fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
+		ERR_print_errors_fp(stderr);
+		OSSL_DECODER_CTX_free(fctx);
+		return -1;
+	}
+	fclose(fp);
+	fp = NULL;
+	OSSL_DECODER_CTX_free(fctx);
 	if (pkey == NULL) {
 		fprintf(stderr, "Unable to init the key; libcrypto errors follow\n");
 		ERR_print_errors_fp(stderr);
@@ -223,4 +369,5 @@ int HyvCryptXor(unsigned char* ibuf, size_t ilen, const unsigned char* kbuf, siz
 		ibuf[i] = kbuf[i % klen];
 	}
 	return ilen;
+}
 }
