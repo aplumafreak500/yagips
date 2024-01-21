@@ -94,8 +94,9 @@ const unsigned char* Session::getSessionKey() const {
 }
 
 void Session::generateSessionKey() {
-	getrandom(&sessionSeed, sizeof(long long), 0);
-	genXorpadFromSeed(sessionSeed, sessionKey, 4096);
+	//getrandom(&sessionSeed, sizeof(long long), 0);
+	sessionSeed = 0x5a5a5a5a5a5a5a5a;
+	genXorpadFromSeed2(sessionSeed, sessionKey, 4096);
 }
 
 unsigned int Session::useSecretKey() const {

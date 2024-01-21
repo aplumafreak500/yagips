@@ -262,7 +262,7 @@ int HyvCryptRsaDec(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 		EVP_PKEY_CTX_free(ctx);
 		return -1;
 	}
-	size_t ibs = obs - 11;
+	size_t ibs = obs + 11;
 	size_t i = 0;
 	while ((ssize_t) ilen > 0 && (ssize_t) olen > 0) {
 		if (EVP_PKEY_decrypt(ctx, obuf, &obs, ibuf, ilen < ibs ? ilen : ibs) <= 0) {
@@ -366,7 +366,7 @@ int HyvCryptRsaSign(const unsigned char* ibuf, size_t ilen, unsigned char* obuf,
 int HyvCryptXor(unsigned char* ibuf, size_t ilen, const unsigned char* kbuf, size_t klen) {
 	unsigned int i;
 	for (i = 0; i < ilen; i++) {
-		ibuf[i] = kbuf[i % klen];
+		ibuf[i] ^= kbuf[i % klen];
 	}
 	return ilen;
 }

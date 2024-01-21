@@ -379,11 +379,20 @@ extern "C" {
 		unsigned int i;
 		unsigned long long* xorpad = (unsigned long long*) _xorpad;
 		init_genrand64(seed);
-		/* TODO Grasscutter adds these steps, figure out if it's really necessary to do here too */
-		// init_genrand64(genrand64_int64());
-		// genrand64_int64();
 		for (i = 0; i < (sz / sizeof(long long)); i++) {
 			xorpad[i] = genrand64_int64();
+		}
+	}
+
+	void genXorpadFromSeed2(unsigned long long seed, unsigned char* _xorpad, size_t sz) {
+		if (_xorpad == NULL) return;
+		unsigned int i;
+		unsigned long long* xorpad = (unsigned long long*) _xorpad;
+		init_genrand64(seed);
+		init_genrand64(genrand64_int64());
+		genrand64_int64();
+		for (i = 0; i < (sz / sizeof(long long)); i++) {
+			xorpad[i] = htobe64(genrand64_int64());
 		}
 	}
 }

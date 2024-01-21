@@ -92,7 +92,7 @@ idx0:
 			if (!isz) break;
 			goto idx0;
 		}
-		e = b64itbl[t] << 2;
+		e = (b64itbl[t] & 0x3f) << 2;
 		isz--;
 		if (!isz) {
 			ret += e;
@@ -111,9 +111,9 @@ idx1:
 			isz--;
 			goto idx1;
 		}
-		e |= b64itbl[t] >> 6;
+		e |= (b64itbl[t] & 0x3f) >> 4;
 		ret += e;
-		e = b64itbl[t] << 4;
+		e = (b64itbl[t] & 0x3f) << 4;
 		isz--;
 		if (!isz) {
 			ret += e;
@@ -133,9 +133,9 @@ idx2:
 			if (!isz) break;
 			goto idx2;
 		}
-		e |= b64itbl[t] >> 4;
+		e |= (b64itbl[t] & 0x3f) >> 2;
 		ret += e;
-		e = b64itbl[t] << 6;
+		e = (b64itbl[t] & 0x3f) << 6;
 		isz--;
 		if (!isz) {
 			ret += e;
@@ -155,7 +155,7 @@ idx3:
 			if (!isz) break;
 			goto idx3;
 		}
-		e |= b64itbl[t];
+		e |= (b64itbl[t] & 0x3f);
 		ret += e;
 		i += 4;
 		isz--;
