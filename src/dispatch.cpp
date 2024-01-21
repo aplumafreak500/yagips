@@ -165,15 +165,6 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	}
 	// Note: Official servers check for the existence and correctness of the `channel_id` parameter. In my testing, no other parameters are needed (though they may be validated if present) to get a positive response. Here, we don't check that at all, nor any other parameters, though that may change in the future.
 	// TODO Clients send a `language` parameter, this could be useful in case we end up supporting multilingual `title` parameters in the region list config.
-	/* TODO Roadmap:
-		1. Iterate through server-configured regions and check for its version.
-			* If the config-level region list is empty, send -1 to the client and an error to the log.
-			* If no version is set at the config level, treat it as allowing all versions.
-		2. If there's a match, add it to the response here.
-		3. If the proto-level region list is empty, send back -1.
-		4. Grab "custom config", seed, and enable_login_pc from config, apply to the proto if present
-			* If no seed is configured, send -1 to the client and an error to the log
-	*/
 	json_object_put(jobj);
 	config_p = globalConfig->getConfig();
 	if (config_p->regionCnt != 0 || config_p->regions == NULL) {
@@ -548,7 +539,7 @@ set_fields:
 build_rsp:
 	if (!ret.SerializeToString(&ret_enc)) {
 		// Bypass Protobuf and encode a response ourselves. Note that this eventually gets base64 encoded, hence the raw hex string.
-		ret_enc = ""; // TODO build a default response
+		ret_enc = "\x08\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\x12\x1cFailed to serialize response";
 	}
 	size_t sz = ret_enc.size();
 	size_t bufsz = ((sz / 256) + 1) * 256;
