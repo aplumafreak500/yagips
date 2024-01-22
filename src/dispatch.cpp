@@ -48,8 +48,8 @@ enum {
 
 #define LIVE_MAJOR 4
 #define LIVE_MINOR 3
-#define CUR_MAJOR 3
-#define CUR_MINOR 2
+#define CUR_MAJOR 1
+#define CUR_MINOR 3
 
 std::string getQueryRegionListHttpRsp(const char* post) {
 	proto::QueryRegionListHttpRsp ret;
@@ -1303,13 +1303,16 @@ write_rsp:
 					break;
 				case SDK_QUERY_CURR_REGION:
 					// Notes: PHP frontend converts GET (or POST) parameters to JSON before sending it to us in a POST. This string is thus passed to getQueryCurrRegionHttpRsp.
-					rsp_str = "{\"content\":\"" + b64enc(getQueryCurrRegionHttpRsp(sign, body)) + "\"";
-					// TODO What to do if there's no signature?
-					if (!sign.empty()) rsp_str += ",\"sign\":\"" + b64enc(sign) + "\"";
-					rsp_str += "}";
+					rsp_str = b64enc(getQueryCurrRegionHttpRsp(sign, body));
+					if (!sign.empty()) {
+						rsp_str = "{\"content\":\"" + rsp_str + "\",\"sign\":\"" + b64enc(sign) + "\"}";
+						mime = "application/json";
+					}
+					else {
+						mime = "text/plain";
+					}
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();
-					mime = "application/json";
 					break;
 				case SDK_GET_AUTH_TOKEN:
 					rsp_str = handleLogin(body);
