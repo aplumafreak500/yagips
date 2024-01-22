@@ -17,72 +17,50 @@ import "block_info.proto";
 import "dispatch.proto";
 
 message TrackingIOInfo {
-    string rydevicetype = 11;
-    string mac = 6;
-    string deviceid = 9;
-    string client_tz = 5;
-    string current_caid = 7;
-    string cached_caid = 15;
     string appid = 1;
-}
-
-message AdjustTrackingInfo {
-    string event_token = 9;
-    string adid = 4;
-    string idfa = 2;
-    string app_token = 14;
-    string gps_adid = 3;
-    string fire_adid = 13;
+    string deviceid = 2;
+    string mac = 3;
+    string rydevicetype = 4;
+    string client_tz = 5;
 }
 
 message PlayerLoginReq {
-    uint32 language_type = 6;
-    uint32 reg_platform = 615;
-    TrackingIOInfo tracking_io_info = 1660;
-    uint32 account_type = 13;
-    string token = 15;
-    bytes extra_bin_data = 1458;
-    uint32 channel_id = 1314;
-    uint32 client_data_version = 688;
-    string account_uid = 2;
-    string client_version = 12;
-    string security_library_md5 = 772;
-    string country_code = 2000;
-    string psn_id = 1268;
-    uint32 client_port = 431;
-    string device_name = 9;
-    string cps = 1163;
-    uint64 login_rand = 3;
-    uint32 target_home_param = 984;
-    AdjustTrackingInfo adjust_tracking_info = 1816;
-    bool is_transfer = 908;
-    uint32 tag = 1787;
-    bool is_guest = 5;
-    bytes environment_error_code = 2026;
-    string online_id = 903;
+    string token = 1;
+    string client_version = 2;
+    string system_version = 3;
+    string device_name = 4;
+    string device_uuid = 5;
+    uint32 target_uid = 6;
+    uint64 login_rand = 7;
     bool is_editor = 8;
-    string checksum_client_version = 861;
-    bytes security_cmd_reply = 1995;
-    string security_library_version = 1213;
-    string birthday = 1652;
-    string device_uuid = 4;
-    uint32 client_token = 1546;
-    uint32 sub_channel_id = 23;
-    uint32 target_uid = 11;
-    string device_info = 1;
-    string client_verison_hash = 1707;
-    string checksum = 1532;
+    uint32 language_type = 9;
+    uint32 account_type = 10;
+    string account_uid = 11;
+    string platform = 12;
+    string device_info = 13;
     uint32 platform_type = 14;
-    uint32 target_home_owner_uid = 1864;
-    uint32 cloud_client_ip = 1335;
-    uint32 gm_uid = 612;
-    string system_version = 10;
-    string platform = 7;
+    bool is_guest = 15;
+    uint32 cloud_client_ip = 16;
+    uint32 gm_uid = 17;
+    string checksum = 18;
+    string online_id = 19;
+    uint32 client_token = 20;
+    bytes security_cmd_reply = 21;
+    bytes extra_bin_data = 22;
+    string cps = 23;
+    uint32 channel_id = 24;
+    uint32 sub_channel_id = 25;
+    string checksum_client_version = 26;
+    uint32 tag = 27;
+    TrackingIOInfo tracking_io_info = 28;
+    string country_code = 29;
+    uint32 client_data_version = 30;
+    bytes environment_error_code = 31;
     
     enum CmdId {
         option allow_alias = true;
         NONE = 0;
-        CMD_ID = 112;
+        CMD_ID = 103;
         ENET_CHANNEL_ID = 0;
         ENET_IS_RELIABLE = 1;
         IS_ALLOW_CLIENT = 1;
@@ -90,51 +68,45 @@ message PlayerLoginReq {
 }
 
 message ShortAbilityHashPair {
-    sfixed32 ability_config_hash = 15;
     sfixed32 ability_name_hash = 1;
+    sfixed32 ability_config_hash = 2;
 }
 
 message PlayerLoginRsp {
-    uint32 client_data_version = 1;
-    bool is_sc_open = 1429;
-    int32 retcode = 15;
-    map<uint32, BlockInfo> block_info_map = 571;
-    bool is_audit = 1685;
-    bool is_transfer = 2018;
-    string client_silence_md5 = 1746;
-    ResVersionConfig next_res_version_config = 1573;
-    uint32 client_silence_data_version = 6;
-    uint64 login_rand = 4;
-    bool is_new_player = 8;
-    string client_version_suffix = 1047;
-    string game_biz = 5;
-    string next_resource_url = 621;
-    bool is_relogin = 10;
-    double total_tick_time = 125;
-    bool is_enable_client_hash_debug = 932;
-    bytes sc_info = 2024;
-    int32 ability_hash_code = 12;
-    string register_cps = 2040;
-    bool is_login_rsp_split = 1649;
-    bool is_use_ability_hash = 2;
-    map<string, int32> ability_hash_map = 11;
-    repeated ShortAbilityHashPair short_ability_hash_map = 250;
-    string client_md5 = 1830;
-    string country_code = 1900;
-    bool is_data_need_relogin = 951;
-    ResVersionConfig res_version_config = 1969;
-    repeated FeatureBlockInfo feature_block_info_list = 1352;
-    string birthday = 624;
-    uint32 target_uid = 14;
-    bytes player_data = 13;
-    string client_silence_version_suffix = 1299;
-    uint32 target_home_owner_uid = 553;
-    uint32 player_data_version = 7;
+    int32 retcode = 1;
+    bytes player_data = 2;
+    bool is_new_player = 3;
+    uint32 target_uid = 4;
+    uint64 login_rand = 5;
+    bool is_use_ability_hash = 6;
+    int32 ability_hash_code = 7;
+    map<string, int32> ability_hash_map = 8;
+    uint32 client_data_version = 9;
+    bool is_relogin = 11;
+    uint32 client_silence_data_version = 13;
+    string game_biz = 14;
+    uint32 player_data_version = 15;
+    string client_md5 = 16;
+    string client_silence_md5 = 17;
+    ResVersionConfig res_version_config = 20;
+    map<uint32, BlockInfo> block_info_map = 21;
+    string client_version_suffix = 24;
+    string client_silence_version_suffix = 25;
+    repeated ShortAbilityHashPair short_ability_hash_map = 27;
+    bytes sc_info = 28;
+    bool is_audit = 29;
+    bool is_sc_open = 30;
+    string register_cps = 31;
+    repeated FeatureBlockInfo feature_block_info_list = 32;
+    bool is_data_need_relogin = 33;
+    string country_code = 34;
+    ResVersionConfig next_res_version_config = 35;
+    string next_resource_url = 36;
     
     enum CmdId {
         option allow_alias = true;
         NONE = 0;
-        CMD_ID = 135;
+        CMD_ID = 104;
         ENET_CHANNEL_ID = 0;
         ENET_IS_RELIABLE = 1;
     }

@@ -20,13 +20,12 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <errno.h>
 #include "account.h"
 #include "dbgate.h"
-#include "util.h"
 
 int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& data) {
 	proto::GetPlayerTokenReq req;
 	proto::GetPlayerTokenRsp rsp;
 	unsigned long long encryptSeed;
-	Packet rsp_pkt(198);
+	Packet rsp_pkt(102);
 	if (!req.ParseFromString(data)) {
 		fprintf(stderr, "Error parsing packet data\n");
 		// TODO should we send a response packet?
@@ -106,12 +105,8 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 	rsp.set_channel_id(1);
 	// TODO Pull from session object?
 	rsp.set_platform_type(3);
-	// Unknown what this does.
-	rsp.set_reg_platform(3);
 	// TODO obtained from kcpSession->getClientIPAddress()
 	// rsp.set_client_ip_str();
-	// Unknown what this does.
-	rsp.set_client_version_random_key("c25-314dd05b0b5f");
 	// TODO either pull from account object or from GeoIP
 	rsp.set_country_code("US");
 	// TODO Grasscutter checks for avatar count (ie. whether you've created the Traveler's avatar object or not) to determine if this should be set. Figure out if we should do the same.
@@ -119,38 +114,6 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 	rsp.set_secret_key_seed(encryptSeed);
 	std::string encryptSeedBuf((const char*) secretKeyBuf, 32);
 	rsp.set_security_cmd_buffer(encryptSeedBuf);
-	if (req.key_id() > 0) {
-		std::string clientRandKeyEnc = b64dec(req.client_rand_key());
-		unsigned char clientRandKeyBuf[1024];
-		ssize_t clientRandKeySz = HyvCryptRsaDec((const unsigned char*) clientRandKeyEnc.c_str(), clientRandKeyEnc.size(), clientRandKeyBuf, 1024, 0);
-		if (clientRandKeySz < 0) {
-			// TODO modify and then send the response packet
-			session.close(12);
-			return -1;
-		}
-		// TODO assert size == sizeof(long long)
-		// TODO figure out endianness
-		unsigned long long clientRandKey = *(unsigned long long*) clientRandKeyBuf;
-		unsigned long long serverRandKey = clientRandKey ^ encryptSeed;
-		unsigned char serverRandKeyBuf[1024];
-		ssize_t serverRandKeySz = HyvCryptRsaEnc((const unsigned char*) &serverRandKey, sizeof(long long), serverRandKeyBuf, 1024, req.key_id());
-		if (serverRandKeySz < 0) {
-			// TODO modify and then send the response packet
-			session.close(12);
-			return -1;
-		}
-		static unsigned char serverRandKeySignBuf[4096];
-		ssize_t serverRandKeySignSz = HyvCryptRsaSign((const unsigned char*) &serverRandKey, sizeof(long long), serverRandKeySignBuf, 4096);
-		if (serverRandKeySignSz < 0) {
-			// TODO modify and then send the response packet
-			session.close(12);
-			return -1;
-		}
-		std::string serverRandKeyS((const char*) serverRandKeyBuf, serverRandKeySz);
-		std::string serverRandKeySignS((const char*) serverRandKeySignBuf, serverRandKeySignSz);
-		rsp.set_server_rand_key(b64enc(serverRandKeyS));
-		rsp.set_sign(b64enc(serverRandKeySignS));
-	}
 	if (!rsp.SerializeToString(&data)) {
 		fprintf(stderr, "Error building packet data\n");
 		return -1;
