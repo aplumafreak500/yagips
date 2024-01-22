@@ -167,7 +167,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	// TODO Clients send a `language` parameter, this could be useful in case we end up supporting multilingual `title` parameters in the region list config.
 	json_object_put(jobj);
 	config_p = globalConfig->getConfig();
-	if (config_p->regionCnt != 0 || config_p->regions == NULL) {
+	if (config_p->regionCnt == 0 || config_p->regions == NULL) {
 		// No regions configured, so supply our own
 		actualRegionCnt = 1;
 		pregion = ret.add_region_list();
