@@ -200,7 +200,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 					}
 				}
 				if (config_p->regions[i]->title != NULL) {
-					pregion->set_name(config_p->regions[i]->title);
+					pregion->set_title(config_p->regions[i]->title);
 				}
 				else {
 					if (i == 0) pregion->set_title("yagips");
