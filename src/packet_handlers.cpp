@@ -27,11 +27,11 @@ int processPacket(Session& session, Packet& packet) {
 	default:
 		fprintf(stderr, "Don't know how to handle opcode %d\n", opcode);
 		return -1;
-	case 7:
+	case 5:
 		return handlePingReq(session, header, data);
-	case 112:
-		return handlePlayerLoginReq(session, header, data);
-	case 172:
+	case 101:
 		return handleGetPlayerTokenReq(session, header, data);
+	case 103:
+		return handlePlayerLoginReq(session, header, data);
 	}
 }

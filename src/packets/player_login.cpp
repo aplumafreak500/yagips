@@ -20,7 +20,7 @@ You should have received a copy of the GNU Affero General Public License along w
 int handlePlayerLoginReq(Session& session, std::string& header, std::string& data) {
 	proto::PlayerLoginReq req;
 	proto::PlayerLoginRsp rsp;
-	Packet rsp_pkt(135);
+	Packet rsp_pkt(104);
 	if (!req.ParseFromString(data)) {
 		// TODO should we send a response packet?
 		fprintf(stderr, "Error parsing packet data\n");

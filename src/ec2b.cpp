@@ -389,8 +389,8 @@ extern "C" {
 		unsigned int i;
 		unsigned long long* xorpad = (unsigned long long*) _xorpad;
 		init_genrand64(seed);
-		init_genrand64(genrand64_int64());
-		genrand64_int64();
+		//init_genrand64(genrand64_int64());
+		//genrand64_int64();
 		for (i = 0; i < (sz / sizeof(long long)); i++) {
 			xorpad[i] = htobe64(genrand64_int64());
 		}

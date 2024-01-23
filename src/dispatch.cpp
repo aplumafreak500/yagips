@@ -36,7 +36,6 @@ enum {
 	CLIENT_ANDROID = 1,
 	CLIENT_IOS = 2,
 //	CLIENT_PS4 = 3,
-//	CLIENT_PS5 = 4,
 	CLIENT_CNT
 };
 
@@ -49,8 +48,8 @@ enum {
 
 #define LIVE_MAJOR 4
 #define LIVE_MINOR 3
-#define CUR_MAJOR 3
-#define CUR_MINOR 2
+#define CUR_MAJOR 1
+#define CUR_MINOR 3
 
 std::string getQueryRegionListHttpRsp(const char* post) {
 	proto::QueryRegionListHttpRsp ret;
@@ -142,9 +141,8 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	if (strncmp(sclient, "Win", 31) == 0) client = CLIENT_PC;
 	else if (strncmp(sclient, "Android", 31) == 0) client = CLIENT_ANDROID;
 	else if (strncmp(sclient, "iOS", 31) == 0) client = CLIENT_IOS;
-	// TODO PS4 and PS5 version ID's?
+	// TODO PS4 version ID?
 	// else if (strncmp(sclient, "PS4", 31) == 0) client = CLIENT_PS4;
-	// else if (strncmp(sclient, "PS5", 31) == 0) client = CLIENT_PS5;
 	else client = CLIENT_UNK;
 	if (
 		(client <= CLIENT_UNK || client >= CLIENT_CNT) ||
@@ -168,15 +166,6 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	}
 	// Note: Official servers check for the existence and correctness of the `channel_id` parameter. In my testing, no other parameters are needed (though they may be validated if present) to get a positive response. Here, we don't check that at all, nor any other parameters, though that may change in the future.
 	// TODO Clients send a `language` parameter, this could be useful in case we end up supporting multilingual `title` parameters in the region list config.
-	/* TODO Roadmap:
-		1. Iterate through server-configured regions and check for its version.
-			* If the config-level region list is empty, send -1 to the client and an error to the log.
-			* If no version is set at the config level, treat it as allowing all versions.
-		2. If there's a match, add it to the response here.
-		3. If the proto-level region list is empty, send back -1.
-		4. Grab "custom config", seed, and enable_login_pc from config, apply to the proto if present
-			* If no seed is configured, send -1 to the client and an error to the log
-	*/
 	json_object_put(jobj);
 	config_p = globalConfig->getConfig();
 	if (config_p->regionCnt != 0 || config_p->regions == NULL) {
@@ -392,9 +381,8 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	if (strncmp(sclient, "Win", 31) == 0) client = CLIENT_PC;
 	else if (strncmp(sclient, "Android", 31) == 0) client = CLIENT_ANDROID;
 	else if (strncmp(sclient, "iOS", 31) == 0) client = CLIENT_IOS;
-	// TODO PS4 and PS5 version ID's?
+	// TODO PS4 version ID?
 	// else if (strncmp(sclient, "PS4", 31) == 0) client = CLIENT_PS4;
-	// else if (strncmp(sclient, "PS5", 31) == 0) client = CLIENT_PS5;
 	else client = CLIENT_UNK;
 	if (
 		(client <= CLIENT_UNK || client >= CLIENT_CNT) ||
@@ -718,17 +706,10 @@ std::string handleLogin(const char* post) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Password is null\"}";
 	}
-	unsigned int isCrypto = 0;
-	if (json_object_object_get_ex(jobj, "is_crypto", &dobj)) {
-		isCrypto = json_object_get_boolean(dobj);
-	}
 	// TODO look up verify password in config
 #if 0
 	char encPassword[1024];
 	memset(encPassword, '\0', 1024);
-	if (isCrypto) {
-		// TODO HyvCryptRsaDec
-	}
 	// TODO look up encrypt password in config
 	// TODO HMAC-SHA256
 	if (strcmp(encPassword, account->getPasswordHash().c_str()) != 0) {
@@ -1322,13 +1303,16 @@ write_rsp:
 					break;
 				case SDK_QUERY_CURR_REGION:
 					// Notes: PHP frontend converts GET (or POST) parameters to JSON before sending it to us in a POST. This string is thus passed to getQueryCurrRegionHttpRsp.
-					rsp_str = "{\"content\":\"" + b64enc(getQueryCurrRegionHttpRsp(sign, body)) + "\"";
-					// TODO What to do if there's no signature?
-					if (!sign.empty()) rsp_str += ",\"sign\":\"" + b64enc(sign) + "\"";
-					rsp_str += "}";
+					rsp_str = b64enc(getQueryCurrRegionHttpRsp(sign, body));
+					if (!sign.empty()) {
+						rsp_str = "{\"content\":\"" + rsp_str + "\",\"sign\":\"" + b64enc(sign) + "\"}";
+						mime = "application/json";
+					}
+					else {
+						mime = "text/plain";
+					}
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();
-					mime = "application/json";
 					break;
 				case SDK_GET_AUTH_TOKEN:
 					rsp_str = handleLogin(body);

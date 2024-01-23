@@ -22,7 +22,7 @@ int handlePingReq(Session& session, std::string& header, std::string& data) {
 	proto::PacketHead pkt_head;
 	proto::PingReq req;
 	proto::PingRsp rsp;
-	Packet rsp_pkt(21);
+	Packet rsp_pkt(6);
 	if (!pkt_head.ParseFromString(header)) {
 		fprintf(stderr, "Error parsing packet header\n");
 		return -1;
