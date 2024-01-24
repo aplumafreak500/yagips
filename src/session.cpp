@@ -142,6 +142,33 @@ unsigned int Session::nextSeq() {
 	return sequence;
 }
 
+int Session::sendPacket(Packet& packet) {
+	static unsigned char buf[4096];
+	size_t sz = 4096;
+	if (packet.build(buf, &sz) < 0) {
+		fprintf(stderr, "Error building packet\n");
+		return -1;
+	}
+	const unsigned char* key = NULL;
+	if (!packet.useDispatchKey() && use_secret_key) {
+		key = sessionKey;
+	}
+#if 0
+	// TODO: verify that the key being used is in fact query_curr_region->client_secret_key before using this.
+	else {
+		if (hasDispatchKey) key = dispatchKey;
+	}
+#endif
+	if (key != NULL) {
+		HyvCryptXor(buf, sz, key, 4096);
+	}
+	if (kcpSession->send(buf, sz) < 0) {
+		fprintf(stderr, "Error sending packet\n");
+		return -1;
+	}
+	return 0;
+}
+
 extern "C" {
 	int SessionMain(Session* session) {
 		__attribute__((aligned(256))) static unsigned char pkt_buf[16 * 1024];

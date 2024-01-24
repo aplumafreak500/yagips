@@ -139,3 +139,19 @@ unsigned char* Packet::getBuffer(size_t* sz) const {
 	}
 	return rawpkt_buf;
 }
+
+unsigned int Packet::useDispatchKey() const {
+	return use_dispatch_key ? 1 : 0;
+}
+
+void Packet::setUseDispatchKey() {
+	use_dispatch_key = 1;
+}
+
+void Packet::setUseDispatchKey(unsigned int i) {
+	use_dispatch_key = i ? 1 : 0;
+}
+
+void Packet::clearUseDispatchKey() {
+	use_dispatch_key = 0;
+}

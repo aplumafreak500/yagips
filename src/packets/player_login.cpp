@@ -76,20 +76,7 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 		fprintf(stderr, "Error building packet\n");
 		return -1;
 	}
-	const unsigned char* key = NULL;
 	// for whatever reason, despite req using the session key, this packet uses the dispatch key... weird
-#if 0
-	// TODO: verify that the key being used is in fact query_curr_region->client_secret_key before using this.
-	else {
-		if (hasDispatchKey) key = dispatchKey;
-	}
-#endif
-	if (key != NULL) {
-		HyvCryptXor(rsp_buf, rsp_sz, key, 4096);
-	}
-	if (session.getKcpSession()->send(rsp_buf, rsp_sz) < 0) {
-		fprintf(stderr, "Error sending packet\n");
-		return -1;
-	}
-	return 0;
+	rsp_pkt.setUseDispatchKey(1);
+	return session.sendPacket(rsp_pkt);
 }

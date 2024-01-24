@@ -16,6 +16,7 @@ class Session; // Resolves two circular dependencies.
 #include "gameserver.h"
 #include "player.h"
 #include "account.h"
+#include "packet.h"
 #include "kcpsession.h"
 
 class Session {
@@ -43,6 +44,7 @@ public:
 	unsigned int getSeq() const;
 	unsigned int nextSeq();
 	void setSeq(unsigned int);
+	int sendPacket(Packet&);
 private:
 	KcpSession* kcpSession;
 	Player* player;

@@ -40,28 +40,5 @@ int handlePingReq(Session& session, std::string& header, std::string& data) {
 	}
 	rsp_pkt.setHeader(header);
 	rsp_pkt.setData(data);
-	static unsigned char rsp_buf[1024];
-	size_t rsp_sz = 1024;
-	if (rsp_pkt.build(rsp_buf, &rsp_sz) < 0) {
-		fprintf(stderr, "Error building packet\n");
-		return -1;
-	}
-	const unsigned char* key = NULL;
-	if (session.useSecretKey()) {
-		key = session.getSessionKey();
-	}
-#if 0
-	// TODO: verify that the key being used is in fact query_curr_region->client_secret_key before using this.
-	else {
-		if (hasDispatchKey) key = dispatchKey;
-	}
-#endif
-	if (key != NULL) {
-		HyvCryptXor(rsp_buf, rsp_sz, key, 4096);
-	}
-	if (session.getKcpSession()->send(rsp_buf, rsp_sz) < 0) {
-		fprintf(stderr, "Error sending packet\n");
-		return -1;
-	}
-	return 0;
+	return session.sendPacket(rsp_pkt);
 }

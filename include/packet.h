@@ -12,6 +12,9 @@ You should have received a copy of the GNU Affero General Public License along w
 #ifndef PACKET_H
 #define PACKET_H
 #include <string>
+
+class Packet;
+
 #include "session.h"
 
 #define PACKET_MAGIC1 0x4567
@@ -33,12 +36,17 @@ public:
 	unsigned short getOpcode() const;
 	void setOpcode(unsigned short);
 	unsigned char* getBuffer(size_t*) const;
+	unsigned int useDispatchKey() const;
+	void setUseDispatchKey();
+	void setUseDispatchKey(unsigned int);
+	void clearUseDispatchKey();
 private:
 	unsigned short opcode;
 	std::string header;
 	std::string data;
 	unsigned char* rawpkt_buf;
 	size_t rawpkt_sz;
+	unsigned int use_dispatch_key;
 };
 
 int processPacket(Session&, Packet&);

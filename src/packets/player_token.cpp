@@ -120,23 +120,6 @@ int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& 
 	}
 	rsp_pkt.buildHeader(session.nextSeq());
 	rsp_pkt.setData(data);
-	static unsigned char rsp_buf[4096];
-	size_t rsp_sz = 4096;
-	if (rsp_pkt.build(rsp_buf, &rsp_sz) < 0) {
-		fprintf(stderr, "Error building packet\n");
-		return -1;
-	}
-#if 0
-	// TODO: verify that the key being used is in fact query_curr_region->client_secret_key before using this.
-	const unsigned char* key = NULL;
-	if (hasDispatchKey) key = dispatchKey;
-	if (key != NULL) {
-		HyvCryptXor(rsp_buf, rsp_sz, key, 4096);
-	}
-#endif
-	if (session.getKcpSession()->send(rsp_buf, rsp_sz) < 0) {
-		fprintf(stderr, "Error sending packet\n");
-		return -1;
-	}
-	return 0;
+	rsp_pkt.setUseDispatchKey(1);
+	return session.sendPacket(rsp_pkt);
 }
