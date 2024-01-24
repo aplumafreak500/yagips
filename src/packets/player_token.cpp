@@ -15,7 +15,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "session.h"
 #include "crypt.h"
 #include "keys.h"
-#include "player_token.pb.h"
+#include "player.pb.h"
 #include <stdlib.h>
 #include <errno.h>
 #include "account.h"

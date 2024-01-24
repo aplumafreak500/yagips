@@ -1,0 +1,324 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+message ReunionSignInInfo {
+    uint32 config_id = 1;
+    uint32 sign_in_count = 2;
+    uint32 last_sign_in_time = 3;
+    repeated uint32 reward_day_list = 4;
+}
+
+message ReunionWatcherInfo {
+    uint32 watcher_id = 1;
+    uint32 cur_progress = 2;
+    uint32 total_progress = 3;
+    bool is_taken_reward = 4;
+}
+
+message ReunionMissionInfo {
+    uint32 mission_id = 1;
+    repeated ReunionWatcherInfo cur_day_watcher_list = 2;
+    uint32 cur_score = 3;
+    bool is_finished = 4;
+    bool is_taken_reward = 5;
+    uint32 next_refresh_time = 6;
+}
+
+message ReunionPrivilegeInfo {
+    uint32 privilege_id = 1;
+    uint32 cur_day_count = 2;
+}
+
+message ReunionBriefInfo {
+    uint32 finish_time = 1;
+    bool is_taken_first_gift = 2;
+    uint32 first_gift_reward_id = 3;
+    uint32 sign_in_config_id = 4;
+    bool sign_in_has_reward = 5;
+    uint32 mission_id = 6;
+    bool mission_has_reward = 7;
+    uint32 privilege_id = 8;
+    string version = 9;
+}
+
+message ReunionBriefInfoReq {
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5051;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message ReunionBriefInfoRsp {
+    int32 retcode = 1;
+    bool is_activate = 2;
+    ReunionBriefInfo reunion_brief_info = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5052;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message TakeReunionFirstGiftRewardReq {
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5053;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TakeReunionFirstGiftRewardRsp {
+    int32 retcode = 1;
+    int32 reward_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5054;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GetReunionSignInInfoReq {
+    uint32 sign_in_config_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5055;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GetReunionSignInInfoRsp {
+    int32 retcode = 1;
+    ReunionSignInInfo sign_in_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5056;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message TakeReunionSignInRewardReq {
+    uint32 config_id = 1;
+    uint32 reward_day = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5057;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TakeReunionSignInRewardRsp {
+    int32 retcode = 1;
+    ReunionSignInInfo sign_in_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5058;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GetReunionMissionInfoReq {
+    uint32 mission_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5059;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GetReunionMissionInfoRsp {
+    int32 retcode = 1;
+    ReunionMissionInfo mission_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5060;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message TakeReunionWatcherRewardReq {
+    uint32 mission_id = 1;
+    uint32 watcher_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5061;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TakeReunionWatcherRewardRsp {
+    int32 retcode = 1;
+    uint32 mission_id = 2;
+    uint32 watcher_id = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5062;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message UpdateReunionWatcherNotify {
+    uint32 mission_id = 1;
+    ReunionWatcherInfo watcher_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5063;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message TakeReunionMissionRewardReq {
+    uint32 mission_id = 1;
+    uint32 reward_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5064;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TakeReunionMissionRewardRsp {
+    int32 retcode = 1;
+    uint32 reward_id = 2;
+    ReunionMissionInfo mission_info = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5065;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GetReunionPrivilegeInfoReq {
+    uint32 privilege_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5066;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GetReunionPrivilegeInfoRsp {
+    int32 retcode = 1;
+    ReunionPrivilegeInfo privilege_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5067;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message ReunionSettleNotify {
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5068;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message ReunionActivateNotify {
+    ReunionBriefInfo reunion_brief_info = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5069;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message ReunionPrivilegeChangeNotify {
+    ReunionPrivilegeInfo privilege_info = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5070;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message ReunionDailyRefreshNotify {
+    ReunionBriefInfo reunion_brief_info = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5071;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}

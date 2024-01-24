@@ -1,0 +1,407 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "define.proto";
+
+message AnchorPointData {
+    uint32 anchor_point_id = 1;
+    Vector pos = 2;
+    Vector rot = 3;
+    uint32 end_time = 4;
+}
+
+message AnchorPointDataNotify {
+    repeated AnchorPointData anchor_point_list = 1;
+    uint32 next_usable_time = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4251;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message UseAnchorPointWidgetReq {
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4252;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message UseAnchorPointWidgetRsp {
+    int32 retcode = 1;
+    uint32 new_anchor_point_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4253;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message AnchorPointOpReq {
+    uint32 anchor_point_op_type = 1;
+    uint32 anchor_point_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4254;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+    
+    enum AnchorPointOpType {
+        ANCHOR_POINT_OP_NONE = 0;
+        ANCHOR_POINT_OP_TELEPORT = 1;
+        ANCHOR_POINT_OP_REMOVE = 2;
+    }
+}
+
+message AnchorPointOpRsp {
+    int32 retcode = 1;
+    uint32 anchor_point_op_type = 2;
+    uint32 anchor_point_id = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4255;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message UseBonfireWidgetReq {
+    Vector pos = 1;
+    Vector rot = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4256;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message UseBonfireWidgetRsp {
+    int32 retcode = 1;
+    uint32 next_usable_time = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4257;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message LunchBoxData {
+    map<uint32, uint32> slot_material_map = 1;
+}
+
+message SetUpLunchBoxWidgetReq {
+    LunchBoxData lunch_box_data = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4258;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message SetUpLunchBoxWidgetRsp {
+    int32 retcode = 1;
+    LunchBoxData lunch_box_data = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4259;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message OneoffGatherPointDetectorData {
+    uint32 material_id = 1;
+    bool is_all_collected = 2;
+    bool is_hint_valid = 3;
+    Vector hint_center_pos = 4;
+    uint32 hint_radius = 5;
+    uint32 group_id = 6;
+    uint32 config_id = 7;
+}
+
+message ClientCollectorData {
+    uint32 material_id = 1;
+    uint32 max_points = 2;
+    uint32 curr_points = 3;
+}
+
+message TreasureMapDetectorData {
+    uint32 region_id = 1;
+    repeated Vector spot_list = 2;
+    Vector center_pos = 3;
+    uint32 radius = 4;
+    bool is_region_detected = 5;
+}
+
+message QuickUseWidgetReq {
+    bool is_pos_valid = 1;
+    Vector pos = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4260;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message QuickUseWidgetRsp {
+    int32 retcode = 1;
+    uint32 material_id = 2;
+    OneoffGatherPointDetectorData detector_data = 3;
+    ClientCollectorData client_collector_data = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4261;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message WidgetCoolDownData {
+    uint32 id = 1;
+    uint64 cool_down_time = 2;
+}
+
+message WidgetCoolDownNotify {
+    repeated WidgetCoolDownData group_cool_down_data_list = 1;
+    repeated WidgetCoolDownData normal_cool_down_data_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4262;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message WidgetReportReq {
+    uint32 material_id = 1;
+    bool is_clear_hint = 2;
+    bool is_client_collect = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4263;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message WidgetReportRsp {
+    int32 retcode = 1;
+    uint32 material_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4264;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message ClientCollectorDataNotify {
+    repeated ClientCollectorData client_collector_data_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4265;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message OneoffGatherPointDetectorDataNotify {
+    repeated OneoffGatherPointDetectorData oneoff_gather_point_detector_data_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4266;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message AttachAvatarWidgetData {
+    uint32 material_id = 1;
+    uint32 cd_over_time = 2;
+}
+
+message AttachAvatarWidgetReq {
+    uint32 material_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4267;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message AttachAvatarWidgetRsp {
+    int32 retcode = 1;
+    AttachAvatarWidgetData attach_avatar_widget = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4268;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message DettachAvatarWidgetReq {
+    uint32 material_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4269;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message DettachAvatarWidgetRsp {
+    int32 retcode = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4270;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message TreasureMapDetectorDataNotify {
+    TreasureMapDetectorData data = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4271;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message AttachAvatarDetachedNotify {
+    uint32 material_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4278;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message SetQuickUseWidgetReq {
+    uint32 quick_use_material_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4298;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message SetQuickUseWidgetRsp {
+    int32 retcode = 1;
+    uint32 quick_use_material_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4299;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message AllWidgetDataNotify {
+    uint32 quick_use_material_id = 1;
+    repeated AnchorPointData anchor_point_list = 2;
+    uint32 next_anchor_point_usable_time = 3;
+    uint32 next_bonfire_usable_time = 4;
+    LunchBoxData lunch_box_data = 5;
+    repeated OneoffGatherPointDetectorData oneoff_gather_point_detector_data_list = 6;
+    repeated ClientCollectorData client_collector_data_list = 7;
+    repeated WidgetCoolDownData cool_down_group_data_list = 8;
+    repeated WidgetCoolDownData normal_cool_down_data_list = 9;
+    AttachAvatarWidgetData attach_avatar_widget = 10;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4300;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+enum LunchBoxSlotType {
+    LUNCH_BOX_SLOT_NONE = 0;
+    LUNCH_BOX_SLOT_REVIVE = 1;
+    LUNCH_BOX_SLOT_HEAL = 2;
+}

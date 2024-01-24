@@ -1,0 +1,162 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+message OpActivityTagBriefInfo {
+    uint32 op_activity_type = 1;
+    uint32 config_id = 2;
+    bool has_reward = 3;
+}
+
+message OpActivityStateNotify {
+    repeated OpActivityTagBriefInfo opened_op_activity_info_list = 1;
+    repeated uint32 finished_bonus_activity_id_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2501;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message SignInInfo {
+    uint32 schedule_id = 1;
+    uint32 config_id = 2;
+    uint32 begin_time = 3;
+    uint32 end_time = 4;
+    bool is_cond_satisfied = 10;
+    uint32 sign_in_count = 11;
+    uint32 last_sign_in_time = 12;
+    repeated uint32 reward_day_list = 13;
+}
+
+message SignInInfoReq {
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2503;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message SignInInfoRsp {
+    int32 retcode = 1;
+    repeated SignInInfo sign_in_info_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2504;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GetSignInRewardReq {
+    uint32 schedule_id = 1;
+    uint32 reward_day = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2505;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GetSignInRewardRsp {
+    int32 retcode = 1;
+    SignInInfo sign_in_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2506;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message BonusActivityInfo {
+    uint32 bonus_activity_id = 1;
+    uint32 state = 2;
+}
+
+message BonusActivityUpdateNotify {
+    repeated BonusActivityInfo bonus_activity_info_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2512;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message BonusActivityInfoReq {
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2513;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message BonusActivityInfoRsp {
+    int32 retcode = 1;
+    repeated BonusActivityInfo bonus_activity_info_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2514;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GetBonusActivityRewardReq {
+    uint32 bonus_activity_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2515;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GetBonusActivityRewardRsp {
+    int32 retcode = 1;
+    BonusActivityInfo bonus_activity_info_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2516;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}

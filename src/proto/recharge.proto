@@ -1,0 +1,169 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "define.proto";
+
+message RechargeReq {
+    ShopMcoinProduct mcoin_product = 1;
+    ShopCardProduct card_product = 2;
+    PlayProduct play_product = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4101;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message RechargeRsp {
+    int32 retcode = 1;
+    string product_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4102;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message OrderFinishNotify {
+    string product_id = 1;
+    uint32 add_mcoin = 2;
+    uint32 card_product_remain_days = 3;
+    uint32 order_id = 4;
+    repeated ItemParam item_list = 5;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4103;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message CardProductRewardNotify {
+    string product_id = 1;
+    uint32 hcoin = 2;
+    uint32 remain_days = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4104;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message ProductPriceTier {
+    string product_id = 1;
+    string price_tier = 2;
+}
+
+message ResinCardData {
+    uint32 config_id = 1;
+    uint32 remain_reward_days = 2;
+    uint32 last_daily_reward_time = 3;
+    uint32 expire_time = 4;
+}
+
+message PlayerRechargeDataNotify {
+    uint32 card_product_remain_days = 1;
+    repeated ProductPriceTier product_price_tier_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4105;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message OrderDisplayNotify {
+    uint32 order_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4106;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message ReportTrackingIOInfoNotify {
+    string appid = 1;
+    string deviceid = 2;
+    string mac = 3;
+    string rydevicetype = 4;
+    string client_tz = 5;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4107;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TakeResinCardDailyRewardReq {
+    uint32 product_config_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4108;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TakeResinCardDailyRewardRsp {
+    int32 retcode = 1;
+    uint32 product_config_id = 2;
+    repeated ItemParam item_vec = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4109;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message ResinCardDataUpdateNotify {
+    repeated ResinCardData card_data_list = 1;
+    uint32 today_start_time = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4110;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}

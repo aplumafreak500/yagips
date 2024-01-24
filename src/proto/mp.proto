@@ -1,0 +1,398 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "define.proto";
+
+message PlayerApplyEnterMpNotify {
+    OnlinePlayerInfo src_player_info = 1;
+    uint32 src_app_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1801;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerApplyEnterMpReq {
+    uint32 target_uid = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1802;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message PlayerApplyEnterMpRsp {
+    int32 retcode = 1;
+    uint32 target_uid = 2;
+    uint32 param = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1803;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerApplyEnterMpResultNotify {
+    uint32 target_uid = 1;
+    bool is_agreed = 2;
+    
+    Reason reason = 3;
+    enum Reason {
+        PLAYER_JUDGE = 0;
+        SCENE_CANNOT_ENTER = 1;
+        PLAYER_CANNOT_ENTER_MP = 2;
+        SYSTEM_JUDGE = 3;
+        ALLOW_ENTER_PLAYER_FULL = 4;
+        WORLD_LEVEL_LOWER_THAN_HOST = 5;
+        HOST_IN_MATCH = 6;
+        PLAYER_IN_BLACKLIST = 7;
+        PS_PLAYER_NOT_ACCEPT_OTHERS = 8;
+        HOST_IS_BLOCKED = 9;
+        OTHER_DATA_VERSION_NOT_LATEST = 10;
+        DATA_VERSION_NOT_LATEST = 11;
+    }
+    
+    string target_nickname = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1804;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerApplyEnterMpResultReq {
+    uint32 apply_uid = 1;
+    bool is_agreed = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1805;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message PlayerApplyEnterMpResultRsp {
+    int32 retcode = 1;
+    uint32 apply_uid = 2;
+    bool is_agreed = 3;
+    uint32 param = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1806;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerQuitFromMpNotify {
+    QuitReason reason = 1;
+    enum QuitReason {
+        INVALID = 0;
+        HOST_NO_OTHER_PLAYER = 1;
+        KICK_BY_HOST = 2;
+        BACK_TO_MY_WORLD = 3;
+        KICK_BY_HOST_LOGOUT = 4;
+        KICK_BY_HOST_BLOCK = 5;
+        BE_BLOCKED = 6;
+    }
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1807;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerPreEnterMpNotify {
+    uint32 uid = 1;
+    
+    State state = 2;
+    enum State {
+        INVALID = 0;
+        START = 1;
+        TIMEOUT = 2;
+    }
+    
+    string nickname = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1808;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GetPlayerMpModeAvailabilityReq {
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1809;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GetPlayerMpModeAvailabilityRsp {
+    int32 retcode = 1;
+    int32 mp_ret = 2;
+    repeated uint32 param_list = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1810;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerSetOnlyMPWithPSPlayerReq {
+    bool is_only = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1811;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message PlayerSetOnlyMPWithPSPlayerRsp {
+    int32 retcode = 1;
+    bool is_only = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1812;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PSPlayerApplyEnterMpReq {
+    string target_online_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1813;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message PSPlayerApplyEnterMpRsp {
+    int32 retcode = 1;
+    string target_online_id = 2;
+    uint32 param = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1814;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MpPlayOwnerCheckReq {
+    uint32 mp_play_id = 1;
+    bool is_skip_match = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1815;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message MpPlayOwnerCheckRsp {
+    int32 retcode = 1;
+    uint32 mp_play_id = 2;
+    uint32 wrong_uid = 3;
+    bool is_skip_match = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1816;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MpPlayOwnerStartInviteReq {
+    uint32 mp_play_id = 1;
+    bool is_skip_match = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1817;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message MpPlayOwnerStartInviteRsp {
+    int32 retcode = 1;
+    uint32 mp_play_id = 2;
+    bool is_skip_match = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1818;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MpPlayOwnerInviteNotify {
+    uint32 mp_play_id = 1;
+    uint32 cd = 2;
+    bool is_remain_reward = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1819;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MpPlayGuestReplyInviteReq {
+    uint32 mp_play_id = 1;
+    bool is_agree = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1820;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message MpPlayGuestReplyInviteRsp {
+    int32 retcode = 1;
+    uint32 mp_play_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1821;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MpPlayGuestReplyNotify {
+    uint32 mp_play_id = 1;
+    uint32 uid = 2;
+    bool is_agree = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1822;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MpPlayPrepareNotify {
+    uint32 mp_play_id = 1;
+    uint32 prepare_end_time = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1823;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MpPlayInviteResultNotify {
+    uint32 mp_play_id = 1;
+    bool all_argee = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1824;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MpPlayPrepareInterruptNotify {
+    uint32 mp_play_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1825;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MpBlockNotify {
+    uint32 end_time = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1826;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}

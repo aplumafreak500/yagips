@@ -16,7 +16,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "crypt.h"
 #include "keys.h"
 #include "packet_head.pb.h"
-#include "ping.pb.h"
+#include "misc.pb.h"
 
 int handlePingReq(Session& session, std::string& header, std::string& data) {
 	proto::PacketHead pkt_head;

@@ -15,7 +15,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "session.h"
 #include "crypt.h"
 #include "keys.h"
-#include "login.pb.h"
+#include "player.pb.h"
 
 int handlePlayerLoginReq(Session& session, std::string& header, std::string& data) {
 	proto::PlayerLoginReq req;

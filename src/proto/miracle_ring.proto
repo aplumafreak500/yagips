@@ -1,0 +1,151 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "define.proto";
+import "gadget.proto";
+
+message UseMiracleRingReq {
+    uint32 miracle_ring_op_type = 1;
+    Vector pos = 2;
+    Vector rot = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5201;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+    
+    enum MiracleRingOpType {
+        MIRACLE_RING_OP_NONE = 0;
+        MIRACLE_RING_OP_PLACE = 1;
+        MIRACLE_RING_OP_RETRACT = 2;
+    }
+}
+
+message UseMiracleRingRsp {
+    int32 retcode = 1;
+    uint32 miracle_ring_op_type = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5202;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MiracleRingDataNotify {
+    uint32 last_deliver_item_time = 1;
+    uint32 last_take_reward_time = 2;
+    uint32 miracle_ring_cd = 3;
+    bool is_gadget_created = 4;
+    uint32 gadget_entity_id = 5;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5203;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MiracleRingTakeRewardReq {
+    uint32 gadget_entity_id = 1;
+    uint32 gadget_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5204;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message MiracleRingTakeRewardRsp {
+    int32 retcode = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5205;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MiracleRingDropResultNotify {
+    int32 drop_result = 1;
+    int32 last_take_reward_time = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5206;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MiracleRingDeliverItemReq {
+    uint32 gadget_entity_id = 1;
+    InterOpType op_type = 2;
+    uint32 gadget_id = 3;
+    repeated uint64 food_weapon_guid_list = 4;
+    repeated ItemParam item_param_list = 5;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5207;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message MiracleRingDeliverItemRsp {
+    int32 retcode = 1;
+    uint32 gadget_entity_id = 2;
+    InteractType interact_type = 3;
+    InterOpType op_type = 4;
+    uint32 gadget_id = 5;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5208;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MiracleRingDestroyNotify {
+    uint32 entity_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5209;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}

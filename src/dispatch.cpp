@@ -26,7 +26,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "util.h"
 #include "crypt.h"
 #include "dispatch.h"
-#include "dispatch.pb.h"
+#include "define.pb.h"
 #include "keys.h"
 #include "http.h"
 
