@@ -7,7 +7,7 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(builddir)/proto -DCONFDIR=\"$(sysconfdir)/yagips\" -DTOPCONFDIR=\"$(sysconfdir)\" -DDATADIR=\"$(datadir)/yagips\" -DVARDIR=\"$(localstatedir)/lib/yagips\" -DLOGDIR=\"$(localstatedir)/log\"
 AM_CFLAGS = $(PROTOBUF_CFLAGS) $(LIBCRYPTO_CFLAGS) $(SQLITE3_CFLAGS) $(JSON_C_CFLAGS)
-AM_CXXFLAGS = $(PROTOBUF_CFLAGS) $(LIBCRYPTO_CFLAGS) $(SQLITE3_CFLAGS) $(JSON_C_CFLAGS)
+AM_CXXFLAGS = $(PROTOBUF_CFLAGS) $(LIBCRYPTO_CFLAGS) $(SQLITE3_CFLAGS) $(JSON_C_CFLAGS) -std=c++11
 bin_PROGRAMS = yagips
 yagips_SOURCES = yagips.cpp gameserver.cpp session.cpp account.cpp kcpsession.cpp dispatch.cpp dbgate.cpp config.cpp crypt.cpp ec2b.cpp util.cpp http.c toml.c mt19937-64.c kcp.c keys.c
 nodist_yagips_SOURCES = $(builddir)/proto/dispatch.pb.cc
