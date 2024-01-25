@@ -70,12 +70,6 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 	}
 	rsp_pkt.setHeader(header);
 	rsp_pkt.setData(data);
-	static unsigned char rsp_buf[1024];
-	size_t rsp_sz = 1024;
-	if (rsp_pkt.build(rsp_buf, &rsp_sz) < 0) {
-		fprintf(stderr, "Error building packet\n");
-		return -1;
-	}
 	// for whatever reason, despite req using the session key, this packet uses the dispatch key... weird
 	rsp_pkt.setUseDispatchKey(1);
 	return session.sendPacket(rsp_pkt);
