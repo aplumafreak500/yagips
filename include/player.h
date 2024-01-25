@@ -12,6 +12,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #ifndef PLAYER_H
 #define PLAYER_H
 #include "account.h"
+#include "session.h"
 class Player {
 public:
 	Player();
@@ -21,6 +22,7 @@ public:
 	unsigned long getUid() const;
 	void setUid(unsigned long);
 	int saveToDb() const;
+	void onLogin(Session& session);
 private:
 	const Account* account;
 	unsigned long uid;

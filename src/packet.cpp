@@ -76,7 +76,6 @@ int Packet::build() {
 int Packet::build(unsigned char* buf, size_t* sz) {
 	if (buf == NULL) return -1;
 	if (sz == NULL) return -1;
-	if (header.empty()) return -1;
 	*sz = 12 + header.size() + data.size();
 	unsigned char* pos = buf;
 	*(unsigned short*) pos = htobe16(PACKET_MAGIC1);

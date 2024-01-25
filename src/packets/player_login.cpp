@@ -54,7 +54,8 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 		return -1;
 	}
 	// TODO once we implement proper avatar storage, send out DoSetPlayerBornDataNotify if avatar storage is empty. This triggers the opening cutscene in the client.
-	// else, trigger player on login event, which sends various "notify" packets telling the client about the game state as of the last logout.
+	// else...
+	player->onLogin(session);
 	rsp.set_retcode(0);
 	// TODO Response packet contains ResVersionConfig info, hold off on sending it until we split the RegionInfo stuff from queryCurrRegionHttpRsp into a separate function
 	// TODO hk4e_cn for Chinese clients
