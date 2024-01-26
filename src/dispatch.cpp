@@ -168,7 +168,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	// TODO Clients send a `language` parameter, this could be useful in case we end up supporting multilingual `title` parameters in the region list config.
 	json_object_put(jobj);
 	config_p = globalConfig->getConfig();
-	if (config_p->regionCnt != 0 || config_p->regions == NULL) {
+	if (config_p->regionCnt == 0 || config_p->regions == NULL) {
 		// No regions configured, so supply our own
 		actualRegionCnt = 1;
 		pregion = ret.add_region_list();
@@ -201,7 +201,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 					}
 				}
 				if (config_p->regions[i]->title != NULL) {
-					pregion->set_name(config_p->regions[i]->title);
+					pregion->set_title(config_p->regions[i]->title);
 				}
 				else {
 					if (i == 0) pregion->set_title("yagips");
@@ -586,7 +586,7 @@ set_fields:
 build_rsp:
 	if (!ret.SerializeToString(&ret_enc)) {
 		// Bypass Protobuf and encode a response ourselves. Note that this eventually gets base64 encoded, hence the raw hex string.
-		ret_enc = ""; // TODO build a default response
+		ret_enc = "\x08\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\x12\x1cFailed to serialize response";
 	}
 	size_t sz = ret_enc.size();
 	size_t bufsz = ((sz / 256) + 1) * 256;

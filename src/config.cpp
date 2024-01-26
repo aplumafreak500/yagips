@@ -62,11 +62,11 @@ Config::Config(const char* path) {
 			if (path == NULL) continue;
 			_path = path;
 		}
-		if (homePath == NULL) {
-			i += 5;
-			continue;
-		}
 		if (i >= 2 && i <= 6) {
+			if (homePath == NULL) {
+				i += 5;
+				continue;
+			}
 			snprintf(homePathBuf, 4095, "%s/%s", homePath, pathList[i]);
 			_path = homePathBuf;
 		}
