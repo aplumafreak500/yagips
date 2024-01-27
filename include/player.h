@@ -13,18 +13,22 @@ You should have received a copy of the GNU Affero General Public License along w
 #define PLAYER_H
 #include "account.h"
 #include "session.h"
+#include "vector.h"
 class Player {
 public:
 	Player();
 	~Player();
 	const Account* getAccount() const;
 	void setAccount(const Account*);
-	unsigned long getUid() const;
-	void setUid(unsigned long);
+	unsigned int getUid() const;
+	void setUid(unsigned int);
 	int saveToDb() const;
 	void onLogin(Session& session);
 private:
 	const Account* account;
-	unsigned long uid;
+	unsigned int uid;
+	unsigned int worldLevel;
+	unsigned int scene_id;
+	Vector* pos;
 };
 #endif

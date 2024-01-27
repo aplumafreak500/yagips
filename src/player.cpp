@@ -31,11 +31,11 @@ void Player::setAccount(const Account* a) {
 	account = a;
 }
 
-unsigned long Player::getUid() const {
+unsigned int Player::getUid() const {
 	return uid;
 }
 
-void Player::setUid(unsigned long u) {
+void Player::setUid(unsigned int u) {
 	uid = u;
 }
 
@@ -52,7 +52,7 @@ void Player::onLogin(Session& session) {
 	// TODO Hardcoded until proper handling for avatar/team data is implemented
 	proto::AvatarInfo* av;
 	proto::AvatarDataNotify adn;
-	unsigned long long guid = (player->getUid() << 32) | 0xd0d0c0;
+	unsigned long long guid = ((unsigned long long) player->getUid() << 32) | 0xd0d0c0;
 	av = adn.add_avatar_list();
 	av->set_avatar_id(10000029); // Klee can help!
 	av->set_guid(guid);
@@ -71,9 +71,9 @@ void Player::onLogin(Session& session) {
 	unsigned long long curms;
 	clock_gettime(CLOCK_REALTIME, &c);
 	curms = (c.tv_sec * 1000) + (c.tv_nsec / 1000000);
-	startPos->set_x(2747.6);
-	startPos->set_y(194.7);
-	startPos->set_z(-1719.4);
+	startPos->set_x(2747.562);
+	startPos->set_y(194.633);
+	startPos->set_z(-1719.386);
 	proto::PlayerEnterSceneNotify esn;
 	esn.set_scene_id(3);
 	esn.set_allocated_pos(startPos);
