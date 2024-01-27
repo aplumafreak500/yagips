@@ -18,6 +18,7 @@ You should have received a copy of the GNU Affero General Public License along w
 extern int handlePingReq(Session&, std::string&, std::string&);
 extern int handleGetPlayerTokenReq(Session&, std::string&, std::string&);
 extern int handlePlayerLoginReq(Session&, std::string&, std::string&);
+extern int handleEnterSceneReadyReq(Session&, std::string&, std::string&);
 
 int processPacket(Session& session, Packet& packet) {
 	unsigned int opcode = packet.getOpcode();
@@ -33,5 +34,7 @@ int processPacket(Session& session, Packet& packet) {
 		return handleGetPlayerTokenReq(session, header, data);
 	case 103:
 		return handlePlayerLoginReq(session, header, data);
+	case 282:
+		return handleEnterSceneReadyReq(session, header, data);
 	}
 }
