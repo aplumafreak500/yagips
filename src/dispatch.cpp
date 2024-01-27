@@ -586,7 +586,7 @@ set_fields:
 build_rsp:
 	if (!ret.SerializeToString(&ret_enc)) {
 		// Bypass Protobuf and encode a response ourselves. Note that this eventually gets base64 encoded, hence the raw hex string.
-		ret_enc = "\x08\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\x12\x1cFailed to serialize response";
+		ret_enc = "\x08\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\x12\x1c""Failed to serialize response";
 	}
 	size_t sz = ret_enc.size();
 	size_t bufsz = ((sz / 256) + 1) * 256;

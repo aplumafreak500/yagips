@@ -290,7 +290,7 @@ static char *norm_lit_str(const char *src, int srclen, int *len, bool multiline,
 			return 0;
 		}
 		/// control characters other than tab is not allowed
-		if ((0 <= ch && ch <= 0x08) || (0x0a <= ch && ch <= 0x1f) || ch == 0x7f) {
+		if (ch <= 0x08 || (0x0a <= ch && ch <= 0x1f) || ch == 0x7f) {
 			if (!(multiline && (ch == '\r' || ch == '\n'))) {
 				xfree(dst);
 				snprintf(errbuf, errbufsz, "invalid char U+%04x", ch);
@@ -359,7 +359,7 @@ static char *norm_basic_str(const char *src, int srclen, int *len, bool multilin
 		}
 		if (ch != '\\') {
 			/// must be escaped: U+0000 to U+0008, U+000A to U+001F, U+007F
-			if ((ch >= 0 && ch <= 0x08) || (ch >= 0x0a && ch <= 0x1f) || ch == 0x7f) {
+			if (ch <= 0x08 || (ch >= 0x0a && ch <= 0x1f) || ch == 0x7f) {
 				if (!(multiline && (ch == '\r' || ch == '\n'))) {
 					xfree(dst);
 					snprintf(errbuf, errbufsz, "invalid char U+%04x", ch);
