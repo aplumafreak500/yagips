@@ -148,7 +148,7 @@ int HyvCryptRsaEnc(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 		olen -= obs;
 	}
 	EVP_PKEY_CTX_free(ctx);
-	fprintf(stderr, "Successfully encrypted %d blocks of data\n", i);
+	fprintf(stderr, "Successfully encrypted %ld blocks of data\n", i);
 	return i * obs;
 }
 
@@ -278,7 +278,7 @@ int HyvCryptRsaDec(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 		olen -= obs;
 	}
 	EVP_PKEY_CTX_free(ctx);
-	fprintf(stderr, "Successfully decrypted %d blocks of data\n", i);
+	fprintf(stderr, "Successfully decrypted %ld blocks of data\n", i);
 	return i * obs;
 }
 
@@ -357,7 +357,7 @@ int HyvCryptRsaSign(const unsigned char* ibuf, size_t ilen, unsigned char* obuf,
 		EVP_MD_CTX_free(mctx);
 		return -1;
 	}
-	fprintf(stderr, "Signed %d bytes of data\n", ilen);
+	fprintf(stderr, "Signed %ld bytes of data\n", ilen);
 	EVP_MD_free(md);
 	EVP_MD_CTX_free(mctx);
 	return olen;
