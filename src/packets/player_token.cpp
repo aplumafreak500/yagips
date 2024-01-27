@@ -13,13 +13,12 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string>
 #include "packet.h"
 #include "session.h"
-#include "crypt.h"
-#include "keys.h"
 #include "player.pb.h"
 #include <stdlib.h>
 #include <errno.h>
 #include "account.h"
 #include "dbgate.h"
+#include "keys.h"
 
 int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& data) {
 	proto::GetPlayerTokenReq req;

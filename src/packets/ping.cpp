@@ -13,8 +13,6 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string>
 #include "packet.h"
 #include "session.h"
-#include "crypt.h"
-#include "keys.h"
 #include "packet_head.pb.h"
 #include "misc.pb.h"
 
