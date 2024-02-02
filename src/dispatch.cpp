@@ -384,6 +384,16 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	// TODO PS4 version ID?
 	// else if (strncmp(sclient, "PS4", 31) == 0) client = CLIENT_PS4;
 	else client = CLIENT_UNK;
+	// Skip signing altogether for 2.7_live and earlier. (Note, 2.7 beta uses signing. Also, skipSign=0 in GET can override this even for earlier versions.)
+	if (
+		major >= 3 ||
+		(major == 2 && (
+			minor >= 8 ||
+			(minor == 7 && patch >= 50)
+		))
+	) {
+		doSign = 0;
+	}
 	if (
 		(client <= CLIENT_UNK || client >= CLIENT_CNT) ||
 		(iregion <= REGION_UNK || iregion >= REGION_CNT) ||
