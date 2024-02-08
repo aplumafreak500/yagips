@@ -279,7 +279,7 @@ build_rsp:
 std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	int doResVersionConfig = 0;
 	int doGateserver = 0;
-	int doSign = 1;
+	int doSign = 0;
 	int doEnc = 0;
 	proto::QueryCurrRegionHttpRsp ret;
 	proto::RegionInfo* region;
@@ -392,7 +392,7 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 			(minor == 7 && patch >= 50)
 		))
 	) {
-		doSign = 0;
+		doSign = 1;
 	}
 	if (
 		(client <= CLIENT_UNK || client >= CLIENT_CNT) ||
