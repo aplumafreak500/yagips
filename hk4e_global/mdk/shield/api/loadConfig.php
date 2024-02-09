@@ -35,7 +35,7 @@ $rsp_data = [
 	"enable_ps_bind_account" => false, //  related to linking psn accounts?
 	"identity" => "I_IDENTITY", // unknown exactly what this does
 	"scene" => "S_TEMPLE", // CN clients only, controls whether mobile phone numbers can be used for auth
-	"thirdparty" => [], // third party auth services. "fb" = facebook "tw" = x/twitter "gl" = hoyolab? what else is accepted?
+	"thirdparty" => [], // third party auth services. "fb" = facebook "tw" = x/twitter "gl" = most likely google. what else is accepted?
 	"guest" => false,
 	"server_guest" => false, // enables guest accounts, TODO which one actually controls it, if not both?
 	// official server: `原神海外` ("Yuanshen Overseas"/Genshin global)
