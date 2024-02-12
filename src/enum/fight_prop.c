@@ -9,6 +9,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
+#include <stddef.h>
 #include "enum/fight_prop.h"
 
 const EnumTblEnt FightPropTbl[] = {
@@ -108,4 +109,5 @@ const EnumTblEnt FightPropTbl[] = {
 	ENUM(FIGHT_PROP_NONEXTRA_SKILL_CD_MINUS_RATIO),
 	ENUM(FIGHT_PROP_NONEXTRA_SHIELD_COST_MINUS_RATIO),
 	ENUM(FIGHT_PROP_NONEXTRA_PHYSICAL_ADD_HURT),
+	{-1, NULL}
 };
