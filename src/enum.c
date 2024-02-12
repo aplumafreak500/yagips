@@ -9,23 +9,16 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#ifndef ENUM_H
-#define ENUM_H
-#ifdef __cplusplus
-extern "C" {
-#endif
-typedef struct {
-	unsigned int id;
-	const char* enumStr;
-} EnumTblEnt;
+#include <string.h>
+#include "enum.h"
 
-unsigned int enumToInt(const char*, const EnumTblEnt[]);
-
-#define ENUM(x) { \
-	.id = x, \
-	.enumStr = #x, \
+unsigned int enumToInt(const char* str, const EnumTblEnt tbl[]) {
+	unsigned int i = 0;
+	while ((int) tbl[i].id != -1) {
+		if (tbl[i].enumStr != NULL) {
+			if (strcmp(str, tbl[i].enumStr) == 0) return tbl[i].id;
+		}
+		i++;
+	}
+	return -1;
 }
-#ifdef __cplusplus
-}
-#endif
-#endif
