@@ -9,35 +9,21 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#ifndef VECTOR_H
-#define VECTOR_H
-#include "define.pb.h"
-struct Vector;
-struct VectorInt;
+#ifndef ENUM_H
+#define ENUM_H
+#ifdef __cplusplus
+extern "C" {
+#endif
+typedef struct {
+	unsigned int id;
+	const char* enumStr;
+} EnumTblEnt;
 
-struct Vector {
-	long double x;
-	long double y;
-	long double z;
-	Vector();
-	Vector(proto::Vector);
-	Vector(proto::Vector3Int);
-	Vector(VectorInt);
-	operator proto::Vector() const;
-	operator proto::Vector3Int() const;
-	operator VectorInt() const;
-};
-
-struct VectorInt {
-	long long x;
-	long long y;
-	long long z;
-	VectorInt();
-	VectorInt(proto::Vector);
-	VectorInt(proto::Vector3Int);
-	VectorInt(Vector);
-	operator proto::Vector() const;
-	operator proto::Vector3Int() const;
-	operator Vector() const;
-};
+#define ENUM(x) { \
+	.id = x, \
+	.enumStr = #x, \
+}
+#ifdef __cplusplus
+}
+#endif
 #endif
