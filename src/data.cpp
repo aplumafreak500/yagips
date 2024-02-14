@@ -122,7 +122,7 @@ const std::vector<excelTableEnt>* loadTsvExcelData(const std::vector<std::string
 
 GameData::GameData() {
 	avatar_data = new AvatarData();
-	if (!avatar_data->load()) {
+	if (avatar_data->load()) {
 		fprintf(stderr, "Warning: Failed to load avatar data\n");
 	}
 }
