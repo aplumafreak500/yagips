@@ -27,7 +27,6 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "enum/grow_curve.h"
 
 AvatarData::AvatarData() {}
-
 AvatarData::~AvatarData() {}
 
 // Field names for TSV

@@ -11,7 +11,8 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #ifndef TSV_H
 #define TSV_H
-#include "stdio.h"
+#include "data/avatar_data.h"
+#include <stdio.h>
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -20,4 +21,12 @@ typedef std::unordered_map<std::string, std::string> excelTableEnt;
 
 const std::vector<excelTableEnt>* loadJsonExcelData(FILE* const);
 const std::vector<excelTableEnt>* loadTsvExcelData(const std::vector<std::string>&, FILE* const);
+
+struct GameData {
+	GameData();
+	~GameData();
+	const AvatarData* avatar_data;
+};
+
+extern GameData* globalGameData;
 #endif

@@ -119,3 +119,16 @@ const std::vector<excelTableEnt>* loadTsvExcelData(const std::vector<std::string
 	free(fBuf);
 	return tbl;
 }
+
+GameData::GameData() {
+	avatar_data = new AvatarData();
+	if (!avatar_data->load()) {
+		fprintf(stderr, "Warning: Failed to load avatar data\n");
+	}
+}
+
+GameData::~GameData() {
+	if (avatar_data != NULL) delete avatar_data;
+}
+
+GameData* globalGameData;
