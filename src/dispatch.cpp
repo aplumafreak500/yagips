@@ -19,6 +19,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <json-c/json_object.h>
 #include <json-c/json_tokener.h>
 #include <string>
+#include "buildconf.h"
 #include "config.h"
 #include "account.h"
 #include "dbgate.h"
@@ -173,7 +174,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 		actualRegionCnt = 1;
 		pregion = ret.add_region_list();
 		pregion->set_name("os_usa");
-		pregion->set_title("yagips");
+		pregion->set_title(PACKAGE_NAME);
 		pregion->set_type("DEV_PUBLIC");
 		// TODO Grab external ip instead of hardcoding the domain
 		pregion->set_dispatch_url("http://osusadispatch.yuanshen.com/query_curr_region");
@@ -204,9 +205,9 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 					pregion->set_title(config_p->regions[i]->title);
 				}
 				else {
-					if (i == 0) pregion->set_title("yagips");
+					if (i == 0) pregion->set_title(PACKAGE_NAME);
 					else {
-						snprintf(tmpBuf, 4096, "yagips %ld", i);
+						snprintf(tmpBuf, 4096, PACKAGE_NAME " %ld", i);
 						pregion->set_title(tmpBuf);
 					}
 				}
@@ -1298,7 +1299,7 @@ write_rsp:
 					break;
 				case 200:
 					rsp = "OK";
-					rsp_str = "hi from yagips dispatch server\n";
+					rsp_str = "hi from " PACKAGE_NAME " dispatch server\n";
 					mime = "text/plain";
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();
@@ -1369,8 +1370,7 @@ write_rsp:
 					"Content-Length: %ld\r\n"
 					"Content-Type: %s\r\n"
 					"Connection: close\r\n"
-					// TODO Pull these from config.h
-					"Server: yagips/0.0a\r\n%s"
+					"Server: " PACKAGE_NAME "/" PACKAGE_VERSION "\r\n%s"
 					"\r\n%s",
 				mver, status, rsp, rsp_len, mime, extra_hdrs, strncmp(meth, "HEAD", 4) == 0 ? "" : rsp_body);
 				actual_len = 0;

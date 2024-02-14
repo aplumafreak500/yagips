@@ -20,5 +20,6 @@ std::string hexdec(const std::string&);
 extern "C" {
 	void DbgHexdump(const unsigned char*, size_t);
 	unsigned long long rand_xoshiro256(unsigned long long [4]);
+	unsigned long long curTimeMs();
 }
 #endif
