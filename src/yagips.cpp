@@ -20,6 +20,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "dispatch.h"
 #include "dbgate.h"
 #include "config.h"
+#include "data.h"
 #include "ec2b.h"
 #include "keys.h"
 
@@ -102,10 +103,9 @@ extern "C" {
 		// TODO Getopt
 		// TODO Path from command line arg
 		globalConfig = new Config();
-		// TODO Null check
 		loadKeys(globalConfig->getConfig()->dataPath);
+		globalGameData = new GameData();
 		globalDbGate = new dbGate(globalConfig->getConfig()->dbPath);
-		// TODO Null check
 		// TODO Thread attributes
 		int terrno = pthread_create(&gameserver, NULL, GameserverMain, NULL);
 		if (terrno) {
