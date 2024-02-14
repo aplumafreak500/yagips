@@ -105,6 +105,7 @@ extern "C" {
 		globalConfig = new Config();
 		loadKeys(globalConfig->getConfig()->dataPath);
 		globalGameData = new GameData();
+		// TODO Try-catch and then exit early
 		globalDbGate = new dbGate(globalConfig->getConfig()->dbPath);
 		// TODO Thread attributes
 		int terrno = pthread_create(&gameserver, NULL, GameserverMain, NULL);

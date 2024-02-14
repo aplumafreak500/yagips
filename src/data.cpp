@@ -88,12 +88,13 @@ const std::vector<excelTableEnt>* loadTsvExcelData(const std::vector<std::string
 	if (fp == NULL) return NULL;
 	std::vector<excelTableEnt>* tbl = new std::vector<excelTableEnt>();
 	excelTableEnt* ent = new excelTableEnt();
-	unsigned int i, j;
+	unsigned int i;
 	unsigned int l = 0;
 	size_t fLen = 4096;
 	ssize_t fLen_r;
 	char* fBuf = (char*) malloc(fLen);
 	char* tsv_ent;
+	char* j;
 	if (fBuf == NULL) return NULL;
 	while (!feof(fp)) {
 		l++;
@@ -106,10 +107,9 @@ const std::vector<excelTableEnt>* loadTsvExcelData(const std::vector<std::string
 			}
 		}
 		if (l <= 1) continue; // Skip the first line, as it just contains the column headers, which are different from the field headers (and written in Chinese)
-		j = 0;
+		j = fBuf;
 		for (i = 0; i < field_list.size(); i++) {
-			tsv_ent = strtok(j ? NULL : fBuf, "\t\r\n");
-			if (!j) j = 1;
+			tsv_ent = strsep(&j, "\t\r\n");
 			if (tsv_ent == NULL) continue;
 			(*ent)[field_list[i]] = tsv_ent;
 		}

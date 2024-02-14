@@ -22,6 +22,7 @@ extern "C" {
 dbGate* globalDbGate;
 
 dbGate::dbGate(const char* path) {
+	// TODO Append file name to path
 	int ret = sqlite3_open_v2(path, &db, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, NULL);
 	if (ret != SQLITE_OK) {
 		char b[1024];

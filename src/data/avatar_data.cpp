@@ -63,7 +63,7 @@ const std::vector<std::string> field_names = {
 	"physicalRes",
 	"physicalBonus",
 	"useType",
-	"qualityType"
+	"qualityType",
 	"chargeEfficiency",
 	"unk2", // 治疗效果 (treatment effect?)
 	"unk3", // 受治疗效果 (therapeutic effect?)
@@ -155,6 +155,7 @@ int AvatarData::load(const char* path) {
 	std::string v;
 	char* b = NULL;
 	char* t = NULL;
+	char* p;
 	std::string rkey;
 	std::string rval;
 	unsigned int rkey_i;
@@ -163,6 +164,8 @@ int AvatarData::load(const char* path) {
 	char* rval_b = NULL;
 	char* rkey_t = NULL;
 	char* rval_t = NULL;
+	char* rkey_p;
+	char* rval_p;
 	struct json_tokener* jtk = NULL;
 	struct json_object* jobj;
 	struct json_object* jobj_idx;
@@ -335,53 +338,45 @@ int AvatarData::load(const char* path) {
 				}
 			}
 			if (rkey_b != NULL) {
-				memcpy(rkey_b, rkey.c_str(), rkey.size());
-				rkey_t = strtok(rkey_b, ";");
+				memcpy(rkey_b, rkey.c_str(), rkey.size() + 1);
+				rkey_p = rkey_b;
 			}
 			if (rval_b != NULL) {
-				memcpy(rval_b, rval.c_str(), rval.size());
-				rval_t = strtok(rval_b, ";");
+				memcpy(rval_b, rval.c_str(), rval.size() + 1);
+				rval_p = rval_b;
 			}
-			if (rkey_t == NULL) {
-				rkey_i = toInt(rkey);
-				rval_i = rval_t == NULL ? 0 : toInt(rval);
+			while (rkey_p != NULL) {
+				rkey_t = strsep(&rkey_p, ";");
+				if (rkey_t == NULL) break;
+				rval_t = strsep(&rval_p, ";");
+				rkey_i = strtoul(rkey_t, NULL, 0);
+				rval_i = rval_p == NULL ? 0 : strtoul(rval_t, NULL, 0);
 				tmpEnt->promote_rewards[rkey_i] = rval_i;
-			}
-			else {
-				while (rkey_t != NULL) {
-					rkey_i = strtoul(rkey_t, NULL, 0);
-					rval_i = rval_t == NULL ? 0 : strtoul(rval_t, NULL, 0);
-					tmpEnt->promote_rewards[rkey_i] = rval_i;
-					rkey_t = strtok(NULL, ";");
-					if (rval_t != NULL) {
-						rval_t = strtok(NULL, ";");
-					}
-				}
 			}
 			free(rkey_b);
 			free(rval_b);
+			rkey_b = NULL;
+			rval_b = NULL;
 			v = tryGetKey(tblEnt, "candSkillDepotIds");
-			b = (char*) malloc(v.size() + 1);
-			if (b != NULL) {
-				memcpy(b, v.c_str(), v.size());
-				t = strtok(b, ",");
-			}
-			if (t == NULL) {
-				e = toInt(v);
-				tmpEnt->candidate_skill_depot_ids[0] = e;
-			}
-			else {
+			if (!v.empty()) {
+				b = (char*) malloc(v.size() + 1);
+				if (b != NULL) {
+					memcpy(b, v.c_str(), v.size() + 1);
+					p = b;
+				}
 				j = 0;
-				while (t != NULL) {
+				while (p != NULL) {
+					t = strsep(&p, ",");
+					if (t == NULL) break;
 					e = strtoul(t, NULL, 0);
-					tmpEnt->candidate_skill_depot_ids[j] = e;
+					tmpEnt->candidate_skill_depot_ids.push_back(e);
 					j++;
-					t = strtok(NULL, ",");
 				}
 			}
 			free(b);
+			b = NULL;
 		}
-		entries[i] = *tmpEnt;
+		entries.push_back(*tmpEnt);
 		delete tmpEnt;
 	}
 	delete tbl;
