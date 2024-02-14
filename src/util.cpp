@@ -11,6 +11,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <assert.h>
 #include <string>
 #include "util.h"
@@ -297,6 +298,12 @@ extern "C" {
 		s[2] ^= t;
 		s[3] = rotl(s[3], 45);
 		return result;
+	}
+
+	unsigned long long curTimeMs() {
+		struct timespec t;
+		clock_gettime(CLOCK_REALTIME, &t);
+		return (t.tv_sec * 1000) + (t.tv_nsec / 1000000);
 	}
 
 }
