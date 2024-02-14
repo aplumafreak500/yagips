@@ -9,8 +9,8 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#ifndef TSV_H
-#define TSV_H
+#ifndef DATA_H
+#define DATA_H
 #include "data/avatar_data.h"
 #include <stdio.h>
 #include <vector>
