@@ -9,46 +9,17 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#ifndef PLAYER_H
-#define PLAYER_H
-
-class Player;
-
-#include <map>
-#include <list>
-#include "account.h"
-#include "session.h"
-#include "vector.h"
+#ifndef SCENE_H
+#define SCENE_H
+class Scene;
 #include "world.h"
-#include "scene.h"
-
-class Player {
+#include "player.h"
+#include <list>
+class Scene {
 public:
-	Player();
-	~Player();
-	const Account* getAccount() const;
-	void setAccount(const Account*);
-	unsigned int getUid() const;
-	void setUid(unsigned int);
-	int saveToDb() const;
-	void onLogin(Session& session);
 private:
-	const Account* account;
-	unsigned int uid;
-	Session* session;
+	unsigned int id;
 	World* world;
-	Scene* curScene;
-	Vector* pos;
-	unsigned int scene_id;
-	unsigned int tpToken;
-	unsigned int worldLevel;
-	unsigned int ar;
-	unsigned long long ar_exp;
-	std::string name;
-	std::string signature;
-	unsigned int namecard;
-	unsigned int pfp;
-	std::map<unsigned int, int> props;
-	std::list<unsigned int> openstates;
+	std::list<Player*> players;
 };
 #endif

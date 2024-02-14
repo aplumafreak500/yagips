@@ -16,6 +16,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "kcpsession.h"
 #include "packet.h"
 #include "vector.h"
+#include "util.h"
 #include "avatar.pb.h"
 #include "scene.pb.h"
 #include "define.pb.h"
@@ -67,17 +68,13 @@ void Player::onLogin(Session& session) {
 	}
 	// TODO Hardcoded until proper handling for scene data is implemented
 	proto::Vector* startPos = new proto::Vector();
-	struct timespec c;
-	unsigned long long curms;
-	clock_gettime(CLOCK_REALTIME, &c);
-	curms = (c.tv_sec * 1000) + (c.tv_nsec / 1000000);
 	startPos->set_x(2747.562);
 	startPos->set_y(194.633);
 	startPos->set_z(-1719.386);
 	proto::PlayerEnterSceneNotify esn;
 	esn.set_scene_id(3);
 	esn.set_allocated_pos(startPos);
-	esn.set_scene_begin_time(curms);
+	esn.set_scene_begin_time(curTimeMs());
 	esn.set_target_uid(uid);
 	esn.set_enter_scene_token(1);
 	esn.set_type(proto::ENTER_SELF);

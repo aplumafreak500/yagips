@@ -12,7 +12,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <time.h>
+#include "util.h"
 #include "packet.h"
 #include "packet_head.pb.h"
 
@@ -109,9 +109,7 @@ const std::string& Packet::buildHeader(unsigned int seq) {
 	proto::PacketHead head_p;
 	std::string ret;
 	head_p.set_client_sequence_id(seq);
-	struct timespec ts;
-	clock_gettime(CLOCK_REALTIME, &ts);
-	head_p.set_sent_ms((ts.tv_sec * 1000) + (ts.tv_nsec / 1000000));
+	head_p.set_sent_ms(curTimeMs());
 	if (head_p.SerializeToString(&ret)) header = ret;
 	return header;
 }
