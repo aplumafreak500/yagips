@@ -25,7 +25,7 @@ const std::vector<excelTableEnt>* loadTsvExcelData(const std::vector<std::string
 struct GameData {
 	GameData();
 	~GameData();
-	const AvatarData* avatar_data;
+	AvatarData* avatar_data;
 };
 
 extern GameData* globalGameData;
