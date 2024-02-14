@@ -18,6 +18,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <json-c/json_tokener.h>
 #include <json-c/json_object.h>
 #include <sys/param.h>
+#include "config.h"
 #include "data.h"
 #include "data/avatar_data.h"
 #include "enum.h"
@@ -98,6 +99,35 @@ static std::string tryGetKey(const std::unordered_map<std::string, std::string>&
 	}
 	catch(const std::out_of_range&) {}
 	return r;
+}
+
+int AvatarData::load() {
+	const config_t* config = globalConfig->getConfig();
+	static char path[4096];
+	int ret;
+	path[4095] = '\0';
+	// Try first with Grasscutter's name scheme.
+	snprintf(path, 4095, "%s/ExcelBinOutput/AvatarExcelConfigData.json", config->dataPath);
+	ret = load(path);
+	if (ret >= 0) return ret;
+	snprintf(path, 4095, "%s/ExcelBinOutput/AvatarExcelConfigData.tsv", config->dataPath);
+	ret = load(path);
+	if (ret >= 0) return ret;
+	snprintf(path, 4095, "%s/ExcelBinOutput/AvatarExcelConfigData.txt", config->dataPath);
+	ret = load(path);
+	if (ret >= 0) return ret;
+	// Try again with GIO's name scheme.
+	snprintf(path, 4095, "%s/txt/AvatarData.json", config->dataPath);
+	ret = load(path);
+	if (ret >= 0) return ret;
+	snprintf(path, 4095, "%s/txt/AvatarData.tsv", config->dataPath);
+	ret = load(path);
+	if (ret >= 0) return ret;
+	snprintf(path, 4095, "%s/txt/AvatarData.txt", config->dataPath);
+	ret = load(path);
+	if (ret >= 0) return ret;
+	// Bail
+	return -1;
 }
 
 int AvatarData::load(const char* path) {

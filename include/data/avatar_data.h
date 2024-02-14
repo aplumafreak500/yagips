@@ -57,6 +57,7 @@ class AvatarData {
 public:
 	AvatarData();
 	~AvatarData();
+	int load();
 	int load(const char*);
 	const AvatarDataEnt* operator[](const unsigned int) const;
 private:
