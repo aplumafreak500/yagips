@@ -20,6 +20,7 @@ public:
 	Avatar();
 	~Avatar();
 	Avatar(unsigned int);
+	Avatar(const proto::AvatarInfo&);
 	operator proto::AvatarInfo() const;
 private:
 	unsigned int id;

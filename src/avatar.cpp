@@ -54,6 +54,35 @@ Avatar::Avatar(unsigned int _id) {
 	// TODO Costume
 }
 
+Avatar::Avatar(const proto::AvatarInfo& pb) {
+	id = pb.avatar_id();
+	guid = pb.guid();
+	bornTime = pb.born_time();
+	skillDepotId = pb.skill_depot_id();
+	wings = pb.wearing_flycloak_id();
+	friendship = pb.fetter_info().exp_level();
+	if (friendship >= 10) {
+		// TODO Pull from AvatarFettersLevelData instead
+		friendship_exp = 6325;
+	}
+	else {
+		friendship_exp = pb.fetter_info().exp_number();
+	}
+	// TODO Auxiliary friendship data
+	// TODO Has obtained namecard
+	// TODO Costume
+	// TODO Artifacts/weapon
+	// TODO Skill map
+	// TODO Talent ids
+	// TODO Skill level map (talent levels)
+	// TODO Fight props
+	// TODO Avatar type
+	// TODO Props (including current/max hp, level, exp, ascension, and satiation
+	// TODO Core proud skill level (?)
+	// TODO Inherit proud skill list (?)
+	// TODO Proud skill extra level map (?)
+}
+
 Avatar::operator proto::AvatarInfo() const {
 	proto::AvatarFetterInfo* fi = new proto::AvatarFetterInfo;
 	fi->set_exp_level(friendship);
