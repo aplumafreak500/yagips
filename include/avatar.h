@@ -14,6 +14,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string>
 #include "item.h"
 #include "player.h"
+#include "data/avatar_data.h"
 #include "define.pb.h"
 
 class Avatar {

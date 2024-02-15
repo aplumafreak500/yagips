@@ -17,6 +17,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "packet.h"
 #include "vector.h"
 #include "util.h"
+#include "avatar.h"
 #include "avatar.pb.h"
 #include "scene.pb.h"
 #include "define.pb.h"
@@ -44,27 +45,27 @@ int Player::saveToDb() const {
 	return globalDbGate->savePlayer(*this);
 }
 
-void Player::onLogin(Session& session) {
-	KcpSession* kcp = session.getKcpSession();
+void Player::onLogin(Session& s) {
+	KcpSession* kcp = s.getKcpSession();
 	if (kcp == NULL) return;
-	Player* player = session.getPlayer();
+	Player* player = s.getPlayer();
 	if (player == NULL) return;
 	std::string pkt_data;
 	// TODO Hardcoded until proper handling for avatar/team data is implemented
-	proto::AvatarInfo* av;
+	proto::AvatarInfo* avp;
 	proto::AvatarDataNotify adn;
 	unsigned long long guid = ((unsigned long long) player->getUid() << 32) | 0xd0d0c0;
-	av = adn.add_avatar_list();
-	av->set_avatar_id(10000029); // Klee can help!
-	av->set_guid(guid);
-	// TODO Skill depot, props, and (default) weapon
+	Avatar av(10000029); // Klee can help!
+	av.setGuid(guid);
+	avp = adn.add_avatar_list();
+	*avp = av;
 	// TODO add to team
 	adn.set_choose_avatar_guid(guid);
 	if (adn.SerializeToString(&pkt_data)) {
 		Packet adn_p(1716);
-		adn_p.buildHeader(session.nextSeq());
+		adn_p.buildHeader(s.nextSeq());
 		adn_p.setData(pkt_data);
-		session.sendPacket(adn_p);
+		s.sendPacket(adn_p);
 	}
 	// TODO Hardcoded until proper handling for scene data is implemented
 	proto::Vector* startPos = new proto::Vector();
@@ -81,6 +82,6 @@ void Player::onLogin(Session& session) {
 	if (esn.SerializeToString(&pkt_data)) {
 		Packet esn_p(201);
 		esn_p.setData(pkt_data);
-		session.sendPacket(esn_p);
+		s.sendPacket(esn_p);
 	}
 }
