@@ -42,6 +42,14 @@ private:
 	unsigned int full;
 	unsigned int full_cd;
 	unsigned int energy; // TODO make type a float?
+	// TODO Skill map
+	// TODO Talent ids
+	// TODO Fight props
+	// TODO Avatar type
+	// TODO Props
+	// TODO Core proud skill level (?)
+	// TODO Inherit proud skill list (?)
+	// TODO Proud skill extra level map (?)
 	// TODO anything else?
 };
 #endif
