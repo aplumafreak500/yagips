@@ -270,7 +270,8 @@ extern "C" {
 						// Check 4 bytes ahead in case the client sent a request to close the session, which uses the "handshake" format.
 						sid = (unsigned long long) be32toh(hs->sid2) << 32;
 						sid |= be32toh(hs->sid1);
-						if (kcpSession->getSessionId() != sid) {							// Client sometimes sends shutdown requests with the highest 32 bits of the session ID unset.
+						if (kcpSession->getSessionId() != sid) {
+							// Client sometimes sends shutdown requests with the highest 32 bits of the session ID unset.
 							if ((sid & 0xffffffff) != be32toh(hs->sid1) && be32toh(hs->sid2) != 0) {
 								continue;
 							}
