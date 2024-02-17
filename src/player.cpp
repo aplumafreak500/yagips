@@ -141,13 +141,18 @@ void Player::onLogin(Session& s) {
 	// TODO Hardcoded until proper handling for avatar/team data is implemented
 	proto::AvatarInfo* avp;
 	proto::AvatarDataNotify adn;
+	proto::AvatarTeam at;
 	unsigned long long guid = ((unsigned long long) player->getUid() << 32) | 0xd0d0c0;
 	Avatar av(10000029); // Klee can help!
 	av.setGuid(guid);
 	avp = adn.add_avatar_list();
 	*avp = av;
-	// TODO add to team
-	adn.set_choose_avatar_guid(guid);
+	at.add_avatar_guid_list(guid);
+	at.set_team_name("yagips test team");
+	auto m = adn.mutable_avatar_team_map();
+	(*m)[1] = at;
+	adn.set_choose_avatar_guid(228); // TODO what actually needs to go here?
+	adn.set_cur_avatar_team_id(1);
 	if (adn.SerializeToString(&pkt_data)) {
 		Packet adn_p(1716);
 		adn_p.buildHeader(s.nextSeq());
