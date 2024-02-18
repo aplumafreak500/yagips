@@ -1,0 +1,6 @@
+*.pb.cc linguist-generated
+*.pb.h linguist-generated
+/compile linguist-vendored
+/depcomp linguist-vendored
+/install-sh linguist-vendored
+/missing linguist-vendored
