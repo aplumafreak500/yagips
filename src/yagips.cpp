@@ -20,6 +20,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "dispatch.h"
 #include "dbgate.h"
 #include "config.h"
+#include "data.h"
 #include "ec2b.h"
 #include "keys.h"
 
@@ -53,9 +54,8 @@ extern "C" {
 			fprintf(stderr, "Can't open %s: %d (%s)\n", keyPathBuf, errno, strerror(errno));
 		}
 		else {
-			fread(&dispatchSeed, sizeof(ec2b_t), 1, fp);
+			Ec2b* ec2b = new Ec2b(fp);
 			fclose(fp);
-			Ec2b* ec2b = new Ec2b(dispatchSeed);
 			memcpy(dispatchKey, ec2b->getXorpad().c_str(), 4096);
 			dispatchXorSeed = ec2b->getSeed();
 			hasDispatchSeed = 1;
@@ -103,10 +103,10 @@ extern "C" {
 		// TODO Getopt
 		// TODO Path from command line arg
 		globalConfig = new Config();
-		// TODO Null check
 		loadKeys(globalConfig->getConfig()->dataPath);
+		globalGameData = new GameData();
+		// TODO Try-catch and then exit early
 		globalDbGate = new dbGate(globalConfig->getConfig()->dbPath);
-		// TODO Null check
 		// TODO Thread attributes
 		int terrno = pthread_create(&gameserver, NULL, GameserverMain, NULL);
 		if (terrno) {

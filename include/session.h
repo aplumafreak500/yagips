@@ -11,9 +11,12 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #ifndef SESSION_H
 #define SESSION_H
-class Session; // Resolves a circular dependency.
+class Session; // Resolves two circular dependencies.
 
 #include "gameserver.h"
+#include "player.h"
+#include "account.h"
+#include "packet.h"
 #include "kcpsession.h"
 
 class Session {
@@ -22,16 +25,34 @@ public:
 	~Session();
 	void update();
 	void close(unsigned int);
-	KcpSession* getKcpSession();
-	unsigned int getState();
+	KcpSession* getKcpSession() const;
+	unsigned int getState() const;
 	void setState(unsigned int);
+	Player* getPlayer() const;
+	void setPlayer(Player*);
+	const Account* getAccount() const;
 	unsigned long long getSessionSeed() const;
 	const unsigned char* getSessionKey() const;
 	void generateSessionKey();
+	unsigned int useSecretKey() const;
+	void setUseSecretKey();
+	void setUseSecretKey(unsigned int);
+	void clearUseSecretKey();
+	unsigned long long getLastPingTime() const;
+	void setLastPingTime(unsigned long long);
+	void updateLastPingTime();
+	unsigned int getSeq() const;
+	unsigned int nextSeq();
+	void setSeq(unsigned int);
+	int sendPacket(Packet&);
 private:
 	KcpSession* kcpSession;
+	Player* player;
 	unsigned int state;
+	unsigned int use_secret_key;
+	unsigned int sequence;
 	unsigned long long sessionSeed;
+	unsigned long long lastPingTime;
 	unsigned char sessionKey[4096];
 };
 

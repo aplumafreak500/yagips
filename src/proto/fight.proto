@@ -1,0 +1,933 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "define.proto";
+
+message HitCollision {
+    HitColliderType hit_collider_type = 1;
+    int32 hit_box_index = 2;
+    Vector hit_point = 3;
+    Vector hit_dir = 4;
+}
+
+message AttackHitEffectResult {
+    uint32 hit_eff_level = 1;
+    float retreat_strength = 2;
+    float air_strength = 3;
+    float hit_halt_time = 4;
+    float hit_halt_time_scale = 5;
+    uint32 original_hit_eff_level = 6;
+}
+
+message AbilityIdentifier {
+    uint32 instanced_ability_id = 1;
+    uint32 ability_caster_id = 2;
+    int32 local_id = 3;
+    uint32 instanced_modifier_id = 4;
+    uint32 modifier_owner_id = 5;
+}
+
+message AttackResult {
+    uint32 attacker_id = 1;
+    uint32 defense_id = 2;
+    string anim_event_id = 3;
+    AbilityIdentifier ability_identifier = 4;
+    float damage = 6;
+    bool is_crit = 7;
+    HitCollision hit_collision = 8;
+    uint32 hit_pos_type = 9;
+    uint32 endure_break = 10;
+    Vector resolved_dir = 11;
+    int32 hit_retreat_angle_compat = 12;
+    AttackHitEffectResult hit_eff_result = 13;
+    uint32 element_type = 14;
+    bool use_gadget_damage_action = 19;
+    uint32 gadget_damage_action_idx = 20;
+    bool is_resist_text = 22;
+    uint32 critical_rand = 23;
+    float element_amplify_rate = 24;
+    float damage_shield = 26;
+    bool mute_element_hurt = 27;
+    uint32 amplify_reaction_type = 30;
+    uint32 addhurt_reaction_type = 31;
+    uint32 bullet_fly_time_ms = 32;
+    uint32 attack_count = 33;
+    uint32 hashed_anim_event_id = 34;
+    uint32 attack_timestamp_ms = 36;
+    float endure_delta = 37;
+    float local_target_forward_to_self_angle = 38;
+    float element_durability_attenuation = 39;
+}
+
+message EvtBeingHitInfo {
+    uint32 peer_id = 1;
+    AttackResult attack_result = 2;
+}
+
+message EvtHittingOtherInfo {
+    uint32 peer_id = 1;
+    AttackResult attack_result = 2;
+}
+
+message EvtBeingHitNotify {
+    ForwardType forward_type = 1;
+    EvtBeingHitInfo being_hit_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 301;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtAnimatorParameterInfo {
+    uint32 entity_id = 1;
+    int32 name_id = 2;
+    bool is_server_cache = 3;
+    AnimatorParameterValueInfo value = 4;
+}
+
+message EvtAnimatorParameterNotify {
+    ForwardType forward_type = 1;
+    EvtAnimatorParameterInfo animator_param_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 302;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message AbilityArgument {
+    oneof arg {
+        uint32 int_arg = 1;
+        float float_arg = 2;
+        string str_arg = 3;
+    }
+}
+
+message HostPlayerNotify {
+    uint32 host_uid = 1;
+    uint32 host_peer_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 303;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message EvtDoSkillSuccNotify {
+    ForwardType forward_type = 1;
+    uint32 caster_id = 2;
+    uint32 skill_id = 3;
+    Vector forward = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 304;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtCreateGadgetNotify {
+    ForwardType forward_type = 1;
+    uint32 entity_id = 2;
+    uint32 config_id = 3;
+    uint32 camp_id = 4;
+    uint32 camp_type = 5;
+    Vector init_pos = 6;
+    Vector init_euler_angles = 7;
+    uint64 guid = 8;
+    uint32 owner_entity_id = 9;
+    uint32 target_entity_id = 10;
+    bool is_async_load = 11;
+    uint32 target_lock_point_index = 12;
+    uint32 room_id = 13;
+    uint32 prop_owner_entity_id = 14;
+    bool sight_group_with_owner = 15;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 305;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtDestroyGadgetNotify {
+    ForwardType forward_type = 1;
+    uint32 entity_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 306;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtFaceToEntityNotify {
+    ForwardType forward_type = 1;
+    uint32 entity_id = 2;
+    uint32 face_entity_id = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 307;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtFaceToDirInfo {
+    uint32 entity_id = 1;
+    Vector face_dir = 2;
+}
+
+message EvtFaceToDirNotify {
+    ForwardType forward_type = 1;
+    EvtFaceToDirInfo evt_face_to_dir_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 308;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtCostStaminaNotify {
+    float cost_stamina = 1;
+    uint32 skill_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 309;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtSetAttackTargetInfo {
+    uint32 entity_id = 1;
+    uint32 attack_target_id = 2;
+}
+
+message EvtSetAttackTargetNotify {
+    ForwardType forward_type = 1;
+    EvtSetAttackTargetInfo evt_set_attack_target_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 310;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtAnimatorStateChangedInfo {
+    uint32 entity_id = 1;
+    uint32 to_state_hash = 2;
+    uint32 normalized_time_compact = 3;
+    int32 face_angle_compact = 4;
+    Vector pos = 5;
+    float fade_duration = 6;
+}
+
+message EvtCompensatePosDiffInfo {
+    uint32 entity_id = 1;
+    uint32 cur_hash = 2;
+    int32 face_angle_compact = 3;
+    Vector cur_pos = 4;
+    uint32 normalized_time_compact = 5;
+}
+
+message EvtMonsterDoBlink {
+    uint32 entity_id = 1;
+    Vector target_pos = 2;
+    Vector target_rot = 3;
+}
+
+message EvtFixedRushMove {
+    uint32 entity_id = 1;
+    float speed = 2;
+    Vector target_pos = 3;
+    string override_collider = 4;
+    repeated uint32 animator_state_id_list = 5;
+    bool need_set_is_in_air = 6;
+    bool check_animator_state_on_exit_only = 7;
+}
+
+message EvtAnimatorStateChangedNotify {
+    ForwardType forward_type = 1;
+    EvtAnimatorStateChangedInfo evt_animator_state_changed_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 311;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtRushMoveInfo {
+    uint32 entity_id = 1;
+    Vector velocity = 2;
+    float timeRange = 3;
+    int32 state_name_hash = 4;
+    int32 face_angle_compact = 5;
+    Vector pos = 6;
+    Vector rush_attack_target_pos = 7;
+    Vector rush_to_pos = 8;
+}
+
+message EvtMotionInfoDuringSteerAttack {
+    uint32 entity_id = 1;
+    Vector velocity = 2;
+    Vector face_dir = 3;
+    Vector pos = 4;
+}
+
+message EvtCombatSteerMotionInfo {
+    uint32 entity_id = 1;
+    Vector velocity = 2;
+    Vector face_dir = 3;
+    Vector pos = 4;
+}
+
+message EvtCombatForceSetPosInfo {
+    uint32 entity_id = 1;
+    uint32 collider_entity_id = 2;
+    uint32 ice_id = 3;
+    Vector target_pos = 4;
+}
+
+message EvtSyncEntityPositionInfo {
+    uint32 entity_id = 1;
+    uint32 state_hash = 2;
+    uint32 normalized_time_compact = 3;
+    int32 face_angle_compact = 4;
+    Vector pos = 5;
+}
+
+message EvtRushMoveNotify {
+    ForwardType forward_type = 1;
+    EvtRushMoveInfo evt_rush_move_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 312;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtBulletHitNotify {
+    ForwardType forward_type = 1;
+    uint32 forward_peer = 2;
+    uint32 entity_id = 3;
+    uint32 hit_entity_id = 4;
+    HitColliderType hit_collider_type = 5;
+    int32 hit_box_index = 6;
+    Vector hit_point = 7;
+    Vector hit_normal = 8;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 313;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtBulletDeactiveNotify {
+    ForwardType forward_type = 1;
+    uint32 entity_id = 2;
+    Vector disappear_pos = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 314;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtEntityStartDieEndNotify {
+    ForwardType forward_type = 1;
+    uint32 entity_id = 2;
+    bool immediately = 3;
+    uint32 die_state_flag = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 315;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtBulletMoveNotify {
+    ForwardType forward_type = 1;
+    uint32 entity_id = 2;
+    Vector cur_pos = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 322;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtAvatarEnterFocusNotify {
+    ForwardType forward_type = 1;
+    uint32 entity_id = 2;
+    bool fast_focus = 3;
+    bool use_focus_sticky = 4;
+    bool use_auto_focus = 5;
+    bool use_gyro = 6;
+    bool can_move = 7;
+    bool show_cross_hair = 8;
+    Vector focus_forward = 9;
+    bool enter_normal_focus_shoot = 10;
+    bool enter_holding_focus_shoot = 11;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 323;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtAvatarExitFocusNotify {
+    ForwardType forward_type = 1;
+    uint32 entity_id = 2;
+    Vector finish_forward = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 324;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtAvatarUpdateFocusNotify {
+    ForwardType forward_type = 1;
+    uint32 entity_id = 2;
+    Vector focus_forward = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 325;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EntityAuthorityChangeNotify {
+    uint32 entity_id = 1;
+    uint32 authority_peer_id = 2;
+    EntityAuthorityInfo entity_authority_info = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 326;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message AvatarBuffAddNotify {
+    uint64 avatar_guid = 1;
+    uint32 buff_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 327;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message AvatarBuffDelNotify {
+    uint64 avatar_guid = 1;
+    uint32 buff_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 328;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message MonsterAlertChangeNotify {
+    uint32 avatar_entity_id = 2;
+    uint32 is_alert = 3;
+    repeated uint32 monster_entity_list = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 329;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message MonsterForceAlertNotify {
+    uint32 monster_entity_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 330;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message AvatarEnterElementViewNotify {
+    uint32 avatar_entity_id = 1;
+    bool is_triggerd = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 332;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TriggerCreateGadgetToEquipPartNotify {
+    uint32 entity_id = 1;
+    uint32 gadget_entity_id = 2;
+    uint32 gadget_id = 3;
+    string equip_part = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 333;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtEntityRenderersChangedNotify {
+    ForwardType forward_type = 1;
+    uint32 entity_id = 2;
+    bool is_server_cache = 3;
+    EntityRendererChangedInfo renderer_changed_info = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 334;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message AnimatorForceSetAirMoveNotify {
+    ForwardType forward_type = 1;
+    uint32 entity_id = 2;
+    bool in_air_move = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 335;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message AiSkillCdInfo {
+    map<uint32, uint32> skill_cd_map = 1;
+    map<uint32, uint32> skill_group_cd_map = 2;
+}
+
+message EvtAiSyncSkillCdNotify {
+    map<uint32, AiSkillCdInfo> ai_cd_map = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 336;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtBeingHitsCombineNotify {
+    ForwardType forward_type = 1;
+    repeated EvtBeingHitInfo evt_being_hit_info_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 337;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtAvatarSitDownNotify {
+    uint32 entity_id = 1;
+    Vector position = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 341;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message EvtAvatarStandUpNotify {
+    uint32 entity_id = 1;
+    int32 direction = 2;
+    int32 performID = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 342;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message CreateMassiveEntityReq {
+    repeated ClientMassiveEntity massive_entity_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 343;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message CreateMassiveEntityRsp {
+    int32 retcode = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 344;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message CreateMassiveEntityNotify {
+    repeated ServerMassiveEntity massive_entity_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 345;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message DestroyMassiveEntityNotify {
+    repeated ClientMassiveEntity massive_entity_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 346;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message MassiveEntityStateChangedNotify {
+    repeated MassiveEntityState massive_entity_state_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 347;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TeamEntityInfo {
+    uint32 team_entity_id = 1;
+    uint32 authority_peer_id = 2;
+    AbilitySyncStateInfo team_ability_info = 3;
+}
+
+message SyncTeamEntityNotify {
+    uint32 scene_id = 1;
+    repeated TeamEntityInfo team_entity_info_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 348;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message DelTeamEntityNotify {
+    uint32 scene_id = 1;
+    repeated uint32 del_entity_id_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 349;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message CombatInvokeEntry {
+    CombatTypeArgument argument_type = 1;
+    ForwardType forward_type = 2;
+    bytes combat_data = 3;
+}
+
+message CombatInvocationsNotify {
+    repeated CombatInvokeEntry invoke_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 350;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message ServerBuffChangeNotify {
+    ServerBuffChangeType server_buff_change_type = 1;
+    enum ServerBuffChangeType {
+        ADD_SERVER_BUFF = 0;
+        DEL_SERVER_BUFF = 1;
+    }
+    
+    repeated uint64 avatar_guid_list = 2;
+    repeated ServerBuff server_buff_list = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 351;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message AiThreatInfo {
+    map<uint32, uint32> ai_threat_map = 1;
+}
+
+message EvtAiSyncCombatThreatInfoNotify {
+    map<uint32, AiThreatInfo> combat_threat_info_map = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 352;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message MassiveEntityElementOpBatchNotify {
+    uint32 user_id = 1;
+    uint32 attacker_id = 2;
+    float attack_element_durability = 3;
+    int32 source_element_type = 4;
+    int32 reaction_source_type = 5;
+    int32 entity_type = 6;
+    
+    oneof check_shape {
+        ShapeSphere shape_sphere = 7;
+        ShapeBox shape_box = 8;
+    }
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 353;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message AiSyncInfo {
+    uint32 entity_id = 1;
+    bool has_path_to_target = 2;
+}
+
+message EntityAiSyncNotify {
+    repeated AiSyncInfo info_list = 1;
+    repeated uint32 local_avatar_alerted_monster_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 354;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message LuaSetOptionNotify {
+    LuaOptionType option_type = 1;
+    enum LuaOptionType {
+        LUA_OPTION_NONE = 0;
+        LUA_OPTION_PLAYER_INPUT = 1;
+    }
+    
+    string lua_set_param = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 355;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message EvtDestroyServerGadgetNotify {
+    uint32 entity_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 356;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+enum ForwardType {
+    FORWARD_LOCAL = 0;
+    FORWARD_TO_ALL = 1;
+    FORWARD_TO_ALL_EXCEPT_CUR = 2;
+    FORWARD_TO_HOST = 3;
+    FORWARD_TO_ALL_GUEST = 4;
+    FORWARD_TO_PEER = 5;
+    FORWARD_TO_PEERS = 6;
+    FORWARD_ONLY_SERVER = 7;
+    FORWARD_TO_ALL_EXIST_EXCEPT_CUR = 8;
+}
+
+enum HitColliderType {
+    HIT_COLLIDER_INVALID = 0;
+    HIT_COLLIDER_HIT_BOX = 1;
+    HIT_COLLIDER_WET_HIT_BOX = 2;
+    HIT_COLLIDER_HEAD_BOX = 3;
+}
+
+enum CombatTypeArgument {
+    COMBAT_NONE = 0;
+    COMBAT_EVT_BEING_HIT = 1;
+    COMBAT_ANIMATOR_STATE_CHANGED = 2;
+    COMBAT_FACE_TO_DIR = 3;
+    COMBAT_SET_ATTACK_TARGET = 4;
+    COMBAT_RUSH_MOVE = 5;
+    COMBAT_ANIMATOR_PARAMETER_CHANGED = 6;
+    ENTITY_MOVE = 7;
+    SYNC_ENTITY_POSITION = 8;
+    COMBAT_STEER_MOTION_INFO = 9;
+    COMBAT_FORCE_SET_POS_INFO = 10;
+    COMBAT_COMPENSATE_POS_DIFF = 11;
+    COMBAT_MONSTER_DO_BLINK = 12;
+    COMBAT_FIXED_RUSH_MOVE = 13;
+}

@@ -1,0 +1,78 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+message OpActivityInfo {
+    uint32 activity_id = 1;
+    uint32 schedule_id = 2;
+    uint32 begin_time = 3;
+    uint32 end_time = 4;
+    bool is_has_change = 6;
+    
+    oneof detail {
+        BonusOpActivityInfo bonus_info = 5;
+    }
+}
+
+message BonusOpActivityInfo {
+    uint32 left_bonus_count = 1;
+}
+
+message GetOpActivityInfoReq {
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5101;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GetOpActivityInfoRsp {
+    int32 retcode = 1;
+    repeated OpActivityInfo op_activity_info_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5102;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message OpActivityDataNotify {
+    repeated OpActivityInfo op_activity_info_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5103;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message OpActivityUpdateNotify {
+    OpActivityInfo op_activity_info = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 5104;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}

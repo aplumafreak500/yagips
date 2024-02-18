@@ -193,7 +193,7 @@ int HyvCryptRsaDec(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 		}
 		break;
 	case 0:
-		snprintf(path_buf, 4095, "%s/keys/signingKey.key", config->dataPath);
+		snprintf(path_buf, 4095, "%s/keys/signingKey.pem", config->dataPath);
 		fp = fopen(path_buf, "rb");
 		if (fp == NULL) {
 			fprintf(stderr, "Unable to open %s (%s)\n", path_buf, strerror(errno));
@@ -210,7 +210,7 @@ int HyvCryptRsaDec(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, 
 		fp = NULL;
 		break;
 	case 1:
-		snprintf(path_buf, 4095, "%s/keys/authKey.key", config->dataPath);
+		snprintf(path_buf, 4095, "%s/keys/authKey.pem", config->dataPath);
 		fp = fopen(path_buf, "rb");
 		if (fp == NULL) {
 			fprintf(stderr, "Unable to open %s (%s)\n", path_buf, strerror(errno));
@@ -301,7 +301,7 @@ int HyvCryptRsaSign(const unsigned char* ibuf, size_t ilen, unsigned char* obuf,
 		ERR_print_errors_fp(stderr);
 		return -1;
 	}
-	snprintf(path_buf, 4095, "%s/keys/signingKey.key", config->dataPath);
+	snprintf(path_buf, 4095, "%s/keys/signingKey.pem", config->dataPath);
 	FILE* fp = fopen(path_buf, "rb");
 	if (fp == NULL) {
 		fprintf(stderr, "Unable to open %s (%s)\n", path_buf, strerror(errno));

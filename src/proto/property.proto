@@ -1,0 +1,210 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "define.proto";
+
+message EntityPropNotify {
+    uint32 entity_id = 1;
+    map<uint32, PropValue> prop_map = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1201;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message LifeStateChangeNotify {
+    uint32 entity_id = 1;
+    uint32 life_state = 2;
+    uint32 source_entity_id = 3;
+    string attack_tag = 4;
+    PlayerDieType die_type = 5;
+    uint32 move_reliable_seq = 6;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1202;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message EntityFightPropNotify {
+    uint32 entity_id = 1;
+    map<uint32, float> fight_prop_map = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1203;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message EntityFightPropUpdateNotify {
+    uint32 entity_id = 1;
+    map<uint32, float> fight_prop_map = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1204;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message AvatarFightPropNotify {
+    uint64 avatar_guid = 1;
+    map<uint32, float> fight_prop_map = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1205;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message AvatarFightPropUpdateNotify {
+    uint64 avatar_guid = 1;
+    map<uint32, float> fight_prop_map = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1206;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message EntityFightPropChangeReasonNotify {
+    uint32 entity_id = 1;
+    uint32 prop_type = 2;
+    float prop_delta = 3;
+    PropChangeReason reason = 4;
+    repeated uint32 param_list = 5;
+    ChangHpReason change_hp_reason = 6;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1207;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message AvatarLifeStateChangeNotify {
+    uint64 avatar_guid = 1;
+    uint32 life_state = 2;
+    uint32 source_entity_id = 3;
+    string attack_tag = 4;
+    PlayerDieType die_type = 5;
+    uint32 move_reliable_seq = 6;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1208;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message AvatarPropChangeReasonNotify {
+    uint64 avatar_guid = 1;
+    uint32 prop_type = 2;
+    float old_value = 3;
+    float cur_value = 4;
+    PropChangeReason reason = 5;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1209;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerPropChangeReasonNotify {
+    uint32 prop_type = 1;
+    float old_value = 2;
+    float cur_value = 3;
+    PropChangeReason reason = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1210;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message AvatarPropNotify {
+    uint64 avatar_guid = 1;
+    map<uint32, int64> prop_map = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1211;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message MarkNewNotify {
+    uint32 mark_new_type = 1;
+    repeated uint32 id_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1212;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+enum PropChangeReason {
+    PROP_CHANGE_NONE = 0;
+    PROP_CHANGE_STATUE_RECOVER = 1;
+    PROP_CHANGE_ENERGY_BALL = 2;
+    PROP_CHANGE_ABILITY = 3;
+    PROP_CHANGE_LEVELUP = 4;
+    PROP_CHANGE_ITEM = 5;
+    PROP_CHANGE_AVATAR_CARD = 6;
+    PROP_CHANGE_CITY_LEVELUP = 7;
+    PROP_CHANGE_AVATAR_UPGRADE = 8;
+    PROP_CHANGE_AVATAR_PROMOTE = 9;
+    PROP_CHANGE_PLAYER_ADD_EXP = 10;
+    PROP_CHANGE_FINISH_QUEST = 11;
+}
+
+enum MarkNewType {
+    MARK_NEW_TYPE_NONE = 0;
+    MARK_NEW_TYPE_COMBINE = 1;
+    MARK_NEW_TYPE_FORGE = 2;
+}

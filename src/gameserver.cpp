@@ -165,7 +165,7 @@ int Gameserver::canRecv(unsigned long mills) {
 	return ret;
 }
 
-unsigned long Gameserver::getKcpInterval() {
+unsigned long Gameserver::getKcpInterval() const {
 	return kcpInterval;
 }
 
@@ -173,7 +173,7 @@ void Gameserver::setKcpInterval(unsigned long i) {
 	kcpInterval = i;
 }
 
-unsigned int Gameserver::getMaxSessions() {
+unsigned int Gameserver::getMaxSessions() const {
 	return maxSessions;
 }
 
@@ -185,17 +185,60 @@ void Gameserver::setMaxSessions(unsigned int i) {
 	maxSessions = i;
 }
 
-Session** Gameserver::getSessions() {
+Session** Gameserver::getSessions() const {
 	return sessionList;
 }
 
-Session* Gameserver::getSession(unsigned int i) {
+Session* Gameserver::getSession(unsigned int i) const {
 	if (sessionList == NULL) return NULL;
 	return sessionList[i];
 }
 
+Session* Gameserver::getSessionById(unsigned long long id) const {
+	if (sessionList == NULL) return NULL;
+	Session* session = NULL;
+	KcpSession* kcpSession;
+	unsigned int i;
+	for (i = 0; i < maxSessions; i++) {
+		kcpSession = sessionList[i]->getKcpSession();
+		if (kcpSession == NULL) continue;
+		if (kcpSession->getSessionId() == id) {
+			session = sessionList[i];
+			break;
+		}
+	}
+	return session;
+}
+
+Session* Gameserver::getSessionByUid(unsigned int id) const {
+	if (sessionList == NULL) return NULL;
+	Session* session = NULL;
+	Player* player;
+	unsigned int i;
+	for (i = 0; i < maxSessions; i++) {
+		player = sessionList[i]->getPlayer();
+		if (player == NULL) continue;
+		if (player->getUid() == id) {
+			session = sessionList[i];
+			break;
+		}
+	}
+	return session;
+}
+
 extern "C" {
 	volatile int GameserverSignal = 0;
+	static Gameserver* gs = NULL;
+
+	Session* getSessionById(unsigned long long id) {
+		if (gs == NULL) return NULL;
+		return gs->getSessionById(id);
+	}
+
+	Session* getSessionByUid(unsigned int id) {
+		if (gs == NULL) return NULL;
+		return gs->getSessionByUid(id);
+	}
 
 	void* GameserverMain(__attribute__((unused)) void* __u) {
 		const char* ip = "::";
@@ -213,7 +256,6 @@ extern "C" {
 		__attribute__((aligned(16))) static unsigned char addr_buf[128];
 		const unsigned int pkt_buf_size = 16 * 1024;
 		ssize_t pkt_size = pkt_buf_size;
-		Gameserver* gs;
 		try {
 			gs = new Gameserver(ip, port);
 		}
@@ -353,6 +395,7 @@ extern "C" {
 		// TODO Wait for either a timeout or a specific signal to allow session threads to clean themselves up gracefully
 		gs->stop();
 		delete gs;
+		gs = NULL;
 		DispatchServerSignal = 1; // TODO enum constant
 		return (void*) 0;
 	}

@@ -13,9 +13,12 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <sys/random.h>
 #include "dbgate.h"
 #include "account.h"
+#include "session.h"
 #include "util.h"
 
-Account::Account() {}
+Account::Account() {
+	session = NULL;
+}
 Account::~Account() {}
 
 unsigned int Account::getAccountId() const {
@@ -107,4 +110,16 @@ unsigned int Account::isGuest() const {
 
 void Account::setIsGuest(unsigned int g) {
 	guest = g ? 1 : 0;
+}
+
+int Account::saveToDb() const {
+	return globalDbGate->saveAccount(*this);
+}
+
+const Session* Account::getSession() const {
+	return session;
+}
+
+void Account::setSession(const Session* s) {
+	session = s;
 }

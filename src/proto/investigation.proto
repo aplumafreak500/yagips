@@ -1,0 +1,184 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "define.proto";
+
+message Investigation {
+    uint32 id = 1;
+    uint32 progress = 2;
+    uint32 total_progress = 3;
+    
+    State state = 4;
+    enum State {
+        INVALID = 0;
+        IN_PROGRESS = 1;
+        COMPLETE = 2;
+        REWARD_TAKEN = 3;
+    }
+}
+
+message InvestigationTarget {
+    uint32 quest_id = 1;
+    uint32 investigation_id = 2;
+    
+    State state = 3;
+    enum State {
+        INVALID = 0;
+        IN_PROGRESS = 1;
+        COMPLETE = 2;
+        REWARD_TAKEN = 3;
+    }
+    
+    uint32 progress = 4;
+    uint32 total_progress = 5;
+}
+
+message PlayerInvestigationAllInfoNotify {
+    repeated Investigation investigation_list = 1;
+    repeated InvestigationTarget investigation_target_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1901;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message TakeInvestigationRewardReq {
+    uint32 id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1902;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TakeInvestigationRewardRsp {
+    int32 retcode = 1;
+    uint32 id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1903;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message TakeInvestigationTargetRewardReq {
+    uint32 quest_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1904;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TakeInvestigationTargetRewardRsp {
+    int32 retcode = 1;
+    uint32 quest_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1905;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GetInvestigationMonsterReq {
+    repeated uint32 city_id_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1906;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message InvestigationMonster {
+    uint32 id = 1;
+    uint32 city_id = 2;
+    uint32 level = 3;
+    bool is_alive = 4;
+    uint32 next_refresh_time = 5;
+    uint32 refresh_interval = 6;
+    Vector pos = 7;
+    
+    LockState lock_state = 8;
+    enum LockState {
+        LOCK_NONE = 0;
+        LOCK_QUEST = 1;
+    }
+    
+    uint32 max_boss_chest_num = 9;
+    uint32 boss_chest_num = 10;
+    uint32 resin = 11;
+    bool is_area_locked = 12;
+    uint32 next_boss_chest_refresh_time = 13;
+}
+
+message GetInvestigationMonsterRsp {
+    int32 retcode = 1;
+    repeated InvestigationMonster monster_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1907;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message PlayerInvestigationNotify {
+    repeated Investigation investigation_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1908;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerInvestigationTargetNotify {
+    repeated InvestigationTarget investigation_target_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 1909;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}

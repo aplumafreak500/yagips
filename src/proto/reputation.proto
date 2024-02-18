@@ -1,0 +1,285 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "define.proto";
+
+message CityReputationQuestInfo {
+    bool is_open = 1;
+    repeated uint32 taken_parent_quest_reward_list = 2;
+    repeated uint32 finished_parent_quest_list = 3;
+}
+
+message CityReputationRequestInfo {
+    bool is_open = 1;
+    
+    repeated RequestInfo request_info_list = 2;
+    message RequestInfo {
+        uint32 request_id = 1;
+        uint32 quest_id = 2;
+        bool is_taken_reward = 3;
+    }
+}
+
+message CityReputationExploreInfo {
+    bool is_open = 1;
+    repeated uint32 taken_explore_reward_list = 2;
+    uint32 explore_percent = 3;
+}
+
+message CityReputationHuntInfo {
+    bool is_open = 1;
+    bool has_reward = 2;
+    uint32 cur_week_finish_num = 3;
+}
+
+message CityReputationInfo {
+    uint32 level = 1;
+    uint32 exp = 2;
+    repeated uint32 taken_level_reward_list = 3;
+    uint32 total_accept_request_num = 4;
+    uint32 next_refresh_time = 5;
+    CityReputationQuestInfo quest_info = 10;
+    CityReputationRequestInfo request_info = 11;
+    CityReputationExploreInfo explore_info = 12;
+    CityReputationHuntInfo hunt_info = 13;
+}
+
+message GetCityReputationInfoReq {
+    uint32 city_id = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2801;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GetCityReputationInfoRsp {
+    int32 retcode = 1;
+    uint32 city_id = 2;
+    CityReputationInfo city_reputation_info = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2802;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message TakeCityReputationLevelRewardReq {
+    uint32 city_id = 1;
+    uint32 level = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2803;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TakeCityReputationLevelRewardRsp {
+    int32 retcode = 1;
+    uint32 city_id = 2;
+    uint32 level = 3;
+    repeated ItemParam item_list = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2804;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message CityReputationLevelupNotify {
+    uint32 city_id = 1;
+    uint32 level = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2805;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message TakeCityReputationParentQuestReq {
+    uint32 city_id = 1;
+    repeated uint32 parent_quest_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2806;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TakeCityReputationParentQuestRsp {
+    int32 retcode = 1;
+    uint32 city_id = 2;
+    repeated uint32 parent_quest_list = 3;
+    repeated ItemParam item_list = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2807;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message AcceptCityReputationRequestReq {
+    uint32 city_id = 1;
+    uint32 request_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2808;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message AcceptCityReputationRequestRsp {
+    int32 retcode = 1;
+    uint32 city_id = 2;
+    uint32 request_id = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2809;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message CancelCityReputationRequestReq {
+    uint32 city_id = 1;
+    uint32 request_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2810;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message CancelCityReputationRequestRsp {
+    int32 retcode = 1;
+    uint32 city_id = 2;
+    uint32 request_id = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2811;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GetCityReputationMapInfoReq {
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2812;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GetCityReputationMapInfoRsp {
+    int32 retcode = 1;
+    repeated uint32 reward_city_list = 2;
+    bool is_new_request = 3;
+    bool is_new_hunting = 4;
+    repeated uint32 unlock_hunting_city_list = 5;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2813;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message TakeCityReputationExploreRewardReq {
+    uint32 city_id = 1;
+    repeated uint32 explore_id_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2814;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message TakeCityReputationExploreRewardRsp {
+    int32 retcode = 1;
+    uint32 city_id = 2;
+    repeated uint32 explore_id_list = 3;
+    repeated ItemParam item_list = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2815;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message CityReputationSimpleInfo {
+    uint32 city_id = 1;
+    uint32 level = 2;
+}
+
+message CityReputationDataNotify {
+    repeated CityReputationSimpleInfo simple_info_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2816;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}

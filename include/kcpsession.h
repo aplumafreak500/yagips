@@ -11,6 +11,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #ifndef KCPSESSION_H
 #define KCPSESSION_H
+#include <arpa/inet.h>
 #include "gameserver.h"
 #include "kcp.h"
 
@@ -22,8 +23,9 @@ public:
 	ssize_t recv(unsigned char*, size_t);
 	ssize_t sendRaw(const unsigned char*, size_t);
 	ssize_t recvRaw(unsigned char*, size_t);
-	ssize_t pushToKcp(unsigned char*, size_t);
-	unsigned long long getSessionId();
+	ssize_t pushToKcp(const unsigned char*, size_t);
+	unsigned long long getSessionId() const;
+	struct in6_addr* getClientIPAddress() const;
 	void update();
 	void update(unsigned int);
 private:

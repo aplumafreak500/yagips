@@ -1,0 +1,328 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "define.proto";
+
+message GadgetInteractReq {
+    uint32 gadget_entity_id = 1;
+    InterOpType op_type = 2;
+    uint32 gadget_id = 3;
+    bool is_use_condense_resin = 4;
+    ResinCostType resin_cost_type = 5;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 801;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GadgetInteractRsp {
+    int32 retcode = 1;
+    uint32 gadget_entity_id = 2;
+    InteractType interact_type = 3;
+    InterOpType op_type = 4;
+    uint32 gadget_id = 5;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 802;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GadgetStateNotify {
+    uint32 gadget_entity_id = 1;
+    uint32 gadget_state = 2;
+    bool is_enable_interact = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 803;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message WorktopOptionNotify {
+    uint32 gadget_entity_id = 1;
+    repeated uint32 option_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 804;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message SelectWorktopOptionReq {
+    uint32 gadget_entity_id = 1;
+    uint32 option_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 805;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message SelectWorktopOptionRsp {
+    int32 retcode = 1;
+    uint32 gadget_entity_id = 2;
+    uint32 option_id = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 806;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message BossChestActivateNotify {
+    uint32 entity_id = 1;
+    repeated uint32 qualify_uid_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 807;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message BlossomChestInfoNotify {
+    uint32 entity_id = 1;
+    BlossomChestInfo blossom_chest_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 808;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GadgetPlayStartNotify {
+    uint32 play_type = 1;
+    uint32 entity_id = 2;
+    uint32 start_time = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 809;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GadgetPlayUidInfo {
+    uint32 uid = 1;
+    uint32 score = 2;
+    uint32 icon = 3;
+    string nickname = 4;
+    string online_id = 5;
+    uint32 battle_watcher_id = 6;
+}
+
+message GadgetPlayStopNotify {
+    uint32 play_type = 1;
+    uint32 entity_id = 2;
+    bool is_win = 3;
+    uint32 cost_time = 4;
+    repeated GadgetPlayUidInfo uid_info_list = 5;
+    uint32 score = 6;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 810;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GadgetPlayDataNotify {
+    uint32 play_type = 1;
+    uint32 entity_id = 2;
+    uint32 progress = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 811;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GadgetPlayUidOpNotify {
+    uint32 play_type = 1;
+    uint32 entity_id = 2;
+    repeated uint32 uid_list = 3;
+    uint32 op = 4;
+    string param_str = 5;
+    repeated uint32 param_list = 6;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 812;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GadgetGeneralRewardInfoNotify {
+    uint32 entity_id = 1;
+    GadgetGeneralRewardInfo general_reward_info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 813;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message GadgetAutoPickDropInfoNotify {
+    repeated Item item_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 814;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message UpdateAbilityCreatedMovingPlatformNotify {
+    OpType op_type = 1;
+    enum OpType {
+        OP_NONE = 0;
+        OP_ACTIVATE = 1;
+        OP_DEACTIVATE = 2;
+    }
+    
+    uint32 entity_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 815;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message FoundationReq {
+    uint32 gadget_entity_id = 1;
+    FoundationOpType op_type = 2;
+    uint32 building_id = 3;
+    uint32 point_config_id = 4;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 816;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message FoundationRsp {
+    int32 retcode = 1;
+    uint32 gadget_entity_id = 2;
+    FoundationOpType op_type = 3;
+    uint32 building_id = 4;
+    uint32 point_config_id = 5;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 817;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message FoundationNotify {
+    uint32 gadget_entity_id = 1;
+    FoundationInfo info = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 818;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+enum InteractType {
+    INTERACT_NONE = 0;
+    INTERACT_PICK_ITEM = 1;
+    INTERACT_GATHER = 2;
+    INTERACT_OPEN_CHEST = 3;
+    INTERACT_OPEN_STATUE = 4;
+    INTERACT_CONSUM = 5;
+    INTERACT_MP_PLAY_REWARD = 6;
+    INTERACT_VIEW = 7;
+    INTERACT_GENERAL_REWARD = 8;
+    INTERACT_MIRACLE_RING = 9;
+    INTERACT_FOUNDATION = 10;
+}
+
+enum InterOpType {
+    INTER_OP_FINISH = 0;
+    INTER_OP_START = 1;
+}
+
+enum ResinCostType {
+    RESIN_COST_TYPE_NONE = 0;
+    RESIN_COST_TYPE_NORMAL = 1;
+    RESIN_COST_TYPE_CONDENSE = 2;
+    RESIN_COST_TYPE_REUNION_PRIVILEGE = 3;
+    RESIN_COST_TYPE_OP_ACTIVITY = 4;
+}
+
+enum FoundationOpType {
+    FOUNDATION_OP_NONE = 0;
+    FOUNDATION_OP_BUILD = 1;
+    FOUNDATION_OP_DEMOLITION = 2;
+    FOUNDATION_OP_REBUILD = 3;
+    FOUNDATION_OP_ROTATE = 4;
+    FOUNDATION_OP_LOCK = 5;
+    FOUNDATION_OP_UNLOCK = 6;
+}

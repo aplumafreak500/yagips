@@ -1,0 +1,198 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "define.proto";
+
+message PlayerStartMatchReq {
+    MatchType match_type = 1;
+    uint32 dungeon_id = 11;
+    uint32 mp_play_id = 12;
+    uint32 mechanicus_difficult_level = 13;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4151;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message PlayerStartMatchRsp {
+    int32 retcode = 1;
+    MatchType match_type = 2;
+    uint32 param = 3;
+    uint32 dungeon_id = 11;
+    uint32 mp_play_id = 12;
+    uint32 mechanicus_difficult_level = 13;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4152;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerMatchInfoNotify {
+    uint32 host_uid = 1;
+    MatchType match_type = 2;
+    uint32 match_begin_time = 3;
+    uint32 estimate_match_cost_time = 4;
+    uint32 dungeon_id = 11;
+    uint32 mp_play_id = 12;
+    uint32 mechanicus_difficult_level = 13;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4153;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerCancelMatchReq {
+    MatchType match_type = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4154;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message PlayerCancelMatchRsp {
+    int32 retcode = 1;
+    MatchType match_type = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4155;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerMatchStopNotify {
+    uint32 host_uid = 1;
+    MatchReason reason = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4156;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerMatchSuccNotify {
+    MatchType match_type = 1;
+    uint32 confirm_end_time = 2;
+    uint32 host_uid = 3;
+    uint32 dungeon_id = 11;
+    uint32 mp_play_id = 12;
+    uint32 mechanicus_difficult_level = 13;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4157;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerConfirmMatchReq {
+    MatchType match_type = 1;
+    bool is_agreed = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4158;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message PlayerConfirmMatchRsp {
+    int32 retcode = 1;
+    MatchType match_type = 2;
+    bool is_agreed = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4159;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerAllowEnterMpAfterAgreeMatchNotify {
+    uint32 target_uid = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4160;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerMatchAgreedResultNotify {
+    uint32 target_uid = 1;
+    
+    Reason reason = 2;
+    enum Reason {
+        SUCC = 0;
+        TARGET_SCENE_CANNOT_ENTER = 1;
+        SELF_MP_UNAVAILABLE = 2;
+        OTHER_DATA_VERSION_NOT_LATEST = 3;
+        DATA_VERSION_NOT_LATEST = 4;
+    }
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4161;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}
+
+message PlayerApplyEnterMpAfterMatchAgreedNotify {
+    MatchType match_type = 1;
+    OnlinePlayerInfo src_player_info = 2;
+    uint32 matchserver_id = 3;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 4162;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+    }
+}

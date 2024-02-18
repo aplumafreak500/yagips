@@ -27,7 +27,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "util.h"
 #include "crypt.h"
 #include "dispatch.h"
-#include "dispatch.pb.h"
+#include "define.pb.h"
 #include "keys.h"
 #include "http.h"
 
@@ -37,7 +37,6 @@ enum {
 	CLIENT_ANDROID = 1,
 	CLIENT_IOS = 2,
 //	CLIENT_PS4 = 3,
-//	CLIENT_PS5 = 4,
 	CLIENT_CNT
 };
 
@@ -50,14 +49,13 @@ enum {
 
 #define LIVE_MAJOR 4
 #define LIVE_MINOR 3
-#define CUR_MAJOR 3
-#define CUR_MINOR 2
+#define CUR_MAJOR 1
+#define CUR_MINOR 3
 
 std::string getQueryRegionListHttpRsp(const char* post) {
 	proto::QueryRegionListHttpRsp ret;
 	proto::RegionSimpleInfo* pregion;
 	std::string ret_enc;
-	std::string seed;
 	std::string cconfig;
 	size_t post_len;
 	struct json_tokener* jtk;
@@ -78,7 +76,11 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	const config_t* config_p;
 	size_t i;
 	unsigned int actualRegionCnt = 0;
-	char tmpBuf[1024];
+	static int hasRegionListSeed = -1;
+	char tmpBuf[4096];
+	Ec2b* regionListKey = NULL;
+	FILE* regionListSeed_p;
+	static ec2b_t regionListSeed;
 	if (post == NULL) {
 		ret.set_retcode(-1);
 		goto build_rsp;
@@ -140,9 +142,8 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	if (strncmp(sclient, "Win", 31) == 0) client = CLIENT_PC;
 	else if (strncmp(sclient, "Android", 31) == 0) client = CLIENT_ANDROID;
 	else if (strncmp(sclient, "iOS", 31) == 0) client = CLIENT_IOS;
-	// TODO PS4 and PS5 version ID's?
+	// TODO PS4 version ID?
 	// else if (strncmp(sclient, "PS4", 31) == 0) client = CLIENT_PS4;
-	// else if (strncmp(sclient, "PS5", 31) == 0) client = CLIENT_PS5;
 	else client = CLIENT_UNK;
 	if (
 		(client <= CLIENT_UNK || client >= CLIENT_CNT) ||
@@ -184,7 +185,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 			if (config_p->regions[i] != NULL) {
 				if (i == 0 && config_p->regions[i]->url == NULL) continue; // allow missing url for index 0 because usually that's actually us
 				if (config_p->regions[i]->version != NULL) {
-					snprintf(tmpBuf, 1024, "%d.%d", major, minor);
+					snprintf(tmpBuf, 4096, "%d.%d", major, minor);
 					if (strncmp(tmpBuf, config_p->regions[i]->version, 1024) != 0) continue;
 				}
 				actualRegionCnt++;
@@ -196,7 +197,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 				else {
 					if (i == 0) pregion->set_name("os_usa");
 					else {
-						snprintf(tmpBuf, 1024, "os_usa.%ld", i);
+						snprintf(tmpBuf, 4096, "os_usa.%ld", i);
 						pregion->set_name(tmpBuf);
 					}
 				}
@@ -206,7 +207,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 				else {
 					if (i == 0) pregion->set_title(PACKAGE_NAME);
 					else {
-						snprintf(tmpBuf, 1024, PACKAGE_NAME " %ld", i);
+						snprintf(tmpBuf, 4096, PACKAGE_NAME " %ld", i);
 						pregion->set_title(tmpBuf);
 					}
 				}
@@ -236,13 +237,28 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	// TODO CNREL sdkenv needs to be 0
 	config = "{\"sdkenv\":\"2\",\"checkdevice\":false,\"loadPatch\":false,\"showexception\":false,\"regionConfig\":\"pm|fk|add\",\"downloadMode\":0,\"codeSwitch\":[0]}";
 	config_sz = strlen(config);
-	if (hasDispatchSeed) {
+	if (hasRegionListSeed < 0) {
+		tmpBuf[4095] = '\0';
+		snprintf(tmpBuf, 4095, "%s/keys/regionListSeed.bin", globalConfig->getConfig()->dataPath);
+		regionListSeed_p = fopen(tmpBuf, "rb");
+		if (regionListSeed_p == NULL) {
+			fprintf(stderr, "Warning: Can't open %s (errno %d: %s)\n", tmpBuf, errno, strerror(errno));
+			hasRegionListSeed = 0;
+		}
+		else {
+			fread(&regionListSeed, sizeof(ec2b_t), 1, regionListSeed_p);
+			fclose(regionListSeed_p);
+			hasRegionListSeed = 1;
+		}
+	}
+	if (hasRegionListSeed > 0) {
+		regionListKey = new Ec2b(regionListSeed);
 		for (i = 0; i < config_sz; i++) {
-			configBuf[i] = config[i] ^ dispatchKey[i % 4096];
+			configBuf[i] = config[i] ^ regionListKey->getXorpad().c_str()[i % 4096];
 		}
 		/* Dispatch seed (used to derive xor key) */
-		seed.assign((const char*) &dispatchSeed, 2076);
-		ret.set_client_secret_key(seed);
+		ret.set_client_secret_key(*regionListKey);
+		delete regionListKey;
 		cconfig.assign(configBuf, config_sz);
 		ret.set_client_custom_config_encrypted(cconfig);
 	}
@@ -264,7 +280,7 @@ build_rsp:
 std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	int doResVersionConfig = 0;
 	int doGateserver = 0;
-	int doSign = 1;
+	int doSign = 0;
 	int doEnc = 0;
 	proto::QueryCurrRegionHttpRsp ret;
 	proto::RegionInfo* region;
@@ -273,6 +289,7 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	proto::StopServerInfo* stop;
 	proto::ForceUpdateInfo* upd;
 	std::string ret_enc;
+	std::string clientSecretKey;
 	const config_t* config;
 	size_t post_len;
 	struct json_tokener* jtk;
@@ -287,6 +304,11 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	char sclient[32];
 	char sregion[3];
 	int sret;
+	static int hasRegionSeed = -1;
+	char pathBuf[4096];
+	Ec2b* regionKey = NULL;
+	FILE* regionSeed_p;
+	static ec2b_t regionSeed;
 	config = globalConfig->getConfig();
 	// These will get overwritten later if an error occurs.
 	ret.set_retcode(0);
@@ -328,6 +350,7 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 		ret.set_msg("JSON POST data is not an object");
 		goto set_fields;
 	}
+	// TODO enforce ip-level bans (origin ip passed in by php)
 	if (!json_object_object_get_ex(jobj, "version", &dobj)) {
 		// Version isn't even present
 		json_object_put(jobj);
@@ -359,10 +382,19 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	if (strncmp(sclient, "Win", 31) == 0) client = CLIENT_PC;
 	else if (strncmp(sclient, "Android", 31) == 0) client = CLIENT_ANDROID;
 	else if (strncmp(sclient, "iOS", 31) == 0) client = CLIENT_IOS;
-	// TODO PS4 and PS5 version ID's?
+	// TODO PS4 version ID?
 	// else if (strncmp(sclient, "PS4", 31) == 0) client = CLIENT_PS4;
-	// else if (strncmp(sclient, "PS5", 31) == 0) client = CLIENT_PS5;
 	else client = CLIENT_UNK;
+	// Skip signing altogether for 2.7_live and earlier. (Note, 2.7 beta uses signing. Also, skipSign=0 in GET can override this even for earlier versions.)
+	if (
+		major >= 3 ||
+		(major == 2 && (
+			minor >= 8 ||
+			(minor == 7 && patch >= 50)
+		))
+	) {
+		doSign = 1;
+	}
 	if (
 		(client <= CLIENT_UNK || client >= CLIENT_CNT) ||
 		(iregion <= REGION_UNK || iregion >= REGION_CNT) ||
@@ -391,7 +423,7 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 		ret.set_msg("Invalid key ID");
 		doEnc = 0;
 	}
-	/* TODO Parse aid and check it. If negative, unset, or non-numeric, continue. Else, check that it exists in the db. If not, continue. Else, check for a ban. If there is one and it hasn't expired, send back a negative response with `msg` and `retcode` set appropriately. (Skip setting the gateserver and ResVersionConfig fields here.) If it has expired, delete it from the db and then continue. */
+	/* TODO Parse aid and check it. If negative, unset, or non-numeric, continue. Else, check that it exists in the db. If not, continue. Else, check for a ban. If there is one and it hasn't expired, send back a negative response with `msg` and `retcode` set appropriately. (Skip setting the gateserver and ResVersionConfig fields here.) If it has expired, delete it from the db and then continue. (is aid even sent by query_curr_region?) */
 	// TODO: Figure out what to do with the dispatch_seed. Yuuki verifies it as part of determining the client version; Grasscutter merely checks for its existence and uses a hardcoded signature if not present, but doesn't appear to do anything else with it if it is set.
 	// TODO What other parameters do we need to check?
 	// TODO What other parameters does the official server check?
@@ -403,6 +435,7 @@ set_fields:
 		ret.set_msg("Server is missing region data");
 		goto build_rsp;
 	}
+	// TODO Here until end marker: Split into separate function that accepts a `struct RegionInfo` object and returns a proto::RegionInfo object. This is because PlayerLoginRsp also sends this data, so we need to share this code with it.
 	region = new proto::RegionInfo;
 	if (doGateserver) {
 		if (config->regionInfo->gateserverIp == NULL || config->regionInfo->gateserverPort == 0) {
@@ -513,7 +546,26 @@ set_fields:
 			region->set_allocated_next_res_version_config(resNext);
 		}
 	}
-	// TODO Load and set secret_key (on Yuuki, same as dispatch seed, but could be different). Unknown what this is actually used for.
+	if (hasRegionSeed < 0) {
+		pathBuf[4095] = '\0';
+		snprintf(pathBuf, 4095, "%s/keys/regionSeed.bin", globalConfig->getConfig()->dataPath);
+		regionSeed_p = fopen(pathBuf, "rb");
+		if (regionSeed_p == NULL) {
+			fprintf(stderr, "Warning: Can't open %s (errno %d: %s)\n", pathBuf, errno, strerror(errno));
+			hasRegionSeed = 0;
+		}
+		else {
+			fread(&regionSeed, sizeof(ec2b_t), 1, regionSeed_p);
+			fclose(regionSeed_p);
+			hasRegionSeed = 1;
+		}
+	}
+	if (hasRegionSeed > 0) {
+		regionKey = new Ec2b(regionSeed);
+		region->set_secret_key(*regionKey);
+		delete regionKey;
+	}
+	// End TODO Split into separate function
 	ret.set_allocated_region_info(region);
 	if (config->regionInfo->sendStopServerOrForceUpdate == 1 && config->regionInfo->stopServer != NULL) {
 		stop = new proto::StopServerInfo;
@@ -532,8 +584,13 @@ set_fields:
 		upd->set_force_update_url(config->regionInfo->forceUpdateUrl);
 		ret.set_allocated_force_udpate(upd);
 	}
+#if 0
+	if (hasDispatchSeed) {
+		clientSecretKey.assign((const char*) &dispatchSeed, sizeof(ec2b_t));
+		ret.set_client_secret_key(clientSecretKey);
+	}
+#endif
 	/* Unknown Fields TODO
-		* client_secret_key - ECB seed struct. At least on Yuuki, this is actually different from the one given in the region list. Unknown what this is actually used for, but it's likely that, once derived, it's the same as the secretKey we already have. (On the other hand, on Grasscutter, this *is* the same as the region list seed.) Notably, if unset, GetPlayerTokenReq/Rsp isn't encrypted (or is at least processed with a null key).
 		* region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one below, or with the one from query_cur_region
 		* client_region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one above, or with the one from query_cur_region
 	*/
@@ -607,6 +664,7 @@ std::string handleLogin(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
 	}
 	struct json_object* dobj;
+	// TODO enforce ip-level bans (origin ip passed in by php)
 	unsigned int isGuest = 0;
 	if (json_object_object_get_ex(jobj, "is_guest", &dobj)) {
 		isGuest = json_object_get_boolean(dobj);
@@ -614,6 +672,7 @@ std::string handleLogin(const char* post) {
 	const char* deviceId = NULL;
 	if (json_object_object_get_ex(jobj, "device_id", &dobj)) {
 		deviceId = json_object_get_string(dobj);
+		// TODO enforce device id level bans
 	}
 	Account* account;
 	if (isGuest) {
@@ -648,6 +707,7 @@ std::string handleLogin(const char* post) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Username does not exist\"}";
 	}
+	// TODO enforce aid-level bans
 	if (!json_object_object_get_ex(jobj, "password", &dobj)) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Password is not set\"}";
@@ -657,17 +717,10 @@ std::string handleLogin(const char* post) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Password is null\"}";
 	}
-	unsigned int isCrypto = 0;
-	if (json_object_object_get_ex(jobj, "is_crypto", &dobj)) {
-		isCrypto = json_object_get_boolean(dobj);
-	}
 	// TODO look up verify password in config
 #if 0
 	char encPassword[1024];
 	memset(encPassword, '\0', 1024);
-	if (isCrypto) {
-		// TODO HyvCryptRsaDec
-	}
 	// TODO look up encrypt password in config
 	// TODO HMAC-SHA256
 	if (strcmp(encPassword, account->getPasswordHash().c_str()) != 0) {
@@ -742,15 +795,18 @@ std::string handleVerify(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
 	}
 	struct json_object* dobj;
+	// TODO enforce ip-level bans (origin ip passed in by php)
 	const char* deviceId = NULL;
 	if (json_object_object_get_ex(jobj, "device_id", &dobj)) {
 		deviceId = json_object_get_string(dobj);
+		// TODO enforce device id level bans
 	}
 	if (!json_object_object_get_ex(jobj, "uid", &dobj)) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Account ID is not set\"}";
 	}
 	aid = json_object_get_int(dobj);
+	// TODO enforce aid-level bans
 	if (!json_object_object_get_ex(jobj, "token", &dobj)) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Token is not set\"}";
@@ -842,6 +898,7 @@ std::string handleCombo(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
 	}
 	struct json_object* dobj2;
+	// TODO enforce ip-level bans (origin ip passed in by php)
 	struct json_object* dobj;
 	const char* data_str = NULL;
 	size_t data_str_len;
@@ -885,11 +942,13 @@ std::string handleCombo(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Account ID is not set\"}";
 	}
 	aid = json_object_get_int(dobj);
+	// TODO enforce aid-level bans
 	unsigned int isGuest = 0;
 	const char* deviceId = NULL;
 	const char* token = NULL;
 	if (json_object_object_get_ex(jobj, "device", &dobj)) {
 		deviceId = json_object_get_string(dobj2);
+		// TODO enforce device id level bans
 	}
 	if (json_object_object_get_ex(dobj2, "guest", &dobj)) {
 		isGuest = json_object_get_boolean(dobj);
@@ -1255,13 +1314,16 @@ write_rsp:
 					break;
 				case SDK_QUERY_CURR_REGION:
 					// Notes: PHP frontend converts GET (or POST) parameters to JSON before sending it to us in a POST. This string is thus passed to getQueryCurrRegionHttpRsp.
-					rsp_str = "{\"content\":\"" + b64enc(getQueryCurrRegionHttpRsp(sign, body)) + "\"";
-					// TODO What to do if there's no signature?
-					if (!sign.empty()) rsp_str += ",\"sign\":\"" + b64enc(sign) + "\"";
-					rsp_str += "}";
+					rsp_str = b64enc(getQueryCurrRegionHttpRsp(sign, body));
+					if (!sign.empty()) {
+						rsp_str = "{\"content\":\"" + rsp_str + "\",\"sign\":\"" + b64enc(sign) + "\"}";
+						mime = "application/json";
+					}
+					else {
+						mime = "text/plain";
+					}
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();
-					mime = "application/json";
 					break;
 				case SDK_GET_AUTH_TOKEN:
 					rsp_str = handleLogin(body);

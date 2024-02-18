@@ -1,0 +1,138 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package proto;
+
+import "define.proto";
+
+message BlossomBriefInfo {
+    uint32 refresh_id = 1;
+    uint32 circle_camp_id = 2;
+    uint32 city_id = 3;
+    uint32 resin = 4;
+    Vector pos = 5;
+    uint32 reward_id = 6;
+    uint32 monster_level = 7;
+    bool is_guide_opened = 8;
+    uint32 state = 9;
+}
+
+message GetBlossomBriefInfoListReq {
+    repeated uint32 city_id_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2701;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message GetBlossomBriefInfoListRsp {
+    int32 retcode = 1;
+    repeated BlossomBriefInfo brief_info_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2702;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message BlossomBriefInfoNotify {
+    repeated BlossomBriefInfo brief_info_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2703;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message WorldOwnerBlossomBriefInfoNotify {
+    repeated BlossomBriefInfo brief_info_list = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2704;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message BlossomScheduleInfo {
+    uint32 refresh_id = 1;
+    uint32 circle_camp_id = 2;
+    uint32 round = 3;
+    uint32 state = 4;
+    uint32 progress = 5;
+    uint32 finish_progress = 6;
+}
+
+message WorldOwnerBlossomScheduleInfoNotify {
+    BlossomScheduleInfo schedule_info = 1;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2705;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message BlossomChestCreateNotify {
+    uint32 refresh_id = 1;
+    uint32 circle_camp_id = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2706;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+message OpenBlossomCircleCampGuideNotify {
+    uint32 refresh_id = 1;
+    repeated uint32 circle_camp_id_list = 2;
+    
+    enum CmdId {
+        option allow_alias = true;
+        NONE = 0;
+        CMD_ID = 2707;
+        ENET_CHANNEL_ID = 0;
+        ENET_IS_RELIABLE = 1;
+        IS_ALLOW_CLIENT = 1;
+    }
+}
+
+enum BlossomScheduleState {
+    BLOSSOM_SCHEDULE_NONE = 0;
+    BLOSSOM_SCHEDULE_INIT = 1;
+    BLOSSOM_SCHEDULE_IN_PROGRESS = 2;
+    BLOSSOM_SCHEDULE_REWARD = 3;
+}

@@ -22,6 +22,7 @@ extern "C" {
 dbGate* globalDbGate;
 
 dbGate::dbGate(const char* path) {
+	// TODO Append file name to path
 	int ret = sqlite3_open_v2(path, &db, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, NULL);
 	if (ret != SQLITE_OK) {
 		char b[1024];
@@ -39,15 +40,24 @@ dbGate::~dbGate() {
 
 extern "C" {
 	static int createTables(sqlite3* db) {
+		// TODO create more tables
+		// Table structures subject to change
 		int ret = sqlite3_exec(db,
-			// TODO create more tables
 			"CREATE TABLE IF NOT EXISTS accounts (aid INTEGER PRIMARY KEY, timeCreated INTEGER NOT NULL DEFAULT (strftime('%s', 'now')), username TEXT UNIQUE, password TEXT, deviceId TEXT, email TEXT, token TEXT, sessionKeyCreated INTEGER, sessionKey TEXT);",
 		NULL, NULL, NULL);
 		if (ret != SQLITE_OK) {
 			fprintf(stderr, "Unable to create accounts table - errcode %d\n", -ret);
 			return -1;
 		}
-		// CREATE TABLE bans (aid INTEGER, uid INTEGER, ip TEXT, reason TEXT, start DATETIME DEFAULT CURRENT_TIMESTAMP, end DATETIME);
+		// CREATE TABLE bans (aid INTEGER, uid INTEGER, ip TEXT, reason TEXT, start INTEGER DEFAULT (strftime('%s', 'now')), end INTEGER);
+		// TODO More data than just uid and aid
+		ret = sqlite3_exec(db,
+			"CREATE TABLE IF NOT EXISTS players (uid INTEGER PRIMARY KEY, aid INTEGER);",
+		NULL, NULL, NULL);
+		if (ret != SQLITE_OK) {
+			fprintf(stderr, "Unable to create accounts table - errcode %d\n", -ret);
+			return -1;
+		}
 		return 0;
 	}
 }
@@ -108,8 +118,9 @@ Account* dbGate::getAccountByAid(unsigned int aid) {
 }
 
 Account* dbGate::getAccountByUid(unsigned int uid) {
-	// TODO "select aid from players where uid = ?1 limit 1;" and then `return getAccountByAid(aid);`
-	return NULL;
+	Player* player = getPlayerByUid(uid);
+	if (player == NULL) return NULL;
+	return (Account*) player->getAccount();
 }
 
 Account* dbGate::getAccountByUsername(const char* username) {
@@ -361,6 +372,7 @@ Account* dbGate::createAccount(const char* username) {
 	}
 	sqlite3_finalize(stmt);
 	account->setAccountId(sqlite3_last_insert_rowid(db));
+	saveAccount(*account);
 	return account;
 }
 
@@ -431,6 +443,174 @@ int dbGate::deleteAccount(const Account& account) {
 		return -2;
 	}
 	ret = sqlite3_bind_int(stmt, 1, account.getAccountId());
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return -2;
+	}
+	ret = sqlite3_step(stmt);
+	if (ret != SQLITE_DONE) {
+		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
+		return -1;
+	}
+	sqlite3_finalize(stmt);
+	return 0;
+}
+
+Player* dbGate::getPlayerByAccount(const Account& account) {
+	sqlite3_stmt* stmt;
+	Player* player;
+	unsigned int aid = account.getAccountId();
+	int ret = sqlite3_prepare(db, "SELECT uid FROM players WHERE aid = ?1 limit 1;", -1, &stmt, NULL);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return NULL;
+	}
+	ret = sqlite3_bind_int(stmt, 1, aid);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return NULL;
+	}
+	ret = sqlite3_step(stmt);
+	switch (ret) {
+	default: // error
+		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
+		sqlite3_finalize(stmt);
+		return NULL;
+	case SQLITE_DONE: // no results
+		sqlite3_finalize(stmt);
+		return NULL;
+	case SQLITE_ROW: // got a hit
+		player = new Player();
+		player->setUid(sqlite3_column_int(stmt, 0));
+		player->setAccount(&account);
+		return player;
+	}
+}
+
+Player* dbGate::getPlayerByAid(unsigned int aid) {
+	const Account* account = getAccountByAid(aid);
+	if (account != NULL) return getPlayerByAccount(*account);
+	// If null, try a query anyways. As crazy as it sounds, valid players can sometimes have invalid accounts.
+	sqlite3_stmt* stmt;
+	Player* player;
+	int ret = sqlite3_prepare(db, "SELECT uid FROM players WHERE aid = ?1 limit 1;", -1, &stmt, NULL);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return NULL;
+	}
+	ret = sqlite3_bind_int(stmt, 1, aid);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return NULL;
+	}
+	ret = sqlite3_step(stmt);
+	switch (ret) {
+	default: // error
+		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
+		sqlite3_finalize(stmt);
+		return NULL;
+	case SQLITE_DONE: // no results
+		sqlite3_finalize(stmt);
+		return NULL;
+	case SQLITE_ROW: // got a hit
+		player = new Player();
+		player->setUid(sqlite3_column_int(stmt, 0));
+		player->setAccount(account);
+		sqlite3_finalize(stmt);
+		return player;
+	}
+}
+
+Player* dbGate::getPlayerByUid(unsigned int uid) {
+	sqlite3_stmt* stmt;
+	Player* player;
+	unsigned int aid;
+	int ret = sqlite3_prepare(db, "SELECT aid FROM players WHERE uid = ?1 limit 1;", -1, &stmt, NULL);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return NULL;
+	}
+	ret = sqlite3_bind_int(stmt, 1, uid);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return NULL;
+	}
+	ret = sqlite3_step(stmt);
+	switch (ret) {
+	default: // error
+		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
+		sqlite3_finalize(stmt);
+		return NULL;
+	case SQLITE_DONE: // no results
+		sqlite3_finalize(stmt);
+		return NULL;
+	case SQLITE_ROW: // got a hit
+		player = new Player();
+		player->setUid(uid);
+		aid = sqlite3_column_int(stmt, 0);
+		sqlite3_finalize(stmt);
+		player->setAccount(getAccountByAid(aid));
+		return player;
+	}
+}
+
+Player* dbGate::newPlayer() {
+	// TODO Allow reserving uid values
+	sqlite3_stmt* stmt;
+	int ret = sqlite3_prepare(db, "INSERT INTO players DEFAULT VALUES;", -1, &stmt, NULL);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return NULL;
+	}
+	ret = sqlite3_step(stmt);
+	if (ret != SQLITE_DONE) {
+		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
+		return NULL;
+	}
+	sqlite3_finalize(stmt);
+	Player* player = new Player();
+	player->setUid(sqlite3_last_insert_rowid(db));
+	return player;
+}
+
+int dbGate::savePlayer(const Player& player) {
+	// TODO More data than just uid and aid
+	const Account* account = player.getAccount();
+	// TODO Set aid to 0 rather than return immediately once more data needs to be saved
+	if (account == NULL) return -1;
+	sqlite3_stmt* stmt;
+	int ret = sqlite3_prepare(db, "UPDATE players SET aid = ?1 WHERE uid = ?2;", -1, &stmt, NULL);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return -3;
+	}
+	ret = sqlite3_bind_int(stmt, 1, player.getUid());
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return -2;
+	}
+	ret = sqlite3_bind_int(stmt, 2, account->getAccountId());
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return -2;
+	}
+	ret = sqlite3_step(stmt);
+	if (ret != SQLITE_DONE) {
+		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
+		return -1;
+	}
+	sqlite3_finalize(stmt);
+	return 0;
+}
+
+int dbGate::deletePlayer(const Player& player) {
+	sqlite3_stmt* stmt;
+	int ret = sqlite3_prepare(db, "DELETE FROM players WHERE uid = ?1;", -1, &stmt, NULL);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+		return -2;
+	}
+	ret = sqlite3_bind_int(stmt, 1, player.getUid());
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
 		return -2;
