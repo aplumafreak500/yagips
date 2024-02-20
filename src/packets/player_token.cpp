@@ -20,7 +20,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "dbgate.h"
 #include "keys.h"
 
-int handleGetPlayerTokenReq(Session& session, std::string& header, std::string& data) {
+int handleGetPlayerTokenReq(Session& session, std::string&, std::string& data) {
 	proto::GetPlayerTokenReq req;
 	proto::GetPlayerTokenRsp rsp;
 	unsigned long long encryptSeed;

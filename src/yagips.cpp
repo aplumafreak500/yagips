@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "gameserver.h"
 #include "dispatch.h"
 #include "dbgate.h"
-#include "config.h"
+#include "runconfig.h"
 #include "data.h"
 #include "ec2b.h"
 #include "keys.h"

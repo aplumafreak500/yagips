@@ -11,6 +11,7 @@ They are as follows:
 * [toml-c](#toml-c) \(<https://github.com/arp242/toml-c>\) in <src/toml.c> and <include/toml.h>
 * [picohttpparser](#picohttpparser) \(<https://github.com/h2o/picohttpparser>\) in <src/http.c> and <include/http.h>
 * xoshiro256++ \(<https://prng.di.unimi.it>, [public domain](https://creativecommons.org/publicdomain/zero/1.0)\) in <src/util.cpp> \(function `rand_xoshiro256`\)
+* gnulib \(<https://www.gnu.org/software/gnulib>\) in directories `gnulib` and `m4` \(Licenses vary per file, but are generally available under GPLv3+ or LGPLv3+\)
 
 ### External dependencies
 

@@ -9,7 +9,6 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#include "buildconf.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,7 +16,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <pwd.h>
 #include <sys/types.h>
 #include "toml.h"
-#include "config.h"
+#include "runconfig.h"
 
 #define CONFIG_FILE_NAME "yagips.conf"
 
