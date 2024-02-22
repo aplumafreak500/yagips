@@ -2,6 +2,7 @@
 *.pb.h linguist-generated
 /compile linguist-vendored
 /depcomp linguist-vendored
+/git-version-gen linguist-vendored
 /install-sh linguist-vendored
 /missing linguist-vendored
 /gnulib/** linguist-vendored
