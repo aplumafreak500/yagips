@@ -18,7 +18,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <openssl/decoder.h>
 #include "crypt.h"
 #include "keys.h"
-#include "config.h"
+#include "runconfig.h"
 
 extern "C" {
 int HyvCryptRsaEnc(const unsigned char* ibuf, size_t ilen, unsigned char* obuf, size_t olen, unsigned int key_id) {

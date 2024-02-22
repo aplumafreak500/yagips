@@ -18,7 +18,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <json-c/json_tokener.h>
 #include <json-c/json_object.h>
 #include <sys/param.h>
-#include "config.h"
+#include "runconfig.h"
 #include "data.h"
 #include "data/avatar_data.h"
 #include "enum.h"

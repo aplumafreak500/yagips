@@ -19,8 +19,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <json-c/json_object.h>
 #include <json-c/json_tokener.h>
 #include <string>
-#include "buildconf.h"
-#include "config.h"
+#include "runconfig.h"
 #include "account.h"
 #include "dbgate.h"
 #include "gameserver.h"

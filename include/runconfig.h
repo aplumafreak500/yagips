@@ -11,7 +11,6 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #ifndef CONFIG_H
 #define CONFIG_H
-#include "buildconf.h"
 #include <stddef.h>
 #include <string>
 
