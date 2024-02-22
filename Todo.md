@@ -10,9 +10,9 @@ This list is subject to change.
 - [ ] Add Getopt \(for command-line arguments\)
 - [ ] Add server console \(optionally using Readline\)
 - [ ] Permissions system
-- [ ] Store `git describe` string into Autoconf `PACKAGE_VERSION` string
+- [x] Store `git describe` string into Autoconf `PACKAGE_VERSION` string
 - [ ] Robust logging system
-- [ ] Add fallbacks for some non-standard C functions such as `strsep` and `getrandom`
+- [x] Add fallbacks for some non-standard C functions such as `strsep` and `getrandom`
 - [ ] Actually check for needed functions from external libraries
 - [ ] Add a test suite and/or test programs
 	- [ ] KCP->TCP tunnel (for use with netcat/socat)
