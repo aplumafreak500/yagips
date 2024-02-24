@@ -16,6 +16,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <sys/random.h>
 #include <time.h>
 #include <pthread.h>
+#include <stdexcept>
 #include "gameserver.h"
 #include "dispatch.h"
 #include "dbgate.h"
@@ -105,8 +106,19 @@ extern "C" {
 		globalConfig = new Config();
 		loadKeys(globalConfig->getConfig()->dataPath);
 		globalGameData = new GameData();
-		// TODO Try-catch and then exit early
-		globalDbGate = new dbGate(globalConfig->getConfig()->dbPath);
+		try {
+			globalDbGate = new dbGate(globalConfig->getConfig()->dbPath, globalConfig->getConfig()->ldbPath);
+		}
+		catch(const std::exception& e) {
+			fprintf(stderr, "Unable to create db handle: %s\n", e.what());
+			delete globalConfig;
+			return -1;
+		}
+		catch(...) {
+			fprintf(stderr, "Unable to create db handle: %s\n", "Unknown error");
+			delete globalConfig;
+			return -1;
+		}
 		// TODO Thread attributes
 		int terrno = pthread_create(&gameserver, NULL, GameserverMain, NULL);
 		if (terrno) {

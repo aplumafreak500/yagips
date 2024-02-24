@@ -71,6 +71,10 @@ PKG_CHECK_MODULES(JSON_C, json-c >= 0.15, [], [
 ])
 AC_SUBST(JSON_C_LIBS)
 AC_SUBST(JSON_C_CFLAGS)
+# LevelDB does not use pkg-config (as of 2024-02-23)
+AC_CHECK_LIB(leveldb, leveldb_open, [], [
+	AC_MSG_ERROR([Required library 'leveldb' not found.])
+])
 printf "\nChecking for required functions...\n\n"
 # These functions are required but not in gnulib for various reasons.
 # So we need to check for them here.

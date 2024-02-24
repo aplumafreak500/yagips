@@ -96,6 +96,7 @@ typedef struct {
 	unsigned int kcpInterval;
 	unsigned int sessionTickRate;
 	const char* dbPath;
+	const char* ldbPath;
 	const char* dataPath;
 	const char* logPath;
 	size_t regionCnt;

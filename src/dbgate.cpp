@@ -11,6 +11,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include <stdio.h>
 #include <sqlite3.h>
+#include <leveldb/db.h>
 #include <stdexcept>
 #include "account.h"
 #include "dbgate.h"
@@ -21,21 +22,28 @@ extern "C" {
 
 dbGate* globalDbGate;
 
-dbGate::dbGate(const char* path) {
-	// TODO Append file name to path
+dbGate::dbGate(const char* path, const char* ldbpath) {
 	int ret = sqlite3_open_v2(path, &db, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, NULL);
+	static char b[1024];
 	if (ret != SQLITE_OK) {
-		char b[1024];
 		snprintf(b, 1024, "SQLite connection couldn't be made, error %d", -ret);
 		throw std::runtime_error(b);
 	}
 	if (createTables(db)) {
 		throw std::runtime_error("Unable to create at least one database table.");
 	}
+	// Don't compress on LevelDB side, since (soon:tm:) we apply Zlib compression to most input data.
+	ldbopt.compression = leveldb::kNoCompression;
+	leveldb::Status s = leveldb::DB::Open(ldbopt, ldbpath, &ldb);
+	if (!s.ok()) {
+		snprintf(b, 1024, "LevelDB object couldn't be created, error: %s", s.ToString().c_str());
+		throw std::runtime_error(b);
+	}
 }
 
 dbGate::~dbGate() {
 	sqlite3_close_v2(db);
+	if (ldb != NULL) delete ldb;
 }
 
 extern "C" {
@@ -622,4 +630,33 @@ int dbGate::deletePlayer(const Player& player) {
 	}
 	sqlite3_finalize(stmt);
 	return 0;
+}
+
+std::string dbGate::getLdbObject(const std::string& key) {
+	std::string ret;
+	leveldb::Status s = ldb->Get(leveldb::ReadOptions(), key, &ret);
+	// If a key isn't found in the db, don't indicate an error unless another error occured.
+	if (!(s.ok() || s.IsNotFound())) {
+		fprintf(stderr, "Warning: Error getting leveldb key: %s\n", s.ToString().c_str());
+	}
+	return ret;
+}
+int dbGate::setLdbObject(const std::string& key, const std::string& val) {
+	int ret = 0;
+	leveldb::Status s = ldb->Put(leveldb::WriteOptions(), key, val);
+	if (!s.ok()) {
+		fprintf(stderr, "Warning: Error setting leveldb key: %s\n", s.ToString().c_str());
+		ret = -1;
+	}
+	return ret;
+}
+
+int dbGate::delLdbObject(const std::string& key) {
+	int ret = 0;
+	leveldb::Status s = ldb->Delete(leveldb::WriteOptions(), key);
+	if (!s.ok()) {
+		fprintf(stderr, "Warning: Error deleting leveldb key: %s\n", s.ToString().c_str());
+		ret = -1;
+	}
+	return ret;
 }
