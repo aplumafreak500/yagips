@@ -33,6 +33,7 @@ Player::Player() {
 	ar = 1;
 	ar_exp = 0;
 	worldLevel = 0;
+	// TODO Hardcoded until proper handling for scene data is implemented
 	pos.x = 2747.562;
 	pos.y = 194.633;
 	pos.z = -1719.386;
@@ -44,7 +45,7 @@ Player::Player(const storage::PlayerInfo& p) {
 	account = globalDbGate->getAccountByAid(p.aid());
 	long long ctime = time(NULL);
 	session = NULL;
-	tpToken = 0;
+	tpToken = 1;
 	if (ctime > p.session_expire_ts()) {
 		session = getSessionById(p.session_id());
 	}
@@ -115,8 +116,6 @@ int Player::saveToDb() const {
 	return globalDbGate->savePlayer(*this);
 }
 
-
-
 const Account* Player::getAccount() const {
 	return account;
 }
@@ -155,17 +154,14 @@ void Player::onLogin(Session& s) {
 		adn_p.setData(pkt_data);
 		s.sendPacket(adn_p);
 	}
-	// TODO Hardcoded until proper handling for scene data is implemented
-	proto::Vector* startPos = new proto::Vector();
-	startPos->set_x(2747.562);
-	startPos->set_y(194.633);
-	startPos->set_z(-1719.386);
+	proto::Vector* _pos = new proto::Vector();
+	*_pos = pos;
 	proto::PlayerEnterSceneNotify esn;
-	esn.set_scene_id(3);
-	esn.set_allocated_pos(startPos);
+	esn.set_scene_id(scene_id);
+	esn.set_allocated_pos(_pos);
 	esn.set_scene_begin_time(curTimeMs());
 	esn.set_target_uid(uid);
-	esn.set_enter_scene_token(1);
+	esn.set_enter_scene_token(tpToken);
 	esn.set_type(proto::ENTER_SELF);
 	if (esn.SerializeToString(&pkt_data)) {
 		Packet esn_p(201);
