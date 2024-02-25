@@ -40,11 +40,28 @@ dbGate::dbGate(const char* path, const char* ldbpath) {
 		snprintf(b, 1024, "LevelDB object couldn't be created, error: %s", s.ToString().c_str());
 		throw std::runtime_error(b);
 	}
+	load();
 }
 
 dbGate::~dbGate() {
+	save();
 	sqlite3_close_v2(db);
 	if (ldb != NULL) delete ldb;
+}
+
+int dbGate::load() {
+	std::string val = getLdbObject("nextID");
+	if (val.empty()) return 0;
+	if (!next_ids.ParseFromString(val)) return -1;
+	return 0;
+}
+
+int dbGate::save() {
+	std::string val;
+	if (!next_ids.SerializeToString(&val)) {
+		return -1;
+	}
+	return setLdbObject("nextID", val);
 }
 
 extern "C" {
@@ -660,4 +677,114 @@ int dbGate::delLdbObject(const std::string& key) {
 		ret = -1;
 	}
 	return ret;
+}
+
+Avatar* dbGate::getAvatarByGuid(unsigned long long guid) {
+	proto::AvatarInfo* v = getAvatarPbByGuid(guid);
+	if (v == NULL) return NULL;
+	Avatar* ret = new Avatar(*v);
+	delete v;
+	return ret;
+}
+
+proto::AvatarInfo* dbGate::getAvatarPbByGuid(unsigned long long guid) {
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	std::string val = getLdbObject(key);
+	if (val.empty()) return NULL;
+	proto::AvatarInfo* ret = new proto::AvatarInfo();
+	if (!ret->ParseFromString(val)) {
+		delete ret;
+		return NULL;
+	}
+	return ret;
+}
+
+int dbGate::saveAvatar(const Avatar& a) {
+	return saveAvatar(a);
+}
+
+int dbGate::saveAvatar(const proto::AvatarInfo& a) {
+	unsigned long long guid = a.guid();
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	std::string val;
+	if (!a.SerializeToString(&val)) return -1;
+	return setLdbObject(key, val);
+}
+
+int dbGate::deleteAvatar(const Avatar& a) {
+	return deleteByGuid(a.getGuid());
+}
+
+int dbGate::deleteAvatar(const proto::AvatarInfo& a) {
+	return deleteByGuid(a.guid());
+}
+
+Item* dbGate::getItemByGuid(unsigned long long guid) {
+	proto::Item* v = getItemPbByGuid(guid);
+	if (v == NULL) return NULL;
+	Item* ret = new Item(*v);
+	delete v;
+	return ret;
+}
+
+proto::Item* dbGate::getItemPbByGuid(unsigned long long guid) {
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	std::string val = getLdbObject(key);
+	if (val.empty()) return NULL;
+	proto::Item* ret = new proto::Item();
+	if (!ret->ParseFromString(val)) {
+		delete ret;
+		return NULL;
+	}
+	return ret;
+}
+
+int dbGate::saveItem(const Item& i) {
+	return saveItem(i);
+}
+
+int dbGate::saveItem(const proto::Item& i) {
+	unsigned long long guid = i.guid();
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	std::string val;
+	if (!i.SerializeToString(&val)) return -1;
+	return setLdbObject(key, val);
+}
+
+int dbGate::deleteItem(const Item& i) {
+	return deleteByGuid(i.guid);
+}
+
+int dbGate::deleteItem(const proto::Item& i) {
+	return deleteByGuid(i.guid());
+}
+
+int dbGate::deleteByGuid(unsigned long long guid) {
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	return delLdbObject(key);
 }
