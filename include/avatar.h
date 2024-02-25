@@ -24,6 +24,9 @@ public:
 	Avatar(unsigned int);
 	Avatar(const proto::AvatarInfo&);
 	operator proto::AvatarInfo() const;
+	int loadFromDb();
+	int loadFromDb(unsigned long long);
+	int saveToDb() const;
 	unsigned int getId() const;
 	void setId(unsigned int);
 	void setId(unsigned int, unsigned int);

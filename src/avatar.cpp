@@ -118,6 +118,22 @@ Avatar::operator proto::AvatarInfo() const {
 	return pb;
 }
 
+int Avatar::loadFromDb() {
+	return loadFromDb(guid);
+}
+
+int Avatar::loadFromDb(unsigned long long _guid) {
+	Avatar* _new = globalDbGate->getAvatarByGuid(_guid);
+	if (_new == NULL) return -1;
+	*this = *_new;
+	delete _new;
+	return 0;
+}
+
+int Avatar::saveToDb() const {
+	return globalDbGate->saveAvatar(*this);
+}
+
 unsigned int Avatar::getId() const {
 	return id;
 }
