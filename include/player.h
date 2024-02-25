@@ -21,16 +21,21 @@ class Player;
 #include "vector.h"
 #include "world.h"
 #include "scene.h"
+#include "storage.pb.h"
 
 class Player {
 public:
 	Player();
+	Player(const storage::PlayerInfo&);
 	~Player();
+	operator storage::PlayerInfo() const;
+	int loadFromDb();
+	int loadFromDb(unsigned int);
+	int saveToDb() const;
 	const Account* getAccount() const;
 	void setAccount(const Account*);
 	unsigned int getUid() const;
 	void setUid(unsigned int);
-	int saveToDb() const;
 	void onLogin(Session& session);
 private:
 	const Account* account;
@@ -38,9 +43,10 @@ private:
 	Session* session;
 	World* world;
 	Scene* curScene;
-	Vector* pos;
+	Vector pos;
 	unsigned int scene_id;
 	unsigned int tpToken;
+	unsigned int nextGuid;
 	unsigned int worldLevel;
 	unsigned int ar;
 	unsigned long long ar_exp;

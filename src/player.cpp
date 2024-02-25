@@ -9,9 +9,11 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
+#include <time.h>
 #include "account.h"
 #include "dbgate.h"
 #include "player.h"
+#include "gameserver.h"
 #include "session.h"
 #include "kcpsession.h"
 #include "packet.h"
@@ -21,9 +23,92 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "avatar.pb.h"
 #include "scene.pb.h"
 #include "define.pb.h"
+#include "storage.pb.h"
 
-Player::Player() {}
-Player::~Player() {}
+Player::Player() {
+	account = NULL;
+	session = NULL;
+	tpToken = 0;
+	nextGuid = 0;
+}
+
+Player::Player(const storage::PlayerInfo& p) {
+	uid = p.uid();
+	account = globalDbGate->getAccountByAid(p.aid());
+	long long ctime = time(NULL);
+	session = NULL;
+	tpToken = 0;
+	if (ctime > p.session_expire_ts()) {
+		session = getSessionById(p.session_id());
+	}
+	scene_id = p.scene_id();
+	worldLevel = p.world_level();
+	ar = p.adventure_rank();
+	ar_exp = p.adventure_exp();
+	name = p.name();
+	signature = p.signature();
+	namecard = p.namecard();
+	pfp = p.pfp();
+	pos = p.position();
+	nextGuid = p.next_guid();
+	// TODO: Props
+	// TODO: Openstates
+}
+
+Player::~Player() {
+	saveToDb();
+}
+
+Player::operator storage::PlayerInfo() const {
+	storage::PlayerInfo ret;
+	ret.set_uid(uid);
+	long long ctime;
+	if (account != NULL) {
+		ret.set_aid(account->getAccountId());
+	}
+	if (session != NULL) {
+		const KcpSession* kcp = session->getKcpSession();
+		if (kcp != NULL) {
+			ret.set_session_id(kcp->getSessionId());
+			ret.set_session_seed(session->getSessionSeed());
+			ctime = time(NULL) + (3 * 60 * 60);
+			ret.set_session_expire_ts(ctime);
+		}
+	}
+	ret.set_next_guid(nextGuid);
+	ret.set_name(name);
+	ret.set_signature(signature);
+	ret.set_pfp(pfp);
+	ret.set_namecard(namecard);
+	ret.set_adventure_rank(ar);
+	ret.set_adventure_exp(ar_exp);
+	ret.set_world_level(worldLevel);
+	proto::Vector* _pos = new proto::Vector();
+	*_pos = pos;
+	ret.set_allocated_position(_pos);
+	ret.set_scene_id(scene_id);
+	// TODO Props
+	// TODO Openstates
+	return ret;
+}
+
+int Player::loadFromDb() {
+	return loadFromDb(uid);
+}
+
+int Player::loadFromDb(unsigned int _uid) {
+	Player* _new = globalDbGate->getPlayerByUid(_uid);
+	if (_new == NULL) return -1;
+	*this = *_new;
+	delete _new;
+	return 0;
+}
+
+int Player::saveToDb() const {
+	return globalDbGate->savePlayer(*this);
+}
+
+
 
 const Account* Player::getAccount() const {
 	return account;
@@ -39,10 +124,6 @@ unsigned int Player::getUid() const {
 
 void Player::setUid(unsigned int u) {
 	uid = u;
-}
-
-int Player::saveToDb() const {
-	return globalDbGate->savePlayer(*this);
 }
 
 void Player::onLogin(Session& s) {

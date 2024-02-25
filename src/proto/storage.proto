@@ -61,43 +61,45 @@ message PlayerInfo {
 	uint32 aid = 2;
 	uint32 session_id = 3;
 	uint64 session_seed = 4;
-	uint32 next_guid = 5;
-	string name = 6;
-	string signature = 7;
-	uint32 pfp = 8;
-	uint32 namecard = 9;
-	proto.Birthday birthday = 10;
-	uint32 adventure_rank = 11;
-	uint64 adventure_exp = 12;
-	bool show_avatars = 13;
-	repeated uint32 show_avatar_guid_list = 14;
-	repeated uint32 show_namecard_list = 15;
-	// TODO Teams (16)
-	map<uint32, uint32> props = 17;
-	// TODO Abilities (18)
-	uint32 scene_id = 19;
-	proto.Vector position = 20;
-	float rotation = 21;
-	repeated uint32 open_states = 22;
-	map<uint32, SceneData> scene_data = 23;
-	// TODO Markers (24)
-	uint32 region_id = 25;
-	uint32 widget_id = 26;
-	repeated uint32 wings = 27;
-	repeated uint32 namecards = 28;
-	repeated uint32 costumes = 29;
-	repeated uint32 unlocked_forge_items = 30;
-	repeated uint32 unlocked_alchemy_items = 31;
-	repeated uint32 unlocked_cook_items = 32;
-	repeated uint32 claimed_ar_rewards = 33;
-	// TODO Statue levels (34)
-	repeated proto.ForgeQueueData forge_queue = 35;
-	// TODO Cooking queue (36)
-	repeated proto.AvatarExpeditionInfo expeditions = 37;
-	// TODO Reputation levels (38)
-	// TODO Bounties (39)
-	// TODO Offering levels (40)
-	reserved 16, 18, 24, 34, 36, 38, 39, 40;
+	int64 session_expire_ts = 5;
+	uint32 next_guid = 6;
+	string name = 7;
+	string signature = 8;
+	uint32 pfp = 9;
+	uint32 namecard = 10;
+	proto.Birthday birthday = 11;
+	uint32 adventure_rank = 12;
+	uint64 adventure_exp = 13;
+	uint32 world_level = 14;
+	bool show_avatars = 15;
+	repeated uint32 show_avatar_guid_list = 16;
+	repeated uint32 show_namecard_list = 17;
+	// TODO Teams (18)
+	map<uint32, uint32> props = 19;
+	// TODO Abilities (20)
+	uint32 scene_id = 21;
+	proto.Vector position = 22;
+	float rotation = 23;
+	repeated uint32 open_states = 24;
+	map<uint32, SceneData> scene_data = 25;
+	// TODO Markers (26)
+	uint32 region_id = 27;
+	uint32 widget_id = 28;
+	repeated uint32 wings = 29;
+	repeated uint32 namecards = 30;
+	repeated uint32 costumes = 31;
+	repeated uint32 unlocked_forge_items = 32;
+	repeated uint32 unlocked_alchemy_items = 33;
+	repeated uint32 unlocked_cook_items = 34;
+	repeated uint32 claimed_ar_rewards = 35;
+	// TODO Statue levels (36)
+	repeated proto.ForgeQueueData forge_queue = 37;
+	// TODO Cooking queue (38)
+	repeated proto.AvatarExpeditionInfo expeditions = 39;
+	// TODO Reputation levels (40)
+	// TODO Bounties (41)
+	// TODO Offering levels (42)
+	reserved 18, 20, 26, 36, 38, 40, 41, 42;
 	reserved "teams", "abilities", "cooking_queue";
 };
 
