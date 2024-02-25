@@ -14,6 +14,7 @@ AC_CONFIG_MACRO_DIRS([m4])
 printf "\nAutomake init...\n\n"
 AM_INIT_AUTOMAKE([-Wall -Werror foreign dist-xz no-dist-gzip subdir-objects])
 AM_MAINTAINER_MODE([disable])
+AM_SILENT_RULES([yes])
 printf "\nChecking C and C++ compilers...\n\n"
 AC_PROG_CC
 AC_PROG_CXX

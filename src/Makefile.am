@@ -19,5 +19,11 @@ yagips_LDADD += $(GETRANDOM_LIB) $(INET_NTOP_LIB) $(INET_PTON_LIB) $(LIBPMULTITH
 BUILT_SOURCES = $(proto_hdr)
 CLEANFILES = $(proto_src) $(proto_hdr)
 dist_noinst_DATA = $(proto)
+
+AM_V_PROTOC = $(am__v_PROTOC_@AM_V@)
+am__v_PROTOC_ = $(am__v_PROTOC_@AM_DEFAULT_V@)
+am__v_PROTOC_0 = @echo "  PROTOC  " $<;
+am__v_PROTOC_1 = 
+
 %.pb.cc %.pb.h: %.proto
-	$(PROTOC) --proto_path=$(srcdir)/proto --cpp_out=$(builddir)/proto $^
+	$(AM_V_PROTOC)$(PROTOC) --proto_path=$(srcdir)/proto --cpp_out=$(builddir)/proto $<
