@@ -11,9 +11,12 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include <stdio.h>
 #include <sqlite3.h>
+#include <leveldb/db.h>
 #include <stdexcept>
 #include "account.h"
 #include "dbgate.h"
+#include "define.pb.h"
+#include "storage.pb.h"
 
 extern "C" {
 	static int createTables(sqlite3*);
@@ -21,21 +24,46 @@ extern "C" {
 
 dbGate* globalDbGate;
 
-dbGate::dbGate(const char* path) {
-	// TODO Append file name to path
+dbGate::dbGate(const char* path, const char* ldbpath) {
 	int ret = sqlite3_open_v2(path, &db, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, NULL);
+	static char b[1024];
 	if (ret != SQLITE_OK) {
-		char b[1024];
 		snprintf(b, 1024, "SQLite connection couldn't be made, error %d", -ret);
 		throw std::runtime_error(b);
 	}
 	if (createTables(db)) {
 		throw std::runtime_error("Unable to create at least one database table.");
 	}
+	// Don't compress on LevelDB side, since (soon:tm:) we apply Zlib compression to most input data.
+	ldbopt.compression = leveldb::kNoCompression;
+	ldbopt.create_if_missing = true;
+	leveldb::Status s = leveldb::DB::Open(ldbopt, ldbpath, &ldb);
+	if (!s.ok()) {
+		snprintf(b, 1024, "LevelDB object couldn't be created, error: %s", s.ToString().c_str());
+		throw std::runtime_error(b);
+	}
+	load();
 }
 
 dbGate::~dbGate() {
+	save();
 	sqlite3_close_v2(db);
+	if (ldb != NULL) delete ldb;
+}
+
+int dbGate::load() {
+	std::string val = getLdbObject("nextID");
+	if (val.empty()) return 0;
+	if (!next_ids.ParseFromString(val)) return -1;
+	return 0;
+}
+
+int dbGate::save() {
+	std::string val;
+	if (!next_ids.SerializeToString(&val)) {
+		return -1;
+	}
+	return setLdbObject("nextID", val);
 }
 
 extern "C" {
@@ -50,14 +78,6 @@ extern "C" {
 			return -1;
 		}
 		// CREATE TABLE bans (aid INTEGER, uid INTEGER, ip TEXT, reason TEXT, start INTEGER DEFAULT (strftime('%s', 'now')), end INTEGER);
-		// TODO More data than just uid and aid
-		ret = sqlite3_exec(db,
-			"CREATE TABLE IF NOT EXISTS players (uid INTEGER PRIMARY KEY, aid INTEGER);",
-		NULL, NULL, NULL);
-		if (ret != SQLITE_OK) {
-			fprintf(stderr, "Unable to create accounts table - errcode %d\n", -ret);
-			return -1;
-		}
 		return 0;
 	}
 }
@@ -453,173 +473,239 @@ int dbGate::deleteAccount(const Account& account) {
 		return -1;
 	}
 	sqlite3_finalize(stmt);
+	// TODO Delete player objects owned by this aid
 	return 0;
 }
 
 Player* dbGate::getPlayerByAccount(const Account& account) {
-	sqlite3_stmt* stmt;
-	Player* player;
-	unsigned int aid = account.getAccountId();
-	int ret = sqlite3_prepare(db, "SELECT uid FROM players WHERE aid = ?1 limit 1;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
-	}
-	ret = sqlite3_bind_int(stmt, 1, aid);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
-	}
-	ret = sqlite3_step(stmt);
-	switch (ret) {
-	default: // error
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_DONE: // no results
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_ROW: // got a hit
-		player = new Player();
-		player->setUid(sqlite3_column_int(stmt, 0));
-		player->setAccount(&account);
-		return player;
-	}
+	return getPlayerByAid(account.getAccountId());
 }
 
 Player* dbGate::getPlayerByAid(unsigned int aid) {
-	const Account* account = getAccountByAid(aid);
-	if (account != NULL) return getPlayerByAccount(*account);
-	// If null, try a query anyways. As crazy as it sounds, valid players can sometimes have invalid accounts.
-	sqlite3_stmt* stmt;
-	Player* player;
-	int ret = sqlite3_prepare(db, "SELECT uid FROM players WHERE aid = ?1 limit 1;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
+	Player* player = NULL;
+	unsigned int key_type;
+	storage::PlayerInfo* pval = new storage::PlayerInfo();
+	std::string val;
+	leveldb::Iterator* it = ldb->NewIterator(leveldb::ReadOptions());
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
+		if (key_type != PLAYER) continue;
+		val = it->value().ToString();
+		if (!pval->ParseFromString(val)) continue;
+		if (pval->aid() == aid) {
+			player = new Player(*pval);
+			break;
+		}
+		pval->Clear();
 	}
-	ret = sqlite3_bind_int(stmt, 1, aid);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
+	if (!it->status().ok()) {
+		fprintf(stderr, "Warning: Error searching leveldb keys: %s\n", it->status().ToString().c_str());
 	}
-	ret = sqlite3_step(stmt);
-	switch (ret) {
-	default: // error
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_DONE: // no results
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_ROW: // got a hit
-		player = new Player();
-		player->setUid(sqlite3_column_int(stmt, 0));
-		player->setAccount(account);
-		sqlite3_finalize(stmt);
-		return player;
-	}
+	delete it;
+	delete pval;
+	return player;
 }
 
 Player* dbGate::getPlayerByUid(unsigned int uid) {
-	sqlite3_stmt* stmt;
-	Player* player;
-	unsigned int aid;
-	int ret = sqlite3_prepare(db, "SELECT aid FROM players WHERE uid = ?1 limit 1;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+	static char key_c[8];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = PLAYER;
+	key_i[1] = uid;
+	std::string key(key_c, 8);
+	std::string val = getLdbObject(key);
+	if (val.empty()) return NULL;
+	storage::PlayerInfo* pval = new storage::PlayerInfo();
+	if (!pval->ParseFromString(val)) {
+		delete pval;
 		return NULL;
 	}
-	ret = sqlite3_bind_int(stmt, 1, uid);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
-	}
-	ret = sqlite3_step(stmt);
-	switch (ret) {
-	default: // error
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_DONE: // no results
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_ROW: // got a hit
-		player = new Player();
-		player->setUid(uid);
-		aid = sqlite3_column_int(stmt, 0);
-		sqlite3_finalize(stmt);
-		player->setAccount(getAccountByAid(aid));
-		return player;
-	}
+	Player* player = new Player(*pval);
+	delete pval;
+	return player;
 }
 
 Player* dbGate::newPlayer() {
+	unsigned int next_uid = next_ids.next_uid();
+	if (next_uid == 0) {
+		next_uid = 1;
+	}
+	static char key_c[8];
+	unsigned int* key_i = (unsigned int*) key_c;
+	std::string key;
+	std::string val;
+	key_i[0] = PLAYER;
 	// TODO Allow reserving uid values
-	sqlite3_stmt* stmt;
-	int ret = sqlite3_prepare(db, "INSERT INTO players DEFAULT VALUES;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
+	while(1) {
+		key_i[1] = next_uid;
+		key.assign(key_c, 8);
+		val = getLdbObject(key);
+		if (val.empty()) break;
+		next_uid++;
 	}
-	ret = sqlite3_step(stmt);
-	if (ret != SQLITE_DONE) {
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		return NULL;
-	}
-	sqlite3_finalize(stmt);
+	next_ids.set_next_uid(next_uid);
 	Player* player = new Player();
-	player->setUid(sqlite3_last_insert_rowid(db));
+	player->setUid(next_uid);
+	savePlayer(*player);
 	return player;
 }
 
 int dbGate::savePlayer(const Player& player) {
-	// TODO More data than just uid and aid
-	const Account* account = player.getAccount();
-	// TODO Set aid to 0 rather than return immediately once more data needs to be saved
-	if (account == NULL) return -1;
-	sqlite3_stmt* stmt;
-	int ret = sqlite3_prepare(db, "UPDATE players SET aid = ?1 WHERE uid = ?2;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -3;
-	}
-	ret = sqlite3_bind_int(stmt, 1, player.getUid());
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
-	}
-	ret = sqlite3_bind_int(stmt, 2, account->getAccountId());
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
-	}
-	ret = sqlite3_step(stmt);
-	if (ret != SQLITE_DONE) {
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		return -1;
-	}
-	sqlite3_finalize(stmt);
-	return 0;
+	static char key_c[8];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = PLAYER;
+	key_i[1] = player.getUid();
+	std::string key(key_c, 8);
+	std::string val;
+	storage::PlayerInfo p = player;
+	if (!p.SerializeToString(&val)) return -1;
+	return setLdbObject(key, val);
 }
 
 int dbGate::deletePlayer(const Player& player) {
-	sqlite3_stmt* stmt;
-	int ret = sqlite3_prepare(db, "DELETE FROM players WHERE uid = ?1;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
+	// TODO Delete objects owned by this uid
+	static char key_c[8];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = PLAYER;
+	key_i[1] = player.getUid();
+	std::string key(key_c, 8);
+	return delLdbObject(key);
+}
+
+std::string dbGate::getLdbObject(const std::string& key) {
+	std::string ret;
+	leveldb::Status s = ldb->Get(leveldb::ReadOptions(), key, &ret);
+	// If a key isn't found in the db, don't indicate an error unless another error occured.
+	if (!(s.ok() || s.IsNotFound())) {
+		fprintf(stderr, "Warning: Error getting leveldb key: %s\n", s.ToString().c_str());
 	}
-	ret = sqlite3_bind_int(stmt, 1, player.getUid());
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
+	return ret;
+}
+int dbGate::setLdbObject(const std::string& key, const std::string& val) {
+	int ret = 0;
+	leveldb::Status s = ldb->Put(leveldb::WriteOptions(), key, val);
+	if (!s.ok()) {
+		fprintf(stderr, "Warning: Error setting leveldb key: %s\n", s.ToString().c_str());
+		ret = -1;
 	}
-	ret = sqlite3_step(stmt);
-	if (ret != SQLITE_DONE) {
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		return -1;
+	return ret;
+}
+
+int dbGate::delLdbObject(const std::string& key) {
+	int ret = 0;
+	leveldb::Status s = ldb->Delete(leveldb::WriteOptions(), key);
+	if (!s.ok()) {
+		fprintf(stderr, "Warning: Error deleting leveldb key: %s\n", s.ToString().c_str());
+		ret = -1;
 	}
-	sqlite3_finalize(stmt);
-	return 0;
+	return ret;
+}
+
+Avatar* dbGate::getAvatarByGuid(unsigned long long guid) {
+	proto::AvatarInfo* v = getAvatarPbByGuid(guid);
+	if (v == NULL) return NULL;
+	Avatar* ret = new Avatar(*v);
+	delete v;
+	return ret;
+}
+
+proto::AvatarInfo* dbGate::getAvatarPbByGuid(unsigned long long guid) {
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	std::string val = getLdbObject(key);
+	if (val.empty()) return NULL;
+	proto::AvatarInfo* ret = new proto::AvatarInfo();
+	if (!ret->ParseFromString(val)) {
+		delete ret;
+		return NULL;
+	}
+	return ret;
+}
+
+int dbGate::saveAvatar(const Avatar& a) {
+	return saveAvatar(a);
+}
+
+int dbGate::saveAvatar(const proto::AvatarInfo& a) {
+	unsigned long long guid = a.guid();
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	std::string val;
+	if (!a.SerializeToString(&val)) return -1;
+	return setLdbObject(key, val);
+}
+
+int dbGate::deleteAvatar(const Avatar& a) {
+	return deleteByGuid(a.getGuid());
+}
+
+int dbGate::deleteAvatar(const proto::AvatarInfo& a) {
+	return deleteByGuid(a.guid());
+}
+
+Item* dbGate::getItemByGuid(unsigned long long guid) {
+	proto::Item* v = getItemPbByGuid(guid);
+	if (v == NULL) return NULL;
+	Item* ret = new Item(*v);
+	delete v;
+	return ret;
+}
+
+proto::Item* dbGate::getItemPbByGuid(unsigned long long guid) {
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	std::string val = getLdbObject(key);
+	if (val.empty()) return NULL;
+	proto::Item* ret = new proto::Item();
+	if (!ret->ParseFromString(val)) {
+		delete ret;
+		return NULL;
+	}
+	return ret;
+}
+
+int dbGate::saveItem(const Item& i) {
+	return saveItem(i);
+}
+
+int dbGate::saveItem(const proto::Item& i) {
+	unsigned long long guid = i.guid();
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	std::string val;
+	if (!i.SerializeToString(&val)) return -1;
+	return setLdbObject(key, val);
+}
+
+int dbGate::deleteItem(const Item& i) {
+	return deleteByGuid(i.guid);
+}
+
+int dbGate::deleteItem(const proto::Item& i) {
+	return deleteByGuid(i.guid());
+}
+
+int dbGate::deleteByGuid(unsigned long long guid) {
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	return delLdbObject(key);
 }

@@ -12,12 +12,20 @@ You should have received a copy of the GNU Affero General Public License along w
 #ifndef DBGATE_H
 #define DBGATE_H
 #include <sqlite3.h>
+#include <leveldb/db.h>
 #include "account.h"
 #include "player.h"
+#include "avatar.h"
+#include "item.h"
+#include "proto/define.pb.h"
+#include "proto/storage.pb.h"
+
 class dbGate {
 public:
-	dbGate(const char*);
+	dbGate(const char*, const char*);
 	~dbGate();
+	int load();
+	int save();
 	/* Account manager */
 	Account* getAccountByAid(unsigned int);
 	Account* getAccountByUid(unsigned int);
@@ -35,8 +43,42 @@ public:
 	Player* newPlayer();
 	int savePlayer(const Player&);
 	int deletePlayer(const Player&);
+	std::string getLdbObject(const std::string&);
+	int setLdbObject(const std::string&, const std::string&);
+	int delLdbObject(const std::string&);
+	Avatar* getAvatarByGuid(unsigned long long);
+	proto::AvatarInfo* getAvatarPbByGuid(unsigned long long);
+	int saveAvatar(const Avatar&);
+	int saveAvatar(const proto::AvatarInfo&);
+	int deleteAvatar(const Avatar&);
+	int deleteAvatar(const proto::AvatarInfo&);
+	Item* getItemByGuid(unsigned long long);
+	proto::Item* getItemPbByGuid(unsigned long long);
+	int saveItem(const Item&);
+	int saveItem(const proto::Item&);
+	int deleteItem(const Item&);
+	int deleteItem(const proto::Item&);
+	int deleteByGuid(unsigned long long);
+	enum LevelDbKeyType : unsigned int {
+		INVENTORY = 0, // items and avatars
+		ACCOUNT, // account objects (also includes bans) (unused for now)
+		PLAYER, // player objects
+		FRIEND, // friendships
+		GACHA, // gacha log
+		MAIL, // mail
+		QUEST, // quests
+		BATTLE_PASS, // bp missions
+		ACHIEVEMENT, // achievements
+		ACTIVITY, // events
+		TOWER, // spiral abyss
+		WORLD, // saved group/block data
+		CODEX, // in-game archive
+	};
 private:
 	sqlite3* db;
+	leveldb::DB* ldb;
+	leveldb::Options ldbopt;
+	storage::NextIdInfo next_ids;
 };
 extern dbGate* globalDbGate;
 #endif

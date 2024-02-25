@@ -109,6 +109,9 @@ Config::Config(const char* path) {
 			// `core.dbPath` - Database path
 			val = toml_table_string(subConfig, "dbPath");
 			config.dbPath = val.ok ? val.u.s : VARDIR "/db.sqlite";
+			// `core.ldbPath` - Database path (LevelDB)
+			val = toml_table_string(subConfig, "ldbPath");
+			config.ldbPath = val.ok ? val.u.s : VARDIR "/ldb";
 			// `core.dataPath` - Server data path (keys, data tables, extra config)
 			val = toml_table_string(subConfig, "dataPath");
 			config.dataPath = val.ok ? val.u.s : DATADIR;
@@ -120,6 +123,7 @@ Config::Config(const char* path) {
 			config.maxSessions = 10;
 			config.sessionTickRate = 500;
 			config.dbPath = VARDIR "/db.sqlite";
+			config.ldbPath = VARDIR "/ldb";
 			config.dataPath = DATADIR;
 			config.logPath = LOGDIR "/yagips.log";
 		}
@@ -358,6 +362,7 @@ Config::Config(const char* path) {
 		config.maxSessions = 10;
 		config.sessionTickRate = 500;
 		config.dbPath = VARDIR "/db.sqlite";
+		config.ldbPath = VARDIR "/ldb.sqlite";
 		config.dataPath = DATADIR;
 		config.logPath = LOGDIR "/yagips.log";
 		config.gameserver_bind_ip = "::";

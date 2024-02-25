@@ -1,0 +1,143 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* This file is part of yagips.
+
+©2024 Alex Pensinger (ArcticLuma113)
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
+
+syntax = "proto3";
+
+package storage;
+
+import "define.proto";
+import "item.proto";
+
+// cached incrementers to save time looking for things
+// type 0 incrementer is stored in player object
+// types 3 and 6+ do not need these yet, they're indexed by game data id, schedule id, and/or uid
+message NextIdInfo {
+	uint32 next_aid = 2;
+	uint32 next_uid = 3;
+	uint32 next_gacha = 5;
+	uint32 next_mail = 6;
+	reserved 1, 4, 7 to 13;
+	reserved "next_guid", "next_friend", "next_quest", "next_bp", "next_achievement", "next_activity", "next_tower", "next_block", "next_codex";
+};
+
+// Type 0: Items and avatars
+message InventoryEntry {
+	oneof type {
+		proto.AvatarInfo avatar = 1;
+		proto.Item item = 2;
+	};
+};
+
+// Type 1: Account data
+message AccountInfo {
+	uint32 id = 1;
+	string username = 2;
+	string email = 3;
+	string password = 4;
+	bytes token = 5;
+	int64 token_expire_ts = 6;
+	string device_id = 7;
+	bool is_guest = 8;
+	uint32 reserved_uid = 9;
+};
+
+// Type 2: Player data
+message SceneData {
+	repeated uint32 points = 1;
+	repeated uint32 areas = 2;
+	repeated uint32 tags = 3;
+};
+
+message PlayerInfo {
+	uint32 uid = 1;
+	uint32 aid = 2;
+	uint32 session_id = 3;
+	uint64 session_seed = 4;
+	int64 session_expire_ts = 5;
+	uint32 next_guid = 6;
+	string name = 7;
+	string signature = 8;
+	uint32 pfp = 9;
+	uint32 namecard = 10;
+	proto.Birthday birthday = 11;
+	uint32 adventure_rank = 12;
+	uint64 adventure_exp = 13;
+	uint32 world_level = 14;
+	bool show_avatars = 15;
+	repeated uint32 show_avatar_guid_list = 16;
+	repeated uint32 show_namecard_list = 17;
+	// TODO Teams (18)
+	map<uint32, uint32> props = 19;
+	// TODO Abilities (20)
+	uint32 scene_id = 21;
+	proto.Vector position = 22;
+	float rotation = 23;
+	repeated uint32 open_states = 24;
+	map<uint32, SceneData> scene_data = 25;
+	// TODO Markers (26)
+	uint32 region_id = 27;
+	uint32 widget_id = 28;
+	repeated uint32 wings = 29;
+	repeated uint32 namecards = 30;
+	repeated uint32 costumes = 31;
+	repeated uint32 unlocked_forge_items = 32;
+	repeated uint32 unlocked_alchemy_items = 33;
+	repeated uint32 unlocked_cook_items = 34;
+	repeated uint32 claimed_ar_rewards = 35;
+	// TODO Statue levels (36)
+	repeated proto.ForgeQueueData forge_queue = 37;
+	// TODO Cooking queue (38)
+	repeated proto.AvatarExpeditionInfo expeditions = 39;
+	// TODO Reputation levels (40)
+	// TODO Bounties (41)
+	// TODO Offering levels (42)
+	reserved 18, 20, 26, 36, 38, 40, 41, 42;
+	reserved "teams", "abilities", "cooking_queue";
+};
+
+// Type 3: Friendship record
+message Friendship {
+	uint32 uid = 1;
+	uint32 friend_uid = 2;
+	bool pending = 3;
+};
+
+// Type 4: Gacha record
+message GachaRecord {
+	uint32 id = 1;
+	uint32 uid = 2;
+	uint32 banner_type = 3;
+	uint32 schedule_id = 4;
+	int64 time = 5;
+	uint32 item_id = 6;
+};
+
+// Type 5: Mail: use proto.Mail
+
+// Type 6: Quest: use proto.Quest
+
+// Type 7: Battle pass data
+// TODO
+
+// Type 8: Achievement data
+// TODO
+
+// Type 9: Event data
+// TODO
+
+// Type 10: Spiral Abyss data
+// TODO
+
+// Type 11: Saved block/group data
+// TODO
+
+// Type 12: Archive data
+// TODO

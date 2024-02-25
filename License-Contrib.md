@@ -19,6 +19,7 @@ They are as follows:
 * OpenSSL \(<https://openssl.org>\)
 * SQLite3 \(<https://www.sqlite.org>\)
 * json-c \(<https://github.com/json-c/json-c>\)
+* LevelDB \(<https://github.com/google/leveldb>\)
 
 ## mt19937-64
 
