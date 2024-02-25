@@ -34,6 +34,7 @@ dbGate::dbGate(const char* path, const char* ldbpath) {
 	}
 	// Don't compress on LevelDB side, since (soon:tm:) we apply Zlib compression to most input data.
 	ldbopt.compression = leveldb::kNoCompression;
+	ldbopt.create_if_missing = true;
 	leveldb::Status s = leveldb::DB::Open(ldbopt, ldbpath, &ldb);
 	if (!s.ok()) {
 		snprintf(b, 1024, "LevelDB object couldn't be created, error: %s", s.ToString().c_str());
