@@ -473,6 +473,7 @@ int dbGate::deleteAccount(const Account& account) {
 		return -1;
 	}
 	sqlite3_finalize(stmt);
+	// TODO Delete player objects owned by this aid
 	return 0;
 }
 
@@ -561,6 +562,7 @@ int dbGate::savePlayer(const Player& player) {
 }
 
 int dbGate::deletePlayer(const Player& player) {
+	// TODO Delete objects owned by this uid
 	static char key_c[8];
 	unsigned int* key_i = (unsigned int*) key_c;
 	key_i[0] = PLAYER;

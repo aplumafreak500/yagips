@@ -28,8 +28,15 @@ You should have received a copy of the GNU Affero General Public License along w
 Player::Player() {
 	account = NULL;
 	session = NULL;
-	tpToken = 0;
-	nextGuid = 0;
+	tpToken = 1;
+	nextGuid = 1;
+	ar = 1;
+	ar_exp = 0;
+	worldLevel = 0;
+	pos.x = 2747.562;
+	pos.y = 194.633;
+	pos.z = -1719.386;
+	scene_id = 3;
 }
 
 Player::Player(const storage::PlayerInfo& p) {
