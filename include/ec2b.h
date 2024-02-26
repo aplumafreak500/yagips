@@ -43,6 +43,7 @@ public:
 	Ec2b(const ec2b_t*); // as above but takes a pointer
 	Ec2b(const std::string&, const std::string&); // Key and seed in params
 	Ec2b(const char*, size_t, const char*, size_t); // as above but with c-style types
+	~Ec2b();
 	const std::string& getKey() const;
 	void setKey(const std::string&);
 	const std::string& getData() const;

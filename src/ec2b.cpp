@@ -23,6 +23,7 @@ extern "C" {
 }
 
 Ec2b::Ec2b() {}
+Ec2b::~Ec2b() {}
 
 Ec2b::Ec2b(int r) {
 	if (r) {
