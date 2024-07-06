@@ -35,5 +35,12 @@
 /* Test whether X is a NaN.  */
 # undef isnanl
 # define isnanl rpl_isnanl
-extern int isnanl (long double x);
+extern
+# ifdef __cplusplus
+"C"
+# endif
+int isnanl (long double x);
 #endif
+
+/* Tell <math.h> that our isnanl does not need libm.  */
+#define HAVE_ISNANL_NOLIBM 1

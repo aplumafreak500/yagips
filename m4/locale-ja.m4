@@ -1,4 +1,5 @@
-# locale-ja.m4 serial 18
+# locale-ja.m4
+# serial 18
 dnl Copyright (C) 2003, 2005-2024 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
@@ -117,7 +118,7 @@ int main ()
                 if (LC_ALL=ja_JP.EUC LC_TIME= LC_CTYPE= ./conftest; exit) 2>/dev/null; then
                   gt_cv_locale_ja=ja_JP.EUC
                 else
-                  # Test for the Solaris 7 locale name.
+                  # Test for the Solaris 10 locale name.
                   if (LC_ALL=ja LC_TIME= LC_CTYPE= ./conftest; exit) 2>/dev/null; then
                     gt_cv_locale_ja=ja
                   else

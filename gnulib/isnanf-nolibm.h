@@ -35,12 +35,23 @@
 #  if defined __sgi
    /* We can't include <ieeefp.h>, because it conflicts with our definition of
       isnand.  Therefore declare isnanf separately.  */
-extern int isnanf (float x);
+extern
+#   ifdef __cplusplus
+"C"
+#   endif
+int isnanf (float x);
 #  endif
 # endif
 #else
 /* Test whether X is a NaN.  */
 # undef isnanf
 # define isnanf rpl_isnanf
-extern int isnanf (float x);
+extern
+# ifdef __cplusplus
+"C"
+# endif
+int isnanf (float x);
 #endif
+
+/* Tell <math.h> that our isnanf does not need libm.  */
+#define HAVE_ISNANF_NOLIBM 1

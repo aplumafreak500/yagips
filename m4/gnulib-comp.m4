@@ -119,6 +119,8 @@ AC_DEFUN([gl_EARLY],
   # Code from module mbszero:
   # Code from module memchr:
   # Code from module minmax:
+  # Code from module mixin/printf-gnu:
+  # Code from module mixin/printf-posix:
   # Code from module msvc-inval:
   # Code from module msvc-nothrow:
   # Code from module multiarch:
@@ -191,6 +193,7 @@ AC_DEFUN([gl_EARLY],
   # Code from module sys_stat:
   # Code from module sys_time:
   # Code from module sys_types:
+  AC_REQUIRE([AC_USE_SYSTEM_EXTENSIONS])
   # Code from module sys_uio:
   # Code from module threadlib:
   gl_THREADLIB_EARLY
@@ -200,6 +203,9 @@ AC_DEFUN([gl_EARLY],
   # Code from module vararrays:
   # Code from module vasnprintf:
   # Code from module vfprintf-posix:
+  # Code from module vfzprintf:
+  # Code from module vsnzprintf:
+  # Code from module vszprintf:
   # Code from module wchar:
   # Code from module windows-once:
   # Code from module windows-thread:
@@ -468,6 +474,8 @@ AC_DEFUN([gl_INIT],
   ])
   gl_STRING_MODULE_INDICATOR([memchr])
   gl_MINMAX
+  # Conditionally invoke gl_PREREQ_VASNPRINTF_WITH_GNU_EXTRAS.
+  # Conditionally invoke gl_PREREQ_VASNPRINTF_WITH_POSIX_EXTRAS.
   AC_REQUIRE([gl_MSVC_INVAL])
   gl_CONDITIONAL([GL_COND_OBJ_MSVC_INVAL],
                  [test $HAVE_MSVC_INVALID_PARAMETER_HANDLER = 1])
@@ -750,6 +758,9 @@ AC_DEFUN([gl_INIT],
   gl_FUNC_VFPRINTF_POSIX
   gl_STDIO_MODULE_INDICATOR([vfprintf-posix])
   gl_MODULE_INDICATOR([vfprintf-posix])
+  gl_STDIO_MODULE_INDICATOR([vfzprintf])
+  gl_STDIO_MODULE_INDICATOR([vsnzprintf])
+  gl_STDIO_MODULE_INDICATOR([vszprintf])
   gl_WCHAR_H
   gl_WCHAR_H_REQUIRE_DEFAULTS
   AC_PROG_MKDIR_P
@@ -1106,6 +1117,9 @@ AC_DEFUN([gl_FILE_LIST], [
   lib/vasnprintf.h
   lib/verify.h
   lib/vfprintf.c
+  lib/vfzprintf.c
+  lib/vsnzprintf.c
+  lib/vszprintf.c
   lib/w32sock.h
   lib/warn-on-use.h
   lib/wchar.in.h
@@ -1196,6 +1210,7 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/nanosleep.m4
   m4/netinet_in_h.m4
   m4/nocrash.m4
+  m4/off64_t.m4
   m4/off_t.m4
   m4/open-cloexec.m4
   m4/open-slash.m4
@@ -1208,6 +1223,7 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/printf-posix.m4
   m4/printf.m4
   m4/pselect.m4
+  m4/pthread-spin.m4
   m4/pthread-thread.m4
   m4/pthread_h.m4
   m4/pthread_sigmask.m4
@@ -1247,6 +1263,7 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/strstr.m4
   m4/strtod.m4
   m4/strtold.m4
+  m4/sys_cdefs_h.m4
   m4/sys_random_h.m4
   m4/sys_select_h.m4
   m4/sys_socket_h.m4
@@ -1264,7 +1281,6 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/vfprintf-posix.m4
   m4/warn-on-use.m4
   m4/wchar_h.m4
-  m4/wchar_t.m4
   m4/wint_t.m4
   m4/xsize.m4
   m4/zzgnulib.m4
