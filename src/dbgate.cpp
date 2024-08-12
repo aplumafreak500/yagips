@@ -626,7 +626,8 @@ proto::AvatarInfo* dbGate::getAvatarPbByGuid(unsigned long long guid) {
 }
 
 int dbGate::saveAvatar(const Avatar& a) {
-	return saveAvatar(a);
+	proto::AvatarInfo ap = a;
+	return saveAvatar(ap);
 }
 
 int dbGate::saveAvatar(const proto::AvatarInfo& a) {
@@ -676,7 +677,8 @@ proto::Item* dbGate::getItemPbByGuid(unsigned long long guid) {
 }
 
 int dbGate::saveItem(const Item& i) {
-	return saveItem(i);
+	proto::Item ip = i;
+	return saveItem(ip);
 }
 
 int dbGate::saveItem(const proto::Item& i) {
