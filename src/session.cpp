@@ -56,7 +56,10 @@ void Session::close(unsigned int reason) {
 		delete kcpSession;
 		kcpSession = NULL;
 	}
-	player = NULL;
+	if (player != NULL) {
+		delete player;
+		player = NULL;
+	}
 	state = 1; // <some constant idk...>
 }
 
