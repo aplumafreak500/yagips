@@ -175,6 +175,9 @@ Config::Config(const char* path) {
 				}
 				else config.regionInfo->gateserverIpIsDomainName = val.u.b;
 				// TODO If gateserverIpIsDomainName is false, run gateserverIp through inet_pton. If a valid ipv4 or ipv6 is detected, do no further checks. Else, run it through gethostbyname2. If there's a positive result, reset gateserverIp to the result of the name lookup, else, set gateserverIpIsDomainName to true anyways.
+				// `dispatch.regionListSeed` - Ec2b initial seed for region list. Can be an integer or a path to a binary seed file. TODO
+				// `dispatch.regionSeed` - Ec2b initial seed for region. Can be an integer or a path to a binary seed file. TODO
+				// `dispatch.dispatchSeed` - Ec2b initial seed for dispatch. Can be an integer or a path to a binary seed file. TODO
 				// All following `dispatch` fields are copied verbatim to the RegionInfo protobuf message.
 				val = toml_table_string(subConfig, "feedbackUrl");
 				config.regionInfo->feedbackUrl = val.ok ? val.u.s : NULL;
@@ -362,7 +365,7 @@ Config::Config(const char* path) {
 		config.maxSessions = 10;
 		config.sessionTickRate = 500;
 		config.dbPath = VARDIR "/db.sqlite";
-		config.ldbPath = VARDIR "/ldb.sqlite";
+		config.ldbPath = VARDIR "/ldb";
 		config.dataPath = DATADIR;
 		config.logPath = LOGDIR "/yagips.log";
 		config.gameserver_bind_ip = "::";

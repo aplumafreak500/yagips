@@ -30,6 +30,7 @@ extern "C" {
 	static pthread_t dispatch, gameserver, parent;
 	static struct sigaction SA_DFL;
 
+	// TODO Once log files are implemented, upon receiving a SIGHUP, just close and/or dup2 the log files over stdio then continue, instead of terminating
 	static void handleTerm(int sig) {
 		static int timesCalled = 0;
 		pthread_t tid = pthread_self();
@@ -45,6 +46,9 @@ extern "C" {
 		exitSignal = sig;
 	}
 
+	// TODO SIGUSR1, if sent, should trigger a config reload
+
+	// TODO maybe consider moving into dispatch.cpp and/or session.cpp
 	int loadKeys(const char* basePath) {
 		char keyPathBuf[4096];
 		keyPathBuf[4095] = '\0';
@@ -62,7 +66,6 @@ extern "C" {
 			hasDispatchSeed = 1;
 			delete ec2b;
 		}
-		// TODO: Signing/auth rsa keys
 		return 0;
 	}
 
