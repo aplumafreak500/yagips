@@ -69,8 +69,8 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	char sclient[32];
 	char sregion[3];
 	int sret;
-	char configBuf[1024];
-	const char* config;
+	char configBuf1[1024];
+	char configBuf2[1024];
 	size_t config_sz;
 	const config_t* config_p;
 	size_t i;
@@ -231,11 +231,6 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 		ret.set_retcode(-1);
 		goto build_rsp;
 	}
-	// TODO Grab from config
-	// TODO Unknown what these do
-	// TODO CNREL sdkenv needs to be 0
-	config = "{\"sdkenv\":\"2\",\"checkdevice\":false,\"loadPatch\":false,\"showexception\":false,\"regionConfig\":\"pm|fk|add\",\"downloadMode\":0,\"codeSwitch\":[0]}";
-	config_sz = strlen(config);
 	if (hasRegionListSeed < 0) {
 		tmpBuf[4095] = '\0';
 		snprintf(tmpBuf, 4095, "%s/keys/regionListSeed.bin", globalConfig->getConfig()->dataPath);
@@ -250,20 +245,25 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 			hasRegionListSeed = 1;
 		}
 	}
+	// TODO Grab from config
+	// TODO Unknown what these do
+	configBuf1[1023] = '\0';
+	snprintf(configBuf1, 1023, "{\"sdkenv\":\"%d\",\"checkdevice\":false,\"loadPatch\":false,\"showexception\":false,\"regionConfig\":\"pm|fk|add\",\"downloadMode\":0,\"codeSwitch\":[0]}", region == REGION_CN ? 0 : 2);
+	config_sz = strlen(configBuf1);
 	if (hasRegionListSeed > 0) {
 		regionListKey = new Ec2b(regionListSeed);
 		for (i = 0; i < config_sz; i++) {
-			configBuf[i] = config[i] ^ regionListKey->getXorpad().c_str()[i % 4096];
+			configBuf2[i] = configBuf1[i] ^ regionListKey->getXorpad().c_str()[i % 4096];
 		}
 		/* Dispatch seed (used to derive xor key) */
 		ret.set_client_secret_key(*regionListKey);
 		delete regionListKey;
-		cconfig.assign(configBuf, config_sz);
+		cconfig.assign(configBuf2, config_sz);
 		ret.set_client_custom_config_encrypted(cconfig);
 	}
 	else {
 		// TODO what does the client do? null key? internal default? or just ignore?
-		ret.set_client_custom_config_encrypted(config);
+		ret.set_client_custom_config_encrypted(configBuf1);
 	}
 	// TODO Grab from config
 	/* TODO Unknown what this does. */
