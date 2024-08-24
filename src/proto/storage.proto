@@ -75,32 +75,33 @@ message PlayerInfo {
 	repeated uint32 show_avatar_guid_list = 16;
 	repeated uint32 show_namecard_list = 17;
 	// TODO Teams (18)
-	map<uint32, uint32> props = 19;
-	// TODO Abilities (20)
-	uint32 scene_id = 21;
-	proto.Vector position = 22;
-	float rotation = 23;
-	repeated uint32 open_states = 24;
-	map<uint32, SceneData> scene_data = 25;
-	// TODO Markers (26)
-	uint32 region_id = 27;
-	uint32 widget_id = 28;
-	repeated uint32 wings = 29;
-	repeated uint32 namecards = 30;
-	repeated uint32 costumes = 31;
-	repeated uint32 unlocked_forge_items = 32;
-	repeated uint32 unlocked_alchemy_items = 33;
-	repeated uint32 unlocked_cook_items = 34;
-	repeated uint32 claimed_ar_rewards = 35;
-	// TODO Statue levels (36)
-	repeated proto.ForgeQueueData forge_queue = 37;
-	// TODO Cooking queue (38)
-	repeated proto.AvatarExpeditionInfo expeditions = 39;
-	// TODO Reputation levels (40)
-	// TODO Bounties (41)
-	// TODO Offering levels (42)
-	reserved 18, 20, 26, 36, 38, 40, 41, 42;
-	reserved "teams", "abilities", "cooking_queue";
+	// TODO Current Team (19)
+	map<uint32, uint32> props = 20;
+	// TODO Abilities (21)
+	uint32 scene_id = 22;
+	proto.Vector position = 23;
+	float rotation = 24;
+	repeated uint32 open_states = 25;
+	map<uint32, SceneData> scene_data = 26;
+	// TODO Markers (27)
+	uint32 region_id = 28;
+	uint32 widget_id = 29;
+	repeated uint32 wings = 30;
+	repeated uint32 namecards = 31;
+	repeated uint32 costumes = 32;
+	repeated uint32 unlocked_forge_items = 33;
+	repeated uint32 unlocked_alchemy_items = 34;
+	repeated uint32 unlocked_cook_items = 35;
+	repeated uint32 claimed_ar_rewards = 36;
+	// TODO Statue levels (37)
+	repeated proto.ForgeQueueData forge_queue = 38;
+	// TODO Cooking queue (39)
+	repeated proto.AvatarExpeditionInfo expeditions = 40;
+	// TODO Reputation levels (41)
+	// TODO Bounties (42)
+	// TODO Offering levels (43)
+	reserved 18, 19, 21, 27, 37, 39, 41, 42, 43;
+	reserved "teams", "cur_team", "abilities", "cooking_queue";
 };
 
 // Type 3: Friendship record
