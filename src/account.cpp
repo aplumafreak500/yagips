@@ -15,11 +15,41 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "account.h"
 #include "session.h"
 #include "util.h"
+#include "proto/storage.pb.h"
 
 Account::Account() {
 	session = NULL;
 }
+
+Account::Account(const storage::AccountInfo& p) {
+	aid = p.id();
+	username = p.username();
+	password_hash = p.password();
+	email = p.email();
+	deviceId = p.device_id();
+	token = hexenc(p.token());
+	sessionKey = b64enc(p.session_key());
+	sessionKeyTimestamp = p.session_key_ts();
+	guest = p.is_guest();
+	// TODO Reserved uid
+	session = NULL;
+}
+
 Account::~Account() {}
+
+Account::operator storage::AccountInfo() const {
+	storage::AccountInfo ret;
+	ret.set_id(aid);
+	ret.set_username(username);
+	ret.set_password(password_hash);
+	ret.set_email(email);
+	ret.set_device_id(deviceId);
+	ret.set_token(hexdec(token));
+	ret.set_session_key(b64dec(sessionKey));
+	ret.set_session_key_ts(sessionKeyTimestamp);
+	// TODO Reserved uid
+	return ret;
+}
 
 unsigned int Account::getAccountId() const {
 	return aid;

@@ -54,15 +54,6 @@ PKG_CHECK_MODULES(LIBCRYPTO, libcrypto >= 3.0.5, [], [
 AC_SUBST(LIBCRYPTO_LIBS)
 AC_SUBST(LIBCRYPTO_CFLAGS)
 # TODO: do we need libssl at all?
-PKG_CHECK_MODULES(SQLITE3, sqlite3 >= 3.37.2, [], [
-	AC_CHECK_LIB(sqlite3, sqlite3_open_v2, [
-		SQLITE3_LIBS = "-lsqlite3"
-	], [
-		AC_MSG_ERROR([Required library 'sqlite3' not found.])
-	])
-])
-AC_SUBST(SQLITE3_LIBS)
-AC_SUBST(SQLITE3_CFLAGS)
 PKG_CHECK_MODULES(JSON_C, json-c >= 0.15, [], [
 	AC_CHECK_LIB(json-c, json_tokener_new, [
 		JSON_C_LIBS = "-ljson-c"

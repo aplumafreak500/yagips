@@ -43,10 +43,11 @@ message AccountInfo {
 	string email = 3;
 	string password = 4;
 	bytes token = 5;
-	int64 token_expire_ts = 6;
-	string device_id = 7;
-	bool is_guest = 8;
-	uint32 reserved_uid = 9;
+	bytes session_key = 6;
+	int64 session_key_ts = 7;
+	string device_id = 8;
+	bool is_guest = 9;
+	uint32 reserved_uid = 10;
 };
 
 // Type 2: Player data

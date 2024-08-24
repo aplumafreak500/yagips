@@ -11,7 +11,6 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #ifndef DBGATE_H
 #define DBGATE_H
-#include <sqlite3.h>
 #include <leveldb/db.h>
 #include "account.h"
 #include "player.h"
@@ -22,7 +21,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 class dbGate {
 public:
-	dbGate(const char*, const char*);
+	dbGate(const char*);
 	~dbGate();
 	int load();
 	int save();
@@ -75,9 +74,8 @@ public:
 		CODEX, // in-game archive
 	};
 private:
-	sqlite3* db;
-	leveldb::DB* ldb;
-	leveldb::Options ldbopt;
+	leveldb::DB* db;
+	leveldb::Options opt;
 	storage::NextIdInfo next_ids;
 };
 extern dbGate* globalDbGate;

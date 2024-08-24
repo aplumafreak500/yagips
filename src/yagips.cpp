@@ -110,7 +110,7 @@ extern "C" {
 		loadKeys(globalConfig->getConfig()->dataPath);
 		globalGameData = new GameData();
 		try {
-			globalDbGate = new dbGate(globalConfig->getConfig()->dbPath, globalConfig->getConfig()->ldbPath);
+			globalDbGate = new dbGate(globalConfig->getConfig()->dbPath);
 		}
 		catch(const std::exception& e) {
 			fprintf(stderr, "Unable to create db handle: %s\n", e.what());

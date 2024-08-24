@@ -14,10 +14,13 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string>
 class Account; // Resolves a circular dependency.
 #include "session.h"
+#include "proto/storage.pb.h"
 class Account {
 public:
 	Account();
+	Account(const storage::AccountInfo&);
 	~Account();
+	operator storage::AccountInfo() const;
 	const std::string& getUsername() const;
 	void setUsername(const std::string&);
 	const std::string& getPasswordHash() const;

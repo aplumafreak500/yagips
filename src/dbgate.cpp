@@ -10,7 +10,6 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 #include <stdio.h>
-#include <sqlite3.h>
 #include <leveldb/db.h>
 #include <stdexcept>
 #include "account.h"
@@ -18,26 +17,14 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "define.pb.h"
 #include "storage.pb.h"
 
-extern "C" {
-	static int createTables(sqlite3*);
-}
-
 dbGate* globalDbGate;
 
-dbGate::dbGate(const char* path, const char* ldbpath) {
-	int ret = sqlite3_open_v2(path, &db, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, NULL);
+dbGate::dbGate(const char* path) {
 	static char b[1024];
-	if (ret != SQLITE_OK) {
-		snprintf(b, 1024, "SQLite connection couldn't be made, error %d", -ret);
-		throw std::runtime_error(b);
-	}
-	if (createTables(db)) {
-		throw std::runtime_error("Unable to create at least one database table.");
-	}
-	// Don't compress on LevelDB side, since (soon:tm:) we apply Zlib compression to most input data.
-	ldbopt.compression = leveldb::kNoCompression;
-	ldbopt.create_if_missing = true;
-	leveldb::Status s = leveldb::DB::Open(ldbopt, ldbpath, &ldb);
+	// Don't compress since (soon:tm:) we apply Zlib compression to most input data.
+	opt.compression = leveldb::kNoCompression;
+	opt.create_if_missing = true;
+	leveldb::Status s = leveldb::DB::Open(opt, path, &db);
 	if (!s.ok()) {
 		snprintf(b, 1024, "LevelDB object couldn't be created, error: %s", s.ToString().c_str());
 		throw std::runtime_error(b);
@@ -47,8 +34,7 @@ dbGate::dbGate(const char* path, const char* ldbpath) {
 
 dbGate::~dbGate() {
 	save();
-	sqlite3_close_v2(db);
-	if (ldb != NULL) delete ldb;
+	if (db != NULL) delete db;
 }
 
 int dbGate::load() {
@@ -66,75 +52,22 @@ int dbGate::save() {
 	return setLdbObject("nextID", val);
 }
 
-extern "C" {
-	static int createTables(sqlite3* db) {
-		// TODO create more tables
-		// Table structures subject to change
-		int ret = sqlite3_exec(db,
-			"CREATE TABLE IF NOT EXISTS accounts (aid INTEGER PRIMARY KEY, timeCreated INTEGER NOT NULL DEFAULT (strftime('%s', 'now')), username TEXT UNIQUE, password TEXT, deviceId TEXT, email TEXT, token TEXT, sessionKeyCreated INTEGER, sessionKey TEXT);",
-		NULL, NULL, NULL);
-		if (ret != SQLITE_OK) {
-			fprintf(stderr, "Unable to create accounts table - errcode %d\n", -ret);
-			return -1;
-		}
-		// CREATE TABLE bans (aid INTEGER, uid INTEGER, ip TEXT, reason TEXT, start INTEGER DEFAULT (strftime('%s', 'now')), end INTEGER);
-		return 0;
-	}
-}
-
 Account* dbGate::getAccountByAid(unsigned int aid) {
-	sqlite3_stmt* stmt;
-	Account* account;
-	const char* username;
-	const char* password;
-	const char* deviceId;
-	const char* email;
-	const char* token;
-	const char* sessionKey;
-	int ret = sqlite3_prepare(db, "SELECT username, password, email, token, sessionKey, deviceId, sessionKeyCreated FROM accounts WHERE aid = ?1 limit 1;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
+	static char key_c[8];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = ACCOUNT;
+	key_i[1] = aid;
+	std::string key(key_c, 8);
+	std::string val = getLdbObject(key);
+	if (val.empty()) return NULL;
+	storage::AccountInfo* pval = new storage::AccountInfo();
+	if (!pval->ParseFromString(val)) {
+		delete pval;
 		return NULL;
 	}
-	ret = sqlite3_bind_int(stmt, 1, aid);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
-	}
-	ret = sqlite3_step(stmt);
-	switch (ret) {
-	default: // error
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_DONE: // no results
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_ROW: // got a hit
-		account = new Account();
-		account->setAccountId(aid);
-		username = (const char*) sqlite3_column_text(stmt, 0);
-		if (username != NULL) {
-			account->setUsername(username);
-			account->setIsGuest(0);
-		}
-		else {
-			account->setIsGuest(1);
-		}
-		password = (const char*) sqlite3_column_text(stmt, 1);
-		if (password != NULL) account->setPasswordHash(password);
-		email = (const char*) sqlite3_column_text(stmt, 2);
-		if (email != NULL) account->setEmail(email);
-		token = (const char*) sqlite3_column_text(stmt, 3);
-		if (token != NULL) account->setToken(token);
-		sessionKey = (const char*) sqlite3_column_text(stmt, 4);
-		if (sessionKey != NULL) account->setSessionKey(sessionKey);
-		deviceId = (const char*) sqlite3_column_text(stmt, 5);
-		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setSessionKeyTimestamp(sqlite3_column_int(stmt, 6));
-		sqlite3_finalize(stmt);
-		return account;
-	}
+	Account* account = new Account(*pval);
+	delete pval;
+	return account;
 }
 
 Account* dbGate::getAccountByUid(unsigned int uid) {
@@ -145,214 +78,137 @@ Account* dbGate::getAccountByUid(unsigned int uid) {
 
 Account* dbGate::getAccountByUsername(const char* username) {
 	if (username == NULL) return NULL;
-	sqlite3_stmt* stmt;
-	Account* account;
-	const char* password;
-	const char* deviceId;
-	const char* email;
-	const char* token;
-	const char* sessionKey;
-	int ret = sqlite3_prepare(db, "SELECT aid, password, email, token, sessionKey, deviceId, sessionKeyCreated FROM accounts WHERE username = ?1 limit 1;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
+	Account* account = NULL;
+	unsigned int key_type;
+	storage::AccountInfo* pval = new storage::AccountInfo();
+	std::string val;
+	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
+		if (key_type != ACCOUNT) continue;
+		val = it->value().ToString();
+		if (!pval->ParseFromString(val)) continue;
+		if (pval->username() == username) {
+			account = new Account(*pval);
+			break;
+		}
+		pval->Clear();
 	}
-	ret = sqlite3_bind_text(stmt, 1, username, -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
+	if (!it->status().ok()) {
+		fprintf(stderr, "Warning: Error searching leveldb keys: %s\n", it->status().ToString().c_str());
 	}
-	ret = sqlite3_step(stmt);
-	switch (ret) {
-	default: // error
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_DONE: // no results
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_ROW: // got a hit
-		account = new Account();
-		account->setUsername(username);
-		account->setAccountId(sqlite3_column_int(stmt, 0));
-		password = (const char*) sqlite3_column_text(stmt, 1);
-		if (password != NULL) account->setPasswordHash(password);
-		email = (const char*) sqlite3_column_text(stmt, 2);
-		if (email != NULL) account->setEmail(email);
-		token = (const char*) sqlite3_column_text(stmt, 3);
-		if (token != NULL) account->setToken(token);
-		sessionKey = (const char*) sqlite3_column_text(stmt, 4);
-		if (sessionKey != NULL) account->setSessionKey(sessionKey);
-		deviceId = (const char*) sqlite3_column_text(stmt, 5);
-		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setSessionKeyTimestamp(sqlite3_column_int(stmt, 6));
-		sqlite3_finalize(stmt);
-		return account;
-	}
+	delete it;
+	delete pval;
+	return account;
 }
 
 Account* dbGate::getAccountByToken(const char* token) {
-	sqlite3_stmt* stmt;
-	Account* account;
-	const char* username;
-	const char* password;
-	const char* deviceId;
-	const char* email;
-	const char* sessionKey;
-	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, sessionKey, deviceId, sessionKeyCreated FROM accounts WHERE token = ?1 limit 1;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
-	}
-	ret = sqlite3_bind_text(stmt, 1, token, -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
-	}
-	ret = sqlite3_step(stmt);
-	switch (ret) {
-	default: // error
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_DONE: // no results
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_ROW: // got a hit
-		account = new Account();
-		account->setToken(token);
-		account->setAccountId(sqlite3_column_int(stmt, 0));
-		username = (const char*) sqlite3_column_text(stmt, 1);
-		if (username != NULL) {
-			account->setUsername(username);
-			account->setIsGuest(0);
+	if (token == NULL) return NULL;
+	Account* account = NULL;
+	unsigned int key_type;
+	storage::AccountInfo* pval = new storage::AccountInfo();
+	std::string val;
+	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
+		if (key_type != ACCOUNT) continue;
+		val = it->value().ToString();
+		if (!pval->ParseFromString(val)) continue;
+		if (pval->token() == token) {
+			account = new Account(*pval);
+			break;
 		}
-		else {
-			account->setIsGuest(1);
-		}
-		password = (const char*) sqlite3_column_text(stmt, 2);
-		if (password != NULL) account->setPasswordHash(password);
-		email = (const char*) sqlite3_column_text(stmt, 3);
-		if (email != NULL) account->setEmail(email);
-		sessionKey = (const char*) sqlite3_column_text(stmt, 4);
-		if (sessionKey != NULL) account->setSessionKey(sessionKey);
-		deviceId = (const char*) sqlite3_column_text(stmt, 5);
-		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setSessionKeyTimestamp(sqlite3_column_int(stmt, 6));
-		sqlite3_finalize(stmt);
-		return account;
+		pval->Clear();
 	}
+	if (!it->status().ok()) {
+		fprintf(stderr, "Warning: Error searching leveldb keys: %s\n", it->status().ToString().c_str());
+	}
+	delete it;
+	delete pval;
+	return account;
 }
 
 Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
-	sqlite3_stmt* stmt;
-	Account* account;
-	const char* username;
-	const char* password;
-	const char* deviceId;
-	const char* email;
-	const char* token;
-	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token, deviceId, sessionKeyCreated FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
-	}
-	ret = sqlite3_bind_text(stmt, 1, sessionKey, -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
-	}
-	ret = sqlite3_step(stmt);
-	switch (ret) {
-	default: // error
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_DONE: // no results
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_ROW: // got a hit
-		account = new Account();
-		account->setSessionKey(sessionKey);
-		account->setAccountId(sqlite3_column_int(stmt, 0));
-		username = (const char*) sqlite3_column_text(stmt, 1);
-		if (username != NULL) {
-			account->setUsername(username);
-			account->setIsGuest(0);
+	if (sessionKey == NULL) return NULL;
+	Account* account = NULL;
+	unsigned int key_type;
+	storage::AccountInfo* pval = new storage::AccountInfo();
+	std::string val;
+	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
+		if (key_type != ACCOUNT) continue;
+		val = it->value().ToString();
+		if (!pval->ParseFromString(val)) continue;
+		if (pval->session_key() == sessionKey) {
+			account = new Account(*pval);
+			break;
 		}
-		else {
-			account->setIsGuest(1);
-		}
-		password = (const char*) sqlite3_column_text(stmt, 2);
-		if (password != NULL) account->setPasswordHash(password);
-		email = (const char*) sqlite3_column_text(stmt, 3);
-		if (email != NULL) account->setEmail(email);
-		token = (const char*) sqlite3_column_text(stmt, 4);
-		if (token != NULL) account->setToken(token);
-		deviceId = (const char*) sqlite3_column_text(stmt, 5);
-		if (deviceId != NULL) account->setDeviceId(deviceId);
-		account->setSessionKeyTimestamp(sqlite3_column_int(stmt, 6));
-		sqlite3_finalize(stmt);
-		return account;
+		pval->Clear();
 	}
+	if (!it->status().ok()) {
+		fprintf(stderr, "Warning: Error searching leveldb keys: %s\n", it->status().ToString().c_str());
+	}
+	delete it;
+	delete pval;
+	return account;
 }
 
 Account* dbGate::getAccountByDeviceId(const char* deviceId) {
-	sqlite3_stmt* stmt;
-	Account* account;
-	const char* username;
-	const char* password;
-	const char* email;
-	const char* token;
-	const char* sessionKey;
-	int ret = sqlite3_prepare(db, "SELECT aid, username, password, email, token, sessionKey, sessionKeyCreated FROM accounts WHERE sessionKey = ?1 limit 1;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
-	}
-	ret = sqlite3_bind_text(stmt, 1, deviceId, -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return NULL;
-	}
-	ret = sqlite3_step(stmt);
-	switch (ret) {
-	default: // error
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_DONE: // no results
-		sqlite3_finalize(stmt);
-		return NULL;
-	case SQLITE_ROW: // got a hit
-		account = new Account();
-		account->setDeviceId(deviceId);
-		account->setAccountId(sqlite3_column_int(stmt, 0));
-		username = (const char*) sqlite3_column_text(stmt, 1);
-		if (username != NULL) {
-			account->setUsername(username);
-			account->setIsGuest(0);
+	if (deviceId == NULL) return NULL;
+	Account* account = NULL;
+	unsigned int key_type;
+	storage::AccountInfo* pval = new storage::AccountInfo();
+	std::string val;
+	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
+		if (key_type != ACCOUNT) continue;
+		val = it->value().ToString();
+		if (!pval->ParseFromString(val)) continue;
+		if (pval->device_id() == deviceId) {
+			account = new Account(*pval);
+			break;
 		}
-		else {
-			account->setIsGuest(1);
-		}
-		password = (const char*) sqlite3_column_text(stmt, 2);
-		if (password != NULL) account->setPasswordHash(password);
-		email = (const char*) sqlite3_column_text(stmt, 3);
-		if (email != NULL) account->setEmail(email);
-		token = (const char*) sqlite3_column_text(stmt, 4);
-		if (token != NULL) account->setToken(token);
-		sessionKey = (const char*) sqlite3_column_text(stmt, 5);
-		if (sessionKey != NULL) account->setSessionKey(sessionKey);
-		account->setSessionKeyTimestamp(sqlite3_column_int(stmt, 6));
-		sqlite3_finalize(stmt);
-		return account;
+		pval->Clear();
 	}
+	if (!it->status().ok()) {
+		fprintf(stderr, "Warning: Error searching leveldb keys: %s\n", it->status().ToString().c_str());
+	}
+	delete it;
+	delete pval;
+	return account;
 }
 
+// TODO Allow reserving uid values
 Account* dbGate::createAccount(const char* username) {
-	sqlite3_stmt* stmt;
-	Account* account = new Account();
+	Account* account;
+	if (username != NULL) {
+		account = getAccountByUsername(username);
+		if (account != NULL) {
+			// TODO: extra "check if existing" parameter
+			return account;
+		}
+	}
+	unsigned int next_aid = next_ids.next_aid();
+	if (next_aid == 0) {
+		next_aid = 1;
+	}
+	static char key_c[8];
+	unsigned int* key_i = (unsigned int*) key_c;
+	std::string key;
+	std::string val;
+	key_i[0] = ACCOUNT;
+	while(1) {
+		key_i[1] = next_aid;
+		key.assign(key_c, 8);
+		val = getLdbObject(key);
+		if (val.empty()) break;
+		next_aid++;
+	}
+	next_ids.set_next_aid(next_aid);
+	account = new Account();
+	account->setAccountId(next_aid);
 	if (username != NULL) {
 		account->setUsername(username);
 		account->setIsGuest(0);
@@ -360,121 +216,32 @@ Account* dbGate::createAccount(const char* username) {
 	else {
 		account->setIsGuest(1);
 	}
-	int ret = sqlite3_prepare(db, "INSERT INTO accounts(username, token, sessionKey) VALUES (?1, ?2, ?3);", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		delete account;
-		return NULL;
-	}
-	ret = sqlite3_bind_text(stmt, 1, username, -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		delete account;
-		return NULL;
-	}
-	ret = sqlite3_bind_text(stmt, 2, account->getNewToken().c_str(), -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		delete account;
-		return NULL;
-	}
-	ret = sqlite3_bind_text(stmt, 3, account->getNewSessionKey().c_str(), -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		delete account;
-		return NULL;
-	}
-	ret = sqlite3_step(stmt);
-	if (ret != SQLITE_DONE) {
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		delete account;
-		return NULL;
-	}
-	sqlite3_finalize(stmt);
-	account->setAccountId(sqlite3_last_insert_rowid(db));
+	account->getNewToken();
+	account->getNewSessionKey();
 	saveAccount(*account);
 	return account;
 }
 
 int dbGate::saveAccount(const Account& account) {
-	sqlite3_stmt* stmt;
-	int ret = sqlite3_prepare(db, "UPDATE accounts SET username = ?1, password = ?2, email = ?3, token = ?4, sessionKey = ?5, deviceId = ?7, sessionKeyCreated = ?8 WHERE aid = ?6;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -3;
-	}
-	if (!account.isGuest()) {
-		ret = sqlite3_bind_text(stmt, 1, account.getUsername().c_str(), -1, SQLITE_STATIC);
-		if (ret != SQLITE_OK) {
-			fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-			return -2;
-		}
-		ret = sqlite3_bind_text(stmt, 2, account.getPasswordHash().c_str(), -1, SQLITE_STATIC);
-		if (ret != SQLITE_OK) {
-			fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-			return -2;
-		}
-		ret = sqlite3_bind_text(stmt, 3, account.getEmail().c_str(), -1, SQLITE_STATIC);
-		if (ret != SQLITE_OK) {
-			fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-			return -2;
-		}
-	}
-	// TODO Turn empty into null
-	ret = sqlite3_bind_text(stmt, 4, account.getToken().c_str(), -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
-	}
-	ret = sqlite3_bind_text(stmt, 5, account.getSessionKey().c_str(), -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
-	}
-	ret = sqlite3_bind_int(stmt, 6, account.getAccountId());
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
-	}
-	ret = sqlite3_bind_text(stmt, 7, account.getDeviceId().c_str(), -1, SQLITE_STATIC);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
-	}
-	ret = sqlite3_bind_int(stmt, 8, account.getSessionKeyTimestamp());
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
-	}
-	ret = sqlite3_step(stmt);
-	if (ret != SQLITE_DONE) {
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		return -1;
-	}
-	sqlite3_finalize(stmt);
-	return 0;
+	static char key_c[8];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = ACCOUNT;
+	key_i[1] = account.getAccountId();
+	std::string key(key_c, 8);
+	std::string val;
+	storage::AccountInfo a = account;
+	if (!a.SerializeToString(&val)) return -1;
+	return setLdbObject(key, val);
 }
 
 int dbGate::deleteAccount(const Account& account) {
-	sqlite3_stmt* stmt;
-	int ret = sqlite3_prepare(db, "DELETE FROM accounts WHERE aid = ?1;", -1, &stmt, NULL);
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
-	}
-	ret = sqlite3_bind_int(stmt, 1, account.getAccountId());
-	if (ret != SQLITE_OK) {
-		fprintf(stderr, "Unable to prepare sql - errcode %d\n", -ret);
-		return -2;
-	}
-	ret = sqlite3_step(stmt);
-	if (ret != SQLITE_DONE) {
-		fprintf(stderr, "Unable to execute sql - errcode %d\n", -ret);
-		return -1;
-	}
-	sqlite3_finalize(stmt);
 	// TODO Delete player objects owned by this aid
-	return 0;
+	static char key_c[8];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = ACCOUNT;
+	key_i[1] = account.getAccountId();
+	std::string key(key_c, 8);
+	return delLdbObject(key);
 }
 
 Player* dbGate::getPlayerByAccount(const Account& account) {
@@ -486,7 +253,7 @@ Player* dbGate::getPlayerByAid(unsigned int aid) {
 	unsigned int key_type;
 	storage::PlayerInfo* pval = new storage::PlayerInfo();
 	std::string val;
-	leveldb::Iterator* it = ldb->NewIterator(leveldb::ReadOptions());
+	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
 		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
 		if (key_type != PLAYER) continue;
@@ -573,7 +340,7 @@ int dbGate::deletePlayer(const Player& player) {
 
 std::string dbGate::getLdbObject(const std::string& key) {
 	std::string ret;
-	leveldb::Status s = ldb->Get(leveldb::ReadOptions(), key, &ret);
+	leveldb::Status s = db->Get(leveldb::ReadOptions(), key, &ret);
 	// If a key isn't found in the db, don't indicate an error unless another error occured.
 	if (!(s.ok() || s.IsNotFound())) {
 		fprintf(stderr, "Warning: Error getting leveldb key: %s\n", s.ToString().c_str());
@@ -582,7 +349,7 @@ std::string dbGate::getLdbObject(const std::string& key) {
 }
 int dbGate::setLdbObject(const std::string& key, const std::string& val) {
 	int ret = 0;
-	leveldb::Status s = ldb->Put(leveldb::WriteOptions(), key, val);
+	leveldb::Status s = db->Put(leveldb::WriteOptions(), key, val);
 	if (!s.ok()) {
 		fprintf(stderr, "Warning: Error setting leveldb key: %s\n", s.ToString().c_str());
 		ret = -1;
@@ -592,7 +359,7 @@ int dbGate::setLdbObject(const std::string& key, const std::string& val) {
 
 int dbGate::delLdbObject(const std::string& key) {
 	int ret = 0;
-	leveldb::Status s = ldb->Delete(leveldb::WriteOptions(), key);
+	leveldb::Status s = db->Delete(leveldb::WriteOptions(), key);
 	if (!s.ok()) {
 		fprintf(stderr, "Warning: Error deleting leveldb key: %s\n", s.ToString().c_str());
 		ret = -1;
