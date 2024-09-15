@@ -12,6 +12,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #ifndef AVATAR_H
 #define AVATAR_H
 #include <string>
+class Avatar;
 #include "item.h"
 #include "player.h"
 #include "data/avatar_data.h"
