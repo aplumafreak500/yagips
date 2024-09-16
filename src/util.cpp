@@ -251,6 +251,7 @@ idx1:
 		}
 		e |= t;
 		ret += e;
+		i += 2;
 		isz--;
 	}
 	return ret;
