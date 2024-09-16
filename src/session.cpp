@@ -30,7 +30,8 @@ Session::Session(Gameserver* gs, sock_t* sock, unsigned long long sid) {
 	player = NULL;
 	use_secret_key = 0;
 	sequence = 10;
-	// state = <some constant idk...>
+	state = Session::TOKEN_WAIT;
+	lastPingTime = curTimeMs();
 }
 
 Session::~Session() {
@@ -60,18 +61,18 @@ void Session::close(unsigned int reason) {
 		delete player;
 		player = NULL;
 	}
-	state = 1; // <some constant idk...>
+	state = Session::NOT_CONNECTED;
 }
 
 KcpSession* Session::getKcpSession() const {
 	return kcpSession;
 }
 
-unsigned int Session::getState() const {
+int Session::getState() const {
 	return state;
 }
 
-void Session::setState(unsigned int i) {
+void Session::setState(int i) {
 	state = i;
 }
 
@@ -173,14 +174,16 @@ extern "C" {
 	int SessionMain(Session* session) {
 		__attribute__((aligned(256))) static unsigned char pkt_buf[16 * 1024];
 		ssize_t pkt_size = 0;
+		int packet_ret;
 		KcpSession* kcp = session->getKcpSession();
+		unsigned long long sessionId = kcp->getSessionId();
 		Packet packet;
 		std::string pkt_data;
 		unsigned const char* key = NULL;
-		fprintf(stderr, "Session 0x%08llx thread started\n", kcp->getSessionId());
+		fprintf(stderr, "Session 0x%08llx thread started\n", sessionId);
 		const struct timespec w = {0, 50000000}; // 50 ms
 		// TODO null checks
-		while(session->getState() != 1 /*TODO session close signal constant*/) {
+		while(session->getState() > Session::NOT_CONNECTED) {
 			pkt_size = kcp->recv(pkt_buf, 16 * 1024);
 			if (pkt_size >= 0) {
 				if (session->useSecretKey()) {
@@ -200,21 +203,32 @@ extern "C" {
 					fprintf(stderr, "Hexdump of Packet Payload:\n");
 					DbgHexdump((const unsigned char*) pkt_buf, pkt_size);
 				}
-				else if (processPacket(*session, packet) < 0) {
-					fprintf(stderr, "Warning: Unhandled packet with ID %d\n", packet.getOpcode());
-					pkt_data = packet.getHeader();
-					fprintf(stderr, "Hexdump of Packet Header:\n");
-					DbgHexdump((const unsigned char*) pkt_data.c_str(), pkt_data.size());
-					pkt_data = packet.getData();
-					fprintf(stderr, "Hexdump of Packet Payload:\n");
-					DbgHexdump((const unsigned char*) pkt_data.c_str(), pkt_data.size());
+				else {
+					int isValid;
+					packet_ret = processPacket(*session, packet, &isValid);
+					if (!isValid) {
+						fprintf(stderr, "Warning: Unhandled packet with ID %d\n", packet.getOpcode());
+						pkt_data = packet.getHeader();
+						fprintf(stderr, "Hexdump of Packet Header:\n");
+						DbgHexdump((const unsigned char*) pkt_data.c_str(), pkt_data.size());
+						pkt_data = packet.getData();
+						fprintf(stderr, "Hexdump of Packet Payload:\n");
+						DbgHexdump((const unsigned char*) pkt_data.c_str(), pkt_data.size());
+					}
+					else if (packet_ret < 0) {
+						fprintf(stderr, "Warning: Handler for packet %d returned error %d\n", packet.getOpcode(), -packet_ret);
+						if (session->getState() <= Session::NOT_CONNECTED) {
+							break;
+						}
+					}
 				}
 			}
 			// Else less than 0 - either no packets in queue, or an error occured
 			kcp->update(50);
 			// TODO Get ping timeout from config. for now, use a value of 30 seconds
-			if (session->getLastPingTime() + (30 * 1000) > curTimeMs()) {
-				fprintf(stderr, "Session 0x%08llx ping timeout\n", kcp->getSessionId());
+			if (session->getLastPingTime() + (30 * 1000) < curTimeMs()) {
+				fprintf(stderr, "Session 0x%08llx ping timeout\n", sessionId);
+				// TODO Set state to TIMEOUT instead of closing right off the bat
 				session->close(10);
 				return 0;
 			}

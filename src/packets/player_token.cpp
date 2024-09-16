@@ -25,6 +25,11 @@ int handleGetPlayerTokenReq(Session& session, std::string&, std::string& data) {
 	proto::GetPlayerTokenRsp rsp;
 	unsigned long long encryptSeed;
 	Packet rsp_pkt(102);
+	if (session.getState() != Session::TOKEN_WAIT) {
+		fprintf(stderr, "Session state is not TOKEN_WAIT\n");
+		// TODO should we send a response packet?
+		return -1;
+	}
 	if (!req.ParseFromString(data)) {
 		fprintf(stderr, "Error parsing packet data\n");
 		// TODO should we send a response packet?
@@ -49,6 +54,7 @@ int handleGetPlayerTokenReq(Session& session, std::string&, std::string& data) {
 	const char* token = req.account_token().c_str();
 	Account* account = globalDbGate->getAccountByAid(aid);
 	if (account == NULL) {
+		fprintf(stderr, "Account with id %d does not exist\n", aid);
 		// TODO Send a response packet first
 		session.close(7);
 		return -1;
@@ -60,11 +66,13 @@ int handleGetPlayerTokenReq(Session& session, std::string&, std::string& data) {
 #if 1
 	std::string ctoken = account->getToken();
 	if (ctoken.empty()) {
+		fprintf(stderr, "Stored account token is empty\n");
 		// TODO Send a response packet first
 		session.close(8);
 		return -1;
 	}
 	if (strncmp(ctoken.c_str(), token, ctoken.size()) != 0) {
+		fprintf(stderr, "Packet token does not match stored token\n");
 		// TODO Send a response packet first
 		session.close(7);
 		return -1;
@@ -83,6 +91,7 @@ int handleGetPlayerTokenReq(Session& session, std::string&, std::string& data) {
 	if (player == NULL) {
 		player = globalDbGate->newPlayer();
 		if (player == NULL) {
+			fprintf(stderr, "Failed to create new player data\n");
 			// TODO Send a response packet first
 			session.close(12);
 			return -1;
@@ -94,7 +103,7 @@ int handleGetPlayerTokenReq(Session& session, std::string&, std::string& data) {
 	session.generateSessionKey();
 	encryptSeed = session.getSessionSeed();
 	session.setUseSecretKey();
-	// TODO Set session state: awaiting login
+	session.setState(Session::LOGIN_WAIT);
 	rsp.set_retcode(0);
 	rsp.set_msg("ok");
 	rsp.set_uid(player->getUid());

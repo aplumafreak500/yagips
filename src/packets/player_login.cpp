@@ -19,6 +19,11 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 	proto::PlayerLoginReq req;
 	proto::PlayerLoginRsp rsp;
 	Packet rsp_pkt(104);
+	if (session.getState() != Session::LOGIN_WAIT) {
+		// TODO should we send a response packet?
+		fprintf(stderr, "Session state is not LOGIN_WAIT\n");
+		return -1;
+	}
 	if (!req.ParseFromString(data)) {
 		// TODO should we send a response packet?
 		fprintf(stderr, "Error parsing packet data\n");
@@ -27,6 +32,7 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 	// reject sessions that haven't sent GetPlayerTokenReq yet
 	const Account* account = session.getAccount();
 	if (account == NULL) {
+		fprintf(stderr, "No account associated with current session\n");
 		// TODO Send a response packet first
 		session.close(7);
 		return -1;
@@ -36,17 +42,20 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 	const char* token = req.token().c_str();
 	std::string ctoken = account->getToken();
 	if (ctoken.empty()) {
+		fprintf(stderr, "Stored token is empty\n");
 		// TODO Send a response packet first
 		session.close(8);
 		return -1;
 	}
 	if (strncmp(ctoken.c_str(), token, ctoken.size()) != 0) {
+		fprintf(stderr, "Packet token does not match stored token\n");
 		// TODO Send a response packet first
 		session.close(7);
 		return -1;
 	}
 	Player* player = session.getPlayer();
 	if (player == NULL) {
+		fprintf(stderr, "No player data associated with session\n");
 		// TODO Send a response packet first
 		session.close(12);
 		return -1;

@@ -49,5 +49,5 @@ private:
 	unsigned int use_dispatch_key;
 };
 
-int processPacket(Session&, Packet&);
+int processPacket(Session&, Packet&, int*);
 #endif

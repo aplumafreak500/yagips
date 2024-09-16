@@ -21,13 +21,24 @@ class Session; // Resolves two circular dependencies.
 
 class Session {
 public:
+	// TODO More constants, especially in the positive range
+	enum State: int {
+		ERROR = -3,
+		FINISHED = -2,
+		TIMEOUT = -1,
+		NOT_CONNECTED = 0,
+		TOKEN_WAIT = 1,
+		LOGIN_WAIT = 2,
+		BORN_WAIT = 3,
+		ACTIVE = 4
+	};
 	Session(Gameserver*, sock_t*, unsigned long long);
 	~Session();
 	void update();
 	void close(unsigned int);
 	KcpSession* getKcpSession() const;
-	unsigned int getState() const;
-	void setState(unsigned int);
+	int getState() const;
+	void setState(int);
 	Player* getPlayer() const;
 	void setPlayer(Player*);
 	const Account* getAccount() const;

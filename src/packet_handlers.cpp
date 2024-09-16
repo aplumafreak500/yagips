@@ -20,14 +20,16 @@ extern int handleGetPlayerTokenReq(Session&, std::string&, std::string&);
 extern int handlePlayerLoginReq(Session&, std::string&, std::string&);
 extern int handleEnterSceneReadyReq(Session&, std::string&, std::string&);
 
-int processPacket(Session& session, Packet& packet) {
+int processPacket(Session& session, Packet& packet, int* isValid) {
 	unsigned int opcode = packet.getOpcode();
 	std::string header = packet.getHeader();
 	std::string data = packet.getData();
+	if (isValid != NULL) *isValid = 1;
 	switch (opcode) {
 	default:
 		fprintf(stderr, "Don't know how to handle opcode %d\n", opcode);
-		return -1;
+		if (isValid != NULL) *isValid = 0;
+		return -opcode;
 	case 5:
 		return handlePingReq(session, header, data);
 	case 101:

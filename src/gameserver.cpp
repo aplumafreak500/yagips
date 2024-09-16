@@ -299,7 +299,7 @@ extern "C" {
 						// Does the session object even exist?
 						if (sessionList[i] == NULL) continue;
 						// Is the session active and connected?
-						//if (sessionList[i].getState() == <some constant idk yet...>) continue;
+						if (sessionList[i]->getState() < Session::NOT_CONNECTED) continue;
 						// Is there a corresponding KCP object?
 						kcpSession = sessionList[i]->getKcpSession();
 						if (kcpSession == NULL) continue;
@@ -321,9 +321,6 @@ extern "C" {
 						// Check for a shutdown request
 						if (hs->magic1 == htobe32(0x194) && hs->magic2 == htobe32(0x19419494)) {
 							sessionList[i]->close(be32toh(hs->cmd));
-							// TODO Once we check state constants, don't do this anymore
-							delete sessionList[i];
-							sessionList[i] = NULL;
 							break;
 						}
 						// Unknown "handshake format" packet
@@ -347,9 +344,38 @@ extern "C" {
 								fprintf(stderr, "Failed to send handshake back to client at %s:%d.\n", addr_buf, client.sin6_port);
 							}
 							else {
+								unsigned int foundValidSession = 0;
+								unsigned int tries = 0;
 								for (i = 0; i < maxSessions; i++) {
 									if (sessionList[i] == NULL) break;
-									//if (sessionList[i].getState() == <some constant idk yet...>) break;
+									switch (sessionList[i]->getState()) {
+									case Session::ACTIVE:
+									default:
+										break;
+									case Session::NOT_CONNECTED:
+										delete sessionList[i];
+										foundValidSession = 1;
+										break;
+									case Session::TIMEOUT:
+										sessionList[i]->close(10);
+										i--;
+										tries++;
+										break;
+									case Session::ERROR:
+										sessionList[i]->close(12);
+										i--;
+										tries++;
+										break;
+									case Session::FINISHED:
+										sessionList[i]->close(3);
+										i--;
+										break;
+									}
+									if (tries >= 5) {
+										delete sessionList[i];
+										break;
+									}
+									if (foundValidSession) break;
 								}
 								if (i >= maxSessions) {
 									fprintf(stderr, "Reached the max amount of sessions, cannot accept a new one.\n");
@@ -374,20 +400,20 @@ extern "C" {
 						}
 						else if (pkt_size >= 28) { // Unfortunately, if a packet is sized bigger than KCP's header, there's no viable way to check for valid KCP headers that don't belong to a connected client, compared to completely invalid packets altogether.
 							fprintf(stderr, "Warning: Invalid packet received (or session id is not registered)\n");
-							//fprintf(stderr, "Hexdump of Packet:\n");
-							//DbgHexdump(pkt_buf, pkt_size);
+							fprintf(stderr, "Hexdump of Packet:\n");
+							DbgHexdump(pkt_buf, pkt_size);
 						}
 						else { // We know for sure the packet is bogus if it's not a valid handshake and its size is smaller than KCP's header.
 							fprintf(stderr, "Warning: Invalid packet received.\n");
-							//fprintf(stderr, "Hexdump of Packet:\n");
-							//DbgHexdump(pkt_buf, pkt_size);
+							fprintf(stderr, "Hexdump of Packet:\n");
+							DbgHexdump(pkt_buf, pkt_size);
 						}
 					}
 				}
 				else { // Smaller than even a handshake packet, so it's definitely bogus
 					fprintf(stderr, "Warning: Invalid packet received.\n");
-					//fprintf(stderr, "Hexdump of Packet:\n");
-					//DbgHexdump(pkt_buf, pkt_size);
+					fprintf(stderr, "Hexdump of Packet:\n");
+					DbgHexdump(pkt_buf, pkt_size);
 				}
 			}
 			// else pkt_size == 0 (no-op)
