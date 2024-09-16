@@ -42,6 +42,7 @@
 #  calloc-gnu \
 #  close \
 #  errno \
+#  execinfo \
 #  fclose \
 #  fopen-gnu \
 #  fprintf-gnu \
@@ -86,6 +87,7 @@ gl_MODULES([
   calloc-gnu
   close
   errno
+  execinfo
   fclose
   fopen-gnu
   fprintf-gnu

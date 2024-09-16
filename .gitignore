@@ -21,21 +21,35 @@ src/proto/*.pb.h
 
 # Gnulib generated header files
 gnulib/alloca.h
-gnulib/arpa
+gnulib/arpa/inet.h
+gnulib/assert.h
+gnulib/errno.h
+gnulib/execinfo.h
 gnulib/fcntl.h
+gnulib/float.h
+gnulib/getopt-cdefs.h
+gnulib/getopt.h
 gnulib/inttypes.h
 gnulib/limits.h
 gnulib/math.h
+gnulib/netinet/in.h
 gnulib/pthread.h
 gnulib/sched.h
 gnulib/signal.h
 gnulib/stdckdint.h
 gnulib/stddef.h
+gnulib/stdint.h
 gnulib/stdio.h
 gnulib/stdlib.h
 gnulib/string.h
 gnulib/strings.h
-gnulib/sys
+gnulib/sys/random.h
+gnulib/sys/select.h
+gnulib/sys/socket.h
+gnulib/sys/stat.h
+gnulib/sys/time.h
+gnulib/sys/types.h
+gnulib/sys/uio.h
 gnulib/time.h
 gnulib/unistd.h
 gnulib/wchar.h

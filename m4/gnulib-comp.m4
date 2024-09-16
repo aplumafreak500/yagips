@@ -60,7 +60,12 @@ AC_DEFUN([gl_EARLY],
   # Code from module close:
   # Code from module dup2:
   # Code from module errno:
+  # Code from module execinfo:
   # Code from module extensions:
+  # This is actually already done in the pre-early phase.
+  # AC_REQUIRE([gl_USE_SYSTEM_EXTENSIONS])
+  # Code from module extensions-aix:
+  AC_REQUIRE([gl_USE_AIX_EXTENSIONS])
   # Code from module extern-inline:
   # Code from module fclose:
   # Code from module fcntl:
@@ -237,6 +242,7 @@ AC_DEFUN([gl_INIT],
   AC_REQUIRE([gl_SYS_SOCKET_H])
   gl_CONDITIONAL([GL_COND_OBJ_ACCEPT], [test "$ac_cv_header_winsock2_h" = yes])
   gl_SYS_SOCKET_MODULE_INDICATOR([accept])
+  gl_MODULE_INDICATOR([accept])
   gl_ALIGNASOF
   gl_FUNC_ALLOCA
   gl_CONDITIONAL_HEADER([alloca.h])
@@ -250,6 +256,7 @@ AC_DEFUN([gl_INIT],
   AC_REQUIRE([gl_SYS_SOCKET_H])
   gl_CONDITIONAL([GL_COND_OBJ_BIND], [test "$ac_cv_header_winsock2_h" = yes])
   gl_SYS_SOCKET_MODULE_INDICATOR([bind])
+  gl_MODULE_INDICATOR([bind])
   gl___BUILTIN_EXPECT
   gl_FUNC_CALLOC_GNU
   if test $REPLACE_CALLOC_FOR_CALLOC_GNU = 1; then
@@ -265,6 +272,7 @@ AC_DEFUN([gl_INIT],
   gl_FUNC_CLOSE
   gl_CONDITIONAL([GL_COND_OBJ_CLOSE], [test $REPLACE_CLOSE = 1])
   gl_UNISTD_MODULE_INDICATOR([close])
+  gl_MODULE_INDICATOR([close])
   gl_FUNC_DUP2
   gl_CONDITIONAL([GL_COND_OBJ_DUP2], [test $REPLACE_DUP2 = 1])
   AM_COND_IF([GL_COND_OBJ_DUP2], [
@@ -274,6 +282,10 @@ AC_DEFUN([gl_INIT],
   gl_HEADER_ERRNO_H
   gl_CONDITIONAL_HEADER([errno.h])
   AC_PROG_MKDIR_P
+  gl_EXECINFO_H
+  gl_CONDITIONAL_HEADER([execinfo.h])
+  AC_PROG_MKDIR_P
+  gl_CONDITIONAL([GL_COND_OBJ_EXECINFO], [$GL_GENERATE_EXECINFO_H])
   AC_REQUIRE([gl_EXTERN_INLINE])
   gl_FUNC_FCLOSE
   gl_CONDITIONAL([GL_COND_OBJ_FCLOSE], [test $REPLACE_FCLOSE = 1])
@@ -295,8 +307,11 @@ AC_DEFUN([gl_INIT],
   gl_FLOAT_H
   gl_CONDITIONAL_HEADER([float.h])
   AC_PROG_MKDIR_P
-  gl_CONDITIONAL([GL_COND_OBJ_FLOAT], [test $REPLACE_FLOAT_LDBL = 1])
+  gl_CONDITIONAL([GL_COND_OBJ_FLOAT],
+                 [test $REPLACE_FLOAT_LDBL = 1 || test $REPLACE_FLOAT_SNAN = 1])
   gl_CONDITIONAL([GL_COND_OBJ_ITOLD], [test $REPLACE_ITOLD = 1])
+  dnl Prerequisites of lib/float.c.
+  AC_REQUIRE([gl_BIGENDIAN])
   gl_FUNC_FOPEN
   if test $REPLACE_FOPEN = 1; then
     AC_LIBOBJ([fopen])
@@ -357,6 +372,7 @@ AC_DEFUN([gl_INIT],
     gl_PREREQ_FSTAT
   ])
   gl_SYS_STAT_MODULE_INDICATOR([fstat])
+  gl_MODULE_INDICATOR([fstat])
   gl_FUNC_FTELL
   gl_CONDITIONAL([GL_COND_OBJ_FTELL], [test $REPLACE_FTELL = 1])
   gl_STDIO_MODULE_INDICATOR([ftell])
@@ -393,6 +409,7 @@ AC_DEFUN([gl_INIT],
   gl_CONDITIONAL([GL_COND_OBJ_GETPEERNAME],
                  [test "$ac_cv_header_winsock2_h" = yes])
   gl_SYS_SOCKET_MODULE_INDICATOR([getpeername])
+  gl_MODULE_INDICATOR([getpeername])
   AC_REQUIRE([AC_CANONICAL_HOST])
   gl_FUNC_GETRANDOM
   gl_CONDITIONAL([GL_COND_OBJ_GETRANDOM],
@@ -446,6 +463,7 @@ AC_DEFUN([gl_INIT],
   AC_REQUIRE([gl_SYS_SOCKET_H])
   gl_CONDITIONAL([GL_COND_OBJ_LISTEN], [test "$ac_cv_header_winsock2_h" = yes])
   gl_SYS_SOCKET_MODULE_INDICATOR([listen])
+  gl_MODULE_INDICATOR([listen])
   gl_FUNC_LSEEK
   gl_CONDITIONAL([GL_COND_OBJ_LSEEK], [test $REPLACE_LSEEK = 1])
   gl_UNISTD_MODULE_INDICATOR([lseek])
@@ -532,25 +550,31 @@ AC_DEFUN([gl_INIT],
   AC_REQUIRE([gl_SYS_SOCKET_H])
   gl_CONDITIONAL([GL_COND_OBJ_RECV], [test "$ac_cv_header_winsock2_h" = yes])
   gl_SYS_SOCKET_MODULE_INDICATOR([recv])
+  gl_MODULE_INDICATOR([recv])
   AC_REQUIRE([gl_SYS_SOCKET_H])
   gl_CONDITIONAL([GL_COND_OBJ_RECVFROM], [test "$ac_cv_header_winsock2_h" = yes])
   gl_SYS_SOCKET_MODULE_INDICATOR([recvfrom])
+  gl_MODULE_INDICATOR([recvfrom])
   gl_SCHED_H
   gl_SCHED_H_REQUIRE_DEFAULTS
   AC_PROG_MKDIR_P
   gl_FUNC_SELECT
   gl_CONDITIONAL([GL_COND_OBJ_SELECT], [test $REPLACE_SELECT = 1])
   gl_SYS_SELECT_MODULE_INDICATOR([select])
+  gl_MODULE_INDICATOR([select])
   AC_REQUIRE([gl_SYS_SOCKET_H])
   gl_CONDITIONAL([GL_COND_OBJ_SEND], [test "$ac_cv_header_winsock2_h" = yes])
   gl_SYS_SOCKET_MODULE_INDICATOR([send])
+  gl_MODULE_INDICATOR([send])
   AC_REQUIRE([gl_SYS_SOCKET_H])
   gl_CONDITIONAL([GL_COND_OBJ_SENDTO], [test "$ac_cv_header_winsock2_h" = yes])
   gl_SYS_SOCKET_MODULE_INDICATOR([sendto])
+  gl_MODULE_INDICATOR([sendto])
   AC_REQUIRE([gl_SYS_SOCKET_H])
   gl_CONDITIONAL([GL_COND_OBJ_SETSOCKOPT],
                  [test "$ac_cv_header_winsock2_h" = yes])
   gl_SYS_SOCKET_MODULE_INDICATOR([setsockopt])
+  gl_MODULE_INDICATOR([setsockopt])
   gl_SIGACTION
   gl_CONDITIONAL([GL_COND_OBJ_SIGACTION], [test $HAVE_SIGACTION = 0])
   AM_COND_IF([GL_COND_OBJ_SIGACTION], [
@@ -587,6 +611,7 @@ AC_DEFUN([gl_INIT],
     SYS_IOCTL_H_HAVE_WINSOCK2_H_AND_USE_SOCKETS=1
   fi
   gl_SYS_SOCKET_MODULE_INDICATOR([socket])
+  gl_MODULE_INDICATOR([socket])
   AC_REQUIRE([gl_SOCKETLIB])
   AC_REQUIRE([gl_SOCKETS])
   gl_TYPE_SOCKLEN_T
@@ -605,6 +630,7 @@ AC_DEFUN([gl_INIT],
     gl_PREREQ_STAT
   ])
   gl_SYS_STAT_MODULE_INDICATOR([stat])
+  gl_MODULE_INDICATOR([stat])
   gl_STAT_TIME
   gl_STAT_BIRTHTIME
   gl_C_BOOL
@@ -951,6 +977,7 @@ AC_DEFUN([gl_FILE_LIST], [
   lib/alloca.c
   lib/alloca.in.h
   lib/arg-nonnull.h
+  lib/arpa_inet.c
   lib/arpa_inet.in.h
   lib/asnprintf.c
   lib/assert.in.h
@@ -965,6 +992,8 @@ AC_DEFUN([gl_FILE_LIST], [
   lib/close.c
   lib/dup2.c
   lib/errno.in.h
+  lib/execinfo.c
+  lib/execinfo.in.h
   lib/fclose.c
   lib/fcntl.c
   lib/fcntl.in.h
@@ -1146,9 +1175,11 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/dup2.m4
   m4/eealloc.m4
   m4/errno_h.m4
+  m4/execinfo.m4
   m4/exponentd.m4
   m4/exponentf.m4
   m4/exponentl.m4
+  m4/extensions-aix.m4
   m4/extensions.m4
   m4/extern-inline.m4
   m4/fclose.m4
@@ -1190,7 +1221,7 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/ldexp.m4
   m4/ldexpl.m4
   m4/limits-h.m4
-  m4/locale-fr.m4
+  m4/locale-en.m4
   m4/locale-ja.m4
   m4/locale-zh.m4
   m4/lseek.m4
