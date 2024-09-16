@@ -14,6 +14,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <stdexcept>
 #include "account.h"
 #include "dbgate.h"
+#include "util.h"
 #include "define.pb.h"
 #include "storage.pb.h"
 
@@ -345,6 +346,10 @@ std::string dbGate::getLdbObject(const std::string& key) {
 	if (!(s.ok() || s.IsNotFound())) {
 		fprintf(stderr, "Warning: Error getting leveldb key: %s\n", s.ToString().c_str());
 	}
+	fprintf(stderr, "successful ldb key read\nHexdump of key:\n");
+	DbgHexdump((unsigned char*) key.c_str(), key.size());
+	fprintf(stderr, "Hexdump of data:\n");
+	DbgHexdump((unsigned char*) ret.c_str(), ret.size());
 	return ret;
 }
 int dbGate::setLdbObject(const std::string& key, const std::string& val) {
@@ -354,6 +359,10 @@ int dbGate::setLdbObject(const std::string& key, const std::string& val) {
 		fprintf(stderr, "Warning: Error setting leveldb key: %s\n", s.ToString().c_str());
 		ret = -1;
 	}
+	fprintf(stderr, "successful ldb key write\nHexdump of key:\n");
+	DbgHexdump((unsigned char*) key.c_str(), key.size());
+	fprintf(stderr, "Hexdump of data:\n");
+	DbgHexdump((unsigned char*) val.c_str(), val.size());
 	return ret;
 }
 
@@ -364,6 +373,8 @@ int dbGate::delLdbObject(const std::string& key) {
 		fprintf(stderr, "Warning: Error deleting leveldb key: %s\n", s.ToString().c_str());
 		ret = -1;
 	}
+	fprintf(stderr, "successful ldb key drop\nHexdump of key:\n");
+	DbgHexdump((unsigned char*) key.c_str(), key.size());
 	return ret;
 }
 
