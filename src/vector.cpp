@@ -89,5 +89,5 @@ VectorInt::operator proto::Vector3Int() const {
 }
 
 VectorInt::operator Vector() const {
-	return VectorInt(*this);
+	return Vector(*this);
 }
