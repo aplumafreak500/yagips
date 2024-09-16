@@ -50,13 +50,18 @@ int Packet::parse(const unsigned char* buf, size_t sz) {
 		fprintf(stderr, "Invalid packet size 0x%08lx\n", sz);
 		return -1;
 	}
-	// NASTY. TODO Find a better way to do this
-	size_t data_sz = be32toh(*(unsigned int*)(&((unsigned short*) buf)[3]));
+	// we do it this way to prevent unaligned memory access
+	unsigned short data_sz_hi = be16toh(((unsigned short*) buf)[3]);
+	unsigned short data_sz_lo = be16toh(((unsigned short*) buf)[4]);
+	size_t data_sz = (data_sz_hi << 16) | data_sz_lo;
 	if (sz < data_sz + hdr_sz + 12) {
 		fprintf(stderr, "Invalid packet size 0x%08lx\n", sz);
 		return -1;
 	}
-	magic = be16toh(*(unsigned short*)(&((unsigned char*) buf)[data_sz + hdr_sz + 10]));
+	// magic2 can be unaligned in some cases, so read it byte by byte
+	unsigned char magic2_hi = ((unsigned char*) buf)[data_sz + hdr_sz + 10];
+	unsigned char magic2_lo = ((unsigned char*) buf)[data_sz + hdr_sz + 11];
+	magic = (magic2_hi << 8) | magic2_lo;
 	if (magic != PACKET_MAGIC2) {
 		fprintf(stderr, "Invalid magic constant 0x%04x (expected 0x%04x)\n", magic, PACKET_MAGIC2);
 		return -1;
@@ -84,13 +89,19 @@ int Packet::build(unsigned char* buf, size_t* sz) {
 	pos += sizeof(short);
 	*(unsigned short*) pos = htobe16(header.size());
 	pos += sizeof(short);
-	*(unsigned int*) pos = htobe32(data.size());
-	pos += sizeof(int);
+	// we do it this way to prevent unaligned memory access
+	*(unsigned short*) pos = htobe16(data.size() >> 16);
+	pos += sizeof(short);
+	*(unsigned short*) pos = htobe16(data.size() & 0xffff);
+	pos += sizeof(short);
 	memcpy(pos, header.c_str(), header.size());
 	pos += header.size();
 	memcpy(pos, data.c_str(), data.size());
 	pos += data.size();
-	*(unsigned short*) pos = htobe16(PACKET_MAGIC2);
+	// magic2 can be unaligned in some cases, so write it byte by byte
+	*(unsigned char*) pos = PACKET_MAGIC2 >> 8;
+	pos += sizeof(char);
+	*(unsigned char*) pos = PACKET_MAGIC2 & 0xff;
 	return 0;
 }
 
