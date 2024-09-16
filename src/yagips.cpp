@@ -16,6 +16,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <sys/random.h>
 #include <time.h>
 #include <pthread.h>
+#include <execinfo.h>
 #include <stdexcept>
 #include "gameserver.h"
 #include "dispatch.h"
@@ -44,6 +45,14 @@ extern "C" {
 			}
 		}
 		exitSignal = sig;
+	}
+
+	static void fatal_handler(int sig) {
+		void* array[16];
+		size_t sz = backtrace(array, 16);
+		fprintf(stderr, "Error: uncaught signal %d:\n", sig);
+		backtrace_symbols_fd(array, sz, 2);
+		exit(sig | 192);
 	}
 
 	// TODO SIGUSR1, if sent, should trigger a config reload
@@ -104,6 +113,10 @@ extern "C" {
 				fprintf(stderr, "Unable to set signal handler for %s, errno = %d (%s)\n", "SIGHUP", errno, strerror(errno));
 			}
 		}
+		signal(SIGSEGV, fatal_handler);
+		signal(SIGBUS, fatal_handler);
+		signal(SIGFPE, fatal_handler);
+		signal(SIGABRT, fatal_handler);
 		// TODO Getopt
 		// TODO Path from command line arg
 		globalConfig = new Config();
