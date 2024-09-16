@@ -22,7 +22,7 @@ print(json_encode([
 				"font_id" => "0",
 				"md5" => "4398dec1a0ffa3d3ce99ef1424107550",
 				"name" => "zh-cn.ttf",
-				"url" => "https://sdk.hoyoverse.com/zn-cn.ttf"
+				"url" => "https://sdk.hoyoverse.com/zh-cn.ttf"
 			],
 			[
 				"app_id" => 0,
