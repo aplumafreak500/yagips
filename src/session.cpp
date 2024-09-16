@@ -11,6 +11,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include <stdio.h>
 #include <time.h>
+#include <endian.h>
 #include <sys/types.h>
 #include <sys/random.h>
 #include "gameserver.h"

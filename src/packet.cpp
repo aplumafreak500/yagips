@@ -12,6 +12,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#include <endian.h>
 #include "util.h"
 #include "packet.h"
 #include "packet_head.pb.h"

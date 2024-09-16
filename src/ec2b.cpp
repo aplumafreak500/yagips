@@ -13,6 +13,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string.h>
 #include <sys/random.h>
 #include <sys/types.h>
+#include <endian.h>
 #include <assert.h>
 #include <string>
 #include "ec2b.h"

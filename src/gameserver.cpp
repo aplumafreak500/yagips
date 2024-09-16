@@ -13,6 +13,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <endian.h>
 #include <sys/random.h>
 #include <sys/socket.h>
 #include <sys/types.h>
