@@ -20,6 +20,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "vector.h"
 #include "util.h"
 #include "avatar.h"
+#include "player.pb.h"
 #include "avatar.pb.h"
 #include "scene.pb.h"
 #include "define.pb.h"
@@ -174,4 +175,21 @@ void Player::onLogin(Session& s) {
 		esn_p.setData(pkt_data);
 		s.sendPacket(esn_p);
 	}
+	proto::OpenStateUpdateNotify osn;
+	auto os_list = osn.mutable_open_state_map();
+	// TODO Hardcoded list of openstates
+	(*os_list)[1] = 1;
+	if (osn.SerializeToString(&pkt_data)) {
+		Packet osn_p(124);
+		osn_p.setData(pkt_data);
+		s.sendPacket(osn_p);
+	}
+	proto::PlayerDataNotify pdn;
+	// TODO Fill this out
+	if (pdn.SerializeToString(&pkt_data)) {
+		Packet pdn_p(108);
+		pdn_p.setData(pkt_data);
+		s.sendPacket(pdn_p);
+	}
+	s.setState(Session::ACTIVE);
 }
