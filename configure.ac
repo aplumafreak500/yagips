@@ -39,12 +39,12 @@ PKG_CHECK_MODULES(PROTOBUF, protobuf >= 3.12.4, [], [
 ])
 AC_SUBST(PROTOBUF_LIBS)
 AC_SUBST(PROTOBUF_CFLAGS)
-PKG_CHECK_MODULES(LIBCRYPTO, libcrypto >= 3.0.5, [], [
-	AC_CHECK_LIB(crypto, EVP_PKEY_CTX_new, [
+PKG_CHECK_MODULES(LIBCRYPTO, libcrypto >= 3.0.0, [], [
+	AC_CHECK_LIB(crypto, OSSL_DECODER_CTX_new, [
 		LIBCRYPTO_LIBS = "-lcrypto"
 	], [
 		# TODO only do this check on Windows
-		AC_CHECK_LIB(eay32, EVP_PKEY_CTX_new, [
+		AC_CHECK_LIB(eay32, OSSL_DECODER_CTX_new, [
 			LIBCRYPTO_LIBS = "-leay32"
 		], [
 			AC_MSG_ERROR([Required library 'openssl' not found.])
@@ -54,8 +54,8 @@ PKG_CHECK_MODULES(LIBCRYPTO, libcrypto >= 3.0.5, [], [
 AC_SUBST(LIBCRYPTO_LIBS)
 AC_SUBST(LIBCRYPTO_CFLAGS)
 # TODO: do we need libssl at all?
-PKG_CHECK_MODULES(SQLITE3, sqlite3 >= 3.37.2, [], [
-	AC_CHECK_LIB(sqlite3, sqlite3_open_v2, [
+PKG_CHECK_MODULES(SQLITE3, sqlite3 >= 3.7.14, [], [
+	AC_CHECK_LIB(sqlite3, sqlite3_close_v2, [
 		SQLITE3_LIBS = "-lsqlite3"
 	], [
 		AC_MSG_ERROR([Required library 'sqlite3' not found.])
