@@ -77,6 +77,7 @@
 #  strstr \
 #  strtod \
 #  strtold \
+#  strtoll \
 #  time
 
 # Specification in the form of a few gnulib-tool.m4 macro invocations:
@@ -122,6 +123,7 @@ gl_MODULES([
   strstr
   strtod
   strtold
+  strtoll
   time
 ])
 gl_AVOID([])
