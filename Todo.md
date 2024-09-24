@@ -1,4 +1,4 @@
-# Things that still need to be done before the first beta release \(last updated 2014-02-18\)
+# Things that still need to be done before the first beta release \(last updated 2014-09-24\)
 
 Pull requests are absolutely welcome! Feel free to contribute if you're interested in doing any of these.
 
@@ -12,16 +12,17 @@ This list is subject to change.
 - [ ] Permissions system
 - [x] Store `git describe` string into Autoconf `PACKAGE_VERSION` string
 - [ ] Robust logging system
-- [x] Add fallbacks for some non-standard C functions such as `strsep` and `getrandom`
+- [x] Add fallbacks for some non-standard C functions such as `strsep` and `getrandom` \(Most are now provided through gnulib\)
+- [ ] Stop ignoring the return value of functions like `getrandom`, `fread`, and `recv`
 - [ ] Actually check for needed functions from external libraries
 - [ ] Add a test suite and/or test programs
-	- [ ] KCP->TCP tunnel (for use with netcat/socat)
+	- [ ] KCP->TCP tunnel \(for use with netcat/socat\)
 
 ## dbgate
-- [ ] Implement storage of player data \([LevelDB](https://github.com/google/leveldb) is currently the most likely candidate backend for this\).
-- [ ] Cache session seed in SQLite `players` table along with a timestamp
-- [ ] Remove `token` from SQLite `accounts` table
-- [ ] Versioned SQLite tables?
+- [ ] Implement storage of player data \([LevelDB](https://github.com/google/leveldb) is currently the most likely candidate backend for this\). (In progress)
+- [ ] ~~Cache session seed in SQLite `players` table along with a timestamp~~ (SQLite is being removed soon in favor of exclusively using LevelDB)
+- [ ] ~~Remove `token` from SQLite `accounts` table~~
+- [ ] ~~Versioned SQLite tables?~~
 - [ ] Implement bans \(IP, `aid`, `uid`, username/email and email domain filters\)
 
 ## dispatch
@@ -43,13 +44,16 @@ This list is subject to change.
 - [ ] HTTP command parser
 - [ ] Barebones "get player data" endpoint
 - [ ] Barebones "set player data" endpoint
+- [ ] Better support for Chinese clients
+- [ ] Web tokens \(distinct from in-game session tokens\)
+- [ ] Browser-based frontend UI
 
 ## gameserver
 - [ ] Player data \(Traveler name, signature, namecard, avatar showcase, etc.\)
 - [ ] Player props \(adventure rank, world level, stanima, etc.\)
 - [ ] Avatar props \(current and max HP, battle stats, etc.\)
-- [ ] Figure out why session timeout always triggers
-- [ ] Figure out why KCP update never triggers
+- [x] Figure out why session timeout always triggers
+- [x] Figure out why KCP update never triggers
 - [ ] Proper scene handling
 - [ ] Proper avatar storage and switching
 - [ ] Team management
