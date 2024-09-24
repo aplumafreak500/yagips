@@ -193,6 +193,7 @@ AC_DEFUN([gl_EARLY],
   # Code from module strtod:
   # Code from module strtold:
   # Code from module strtoll:
+  # Code from module strtoull:
   # Code from module sys_random:
   # Code from module sys_select:
   # Code from module sys_socket:
@@ -752,6 +753,13 @@ AC_DEFUN([gl_INIT],
     gl_PREREQ_STRTOLL
   ])
   gl_STDLIB_MODULE_INDICATOR([strtoll])
+  gl_FUNC_STRTOULL
+  gl_CONDITIONAL([GL_COND_OBJ_STRTOULL],
+                 [test $HAVE_STRTOULL = 0 || test $REPLACE_STRTOULL = 1])
+  AM_COND_IF([GL_COND_OBJ_STRTOULL], [
+    gl_PREREQ_STRTOULL
+  ])
+  gl_STDLIB_MODULE_INDICATOR([strtoull])
   gl_SYS_RANDOM_H
   gl_SYS_RANDOM_H_REQUIRE_DEFAULTS
   AC_PROG_MKDIR_P
@@ -1140,6 +1148,8 @@ AC_DEFUN([gl_FILE_LIST], [
   lib/strtol.c
   lib/strtold.c
   lib/strtoll.c
+  lib/strtoul.c
+  lib/strtoull.c
   lib/sys_random.in.h
   lib/sys_select.in.h
   lib/sys_socket.c
@@ -1305,6 +1315,7 @@ AC_DEFUN([gl_FILE_LIST], [
   m4/strtod.m4
   m4/strtold.m4
   m4/strtoll.m4
+  m4/strtoull.m4
   m4/sys_cdefs_h.m4
   m4/sys_random_h.m4
   m4/sys_select_h.m4

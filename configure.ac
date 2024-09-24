@@ -76,18 +76,7 @@ AC_SUBST(JSON_C_CFLAGS)
 AC_CHECK_LIB(leveldb, leveldb_open, [], [
 	AC_MSG_ERROR([Required library 'leveldb' not found.])
 ])
-printf "\nChecking for required functions...\n\n"
-# These functions are required but not in gnulib for various reasons.
-# So we need to check for them here.
-AC_CHECK_DECLS(strtol, [], [
-	AC_MSG_ERROR([Required function 'strtol' not found])
-])
-AC_CHECK_DECLS(strtoul, [], [
-	AC_MSG_ERROR([Required functions 'strtoul' not found])
-])
-AC_CHECK_DECLS(strtoull, [], [
-	AC_MSG_ERROR([Required functions 'strtoull' not found])
-])
+# printf "\nChecking for required functions...\n\n"
 # TODO Check more required functions, possibly from the dependencies
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile src/Makefile gnulib/Makefile])

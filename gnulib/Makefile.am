@@ -73,6 +73,7 @@
 #  strtod \
 #  strtold \
 #  strtoll \
+#  strtoull \
 #  time
 
 AUTOMAKE_OPTIONS = 1.14 gnits subdir-objects
@@ -2476,6 +2477,18 @@ EXTRA_DIST += strtol.c
 EXTRA_libgnu_a_SOURCES += strtol.c
 
 ## end   gnulib module strtoll
+
+## begin gnulib module strtoull
+
+if GL_COND_OBJ_STRTOULL
+libgnu_a_SOURCES += strtoull.c
+endif
+
+EXTRA_DIST += strtol.c strtoul.c
+
+EXTRA_libgnu_a_SOURCES += strtol.c strtoul.c
+
+## end   gnulib module strtoull
 
 ## begin gnulib module sys_random
 
