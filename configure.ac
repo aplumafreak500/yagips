@@ -7,8 +7,7 @@
 
 AC_INIT(
 	[yagips],
-	m4_esyscmd([./git-version-gen .tarball-version])
-)
+	m4_esyscmd([./git-version-gen .tarball-version]))
 printf "Start configuration...\n"
 AC_CONFIG_MACRO_DIRS([m4])
 printf "\nAutomake init...\n\n"
