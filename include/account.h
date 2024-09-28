@@ -12,8 +12,10 @@ You should have received a copy of the GNU Affero General Public License along w
 #ifndef ACCOUNT_H
 #define ACCOUNT_H
 #include <string>
+#include <list>
 class Account; // Resolves a circular dependency.
 #include "session.h"
+#include "permission.h"
 #include "proto/storage.pb.h"
 class Account {
 public:
@@ -44,6 +46,12 @@ public:
 	void setSessionKeyTimestamp(long long);
 	const Session* getSession() const;
 	void setSession(const Session*);
+	const std::list<Permission>& getPermissions() const;
+	void setPermissions(const std::list<Permission>&);
+	void clearPermissions();
+	void addPermission(Permission);
+	void removePermission(Permission);
+	unsigned int hasPermission(Permission) const;
 	int saveToDb() const;
 private:
 	std::string username;
@@ -56,5 +64,6 @@ private:
 	unsigned int guest;
 	long long sessionKeyTimestamp;
 	const Session* session;
+	std::list<Permission> permissions;
 };
 #endif

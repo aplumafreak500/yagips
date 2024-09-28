@@ -33,6 +33,9 @@ Account::Account(const storage::AccountInfo& p) {
 	guest = p.is_guest();
 	// TODO Reserved uid
 	session = NULL;
+	for (int i = 0; i < p.permissions_size(); i++) {
+		permissions.push_back(static_cast<Permission>(p.permissions(i)));
+	}
 }
 
 Account::~Account() {}
@@ -48,6 +51,9 @@ Account::operator storage::AccountInfo() const {
 	ret.set_session_key(b64dec(sessionKey));
 	ret.set_session_key_ts(sessionKeyTimestamp);
 	// TODO Reserved uid
+	for (auto i = permissions.cbegin(); i != permissions.cend(); i++) {
+		ret.add_permissions(static_cast<unsigned int>(*i));
+	}
 	return ret;
 }
 
@@ -152,4 +158,37 @@ const Session* Account::getSession() const {
 
 void Account::setSession(const Session* s) {
 	session = s;
+}
+
+const std::list<Permission>& Account::getPermissions() const {
+	return permissions;
+}
+
+void Account::setPermissions(const std::list<Permission>& l) {
+	permissions = l;
+}
+
+void Account::clearPermissions() {
+	permissions.clear();
+}
+
+void Account::addPermission(Permission p) {
+	permissions.insert(permissions.end(), p);
+}
+
+void Account::removePermission(Permission p) {
+	for (auto i = permissions.cbegin(); i != permissions.cend(); i++) {
+		if (*i == p) {
+			permissions.erase(i);
+		}
+	}
+}
+
+unsigned int Account::hasPermission(Permission p) const {
+	for (auto i = permissions.cbegin(); i != permissions.cend(); i++) {
+		if (*i == p) {
+			return 1;
+		}
+	}
+	return 0;
 }
