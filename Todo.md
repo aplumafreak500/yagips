@@ -10,7 +10,8 @@ This list is subject to change.
 - [ ] Add Getopt \(for command-line arguments\)
 - [x] Add server console \(optionally using Readline\)
 	- [ ] Add command history support when using Readline
-- [ ] Permissions system
+- [x] Permissions system
+	- Backend is in place, things actually have to use it now
 - [x] Store `git describe` string into Autoconf `PACKAGE_VERSION` string
 - [ ] Robust logging system
 - [x] Add fallbacks for some non-standard C functions such as `strsep` and `getrandom` \(Most are now provided through gnulib\)
@@ -20,10 +21,8 @@ This list is subject to change.
 	- [ ] KCP->TCP tunnel \(for use with netcat/socat\)
 
 ## dbgate
-- [ ] Implement storage of player data \([LevelDB](https://github.com/google/leveldb) is currently the most likely candidate backend for this\). (In progress)
-- [ ] ~~Cache session seed in SQLite `players` table along with a timestamp~~ (SQLite is being removed soon in favor of exclusively using LevelDB)
-- [ ] ~~Remove `token` from SQLite `accounts` table~~
-- [ ] ~~Versioned SQLite tables?~~
+- [x] Implement storage of player data
+	- Backend is in place, but most functionality has yet to be implemented
 - [ ] Implement bans \(IP, `aid`, `uid`, username/email and email domain filters\)
 
 ## dispatch

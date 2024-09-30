@@ -17,7 +17,6 @@ They are as follows:
 
 * Protobuf \(<https://protobuf.dev>\)
 * OpenSSL \(<https://openssl.org>\)
-* SQLite3 \(<https://www.sqlite.org>\)
 * json-c \(<https://github.com/json-c/json-c>\)
 * LevelDB \(<https://github.com/google/leveldb>\)
 * Readline \(<https://www.gnu.org/software/readline>\)

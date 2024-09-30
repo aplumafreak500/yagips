@@ -684,6 +684,15 @@ std::string handleLogin(const char* post) {
 			return "{\"retcode\":-101,\"message\":\"Device ID is empty\"}";
 		}
 		account = globalDbGate->getAccountByDeviceId(deviceId);
+		if (account == NULL) {
+			if (0/* TODO auto-create account config */) {
+				account = globalDbGate->createAccount(NULL);
+			}
+			else {
+				json_object_put(jobj);
+				return "{\"retcode\":-101,\"message\":\"Device ID does not exist\"}";
+			}
+		}
 	}
 	else {
 		if (!json_object_object_get_ex(jobj, "account", &dobj)) {
@@ -700,11 +709,15 @@ std::string handleLogin(const char* post) {
 			return "{\"retcode\":-101,\"message\":\"Username is empty\"}";
 		}
 		account = globalDbGate->getAccountByUsername(username);
-	}
-	if (account == NULL) {
-		// TODO look up auto create an account in config
-		json_object_put(jobj);
-		return "{\"retcode\":-101,\"message\":\"Username does not exist\"}";
+		if (account == NULL) {
+			if (1/* TODO auto-create account config */) {
+				account = globalDbGate->createAccount(username);
+			}
+			else {
+				json_object_put(jobj);
+				return "{\"retcode\":-101,\"message\":\"Username does not exist\"}";
+			}
+		}
 	}
 	// TODO enforce aid-level bans
 	if (!json_object_object_get_ex(jobj, "password", &dobj)) {

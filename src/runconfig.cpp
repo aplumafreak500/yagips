@@ -108,10 +108,7 @@ Config::Config(const char* path) {
 			config.sessionTickRate = val.ok ? val.u.i : 500;
 			// `core.dbPath` - Database path
 			val = toml_table_string(subConfig, "dbPath");
-			config.dbPath = val.ok ? val.u.s : VARDIR "/db.sqlite";
-			// `core.ldbPath` - Database path (LevelDB)
-			val = toml_table_string(subConfig, "ldbPath");
-			config.ldbPath = val.ok ? val.u.s : VARDIR "/ldb";
+			config.dbPath = val.ok ? val.u.s : VARDIR "/db";
 			// `core.dataPath` - Server data path (keys, data tables, extra config)
 			val = toml_table_string(subConfig, "dataPath");
 			config.dataPath = val.ok ? val.u.s : DATADIR;
@@ -122,8 +119,7 @@ Config::Config(const char* path) {
 		else {
 			config.maxSessions = 10;
 			config.sessionTickRate = 500;
-			config.dbPath = VARDIR "/db.sqlite";
-			config.ldbPath = VARDIR "/ldb";
+			config.dbPath = VARDIR "/db";
 			config.dataPath = DATADIR;
 			config.logPath = LOGDIR "/yagips.log";
 		}
@@ -157,6 +153,7 @@ Config::Config(const char* path) {
 		// `game.resinRefreshRate` - Time in seconds to replenish 1 Original Resin
 		// `game.resinCap` - Max amount of Original Resin per player
 		// `game.dailyResetTime` - UTC offset in seconds of daily server resets (influences domain availability, Welkin claims, mob and item respawns, and shop refreshes)
+		// Section `sdk` - SDK (account) manager params TODO
 		// Section `dispatch` - Dispatch and auth
 		subConfig = toml_table_table(rootConfig, "dispatch");
 		if (subConfig != NULL) {
@@ -364,8 +361,7 @@ Config::Config(const char* path) {
 	else {
 		config.maxSessions = 10;
 		config.sessionTickRate = 500;
-		config.dbPath = VARDIR "/db.sqlite";
-		config.ldbPath = VARDIR "/ldb";
+		config.dbPath = VARDIR "/db";
 		config.dataPath = DATADIR;
 		config.logPath = LOGDIR "/yagips.log";
 		config.gameserver_bind_ip = "::";

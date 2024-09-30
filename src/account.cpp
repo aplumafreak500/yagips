@@ -15,11 +15,47 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "account.h"
 #include "session.h"
 #include "util.h"
+#include "proto/storage.pb.h"
 
 Account::Account() {
 	session = NULL;
 }
+
+Account::Account(const storage::AccountInfo& p) {
+	aid = p.id();
+	username = p.username();
+	password_hash = p.password();
+	email = p.email();
+	deviceId = p.device_id();
+	token = hexenc(p.token());
+	sessionKey = b64enc(p.session_key());
+	sessionKeyTimestamp = p.session_key_ts();
+	guest = p.is_guest();
+	// TODO Reserved uid
+	session = NULL;
+	for (int i = 0; i < p.permissions_size(); i++) {
+		permissions.push_back(static_cast<Permission>(p.permissions(i)));
+	}
+}
+
 Account::~Account() {}
+
+Account::operator storage::AccountInfo() const {
+	storage::AccountInfo ret;
+	ret.set_id(aid);
+	ret.set_username(username);
+	ret.set_password(password_hash);
+	ret.set_email(email);
+	ret.set_device_id(deviceId);
+	ret.set_token(hexdec(token));
+	ret.set_session_key(b64dec(sessionKey));
+	ret.set_session_key_ts(sessionKeyTimestamp);
+	// TODO Reserved uid
+	for (auto i = permissions.cbegin(); i != permissions.cend(); i++) {
+		ret.add_permissions(static_cast<unsigned int>(*i));
+	}
+	return ret;
+}
 
 unsigned int Account::getAccountId() const {
 	return aid;
@@ -122,4 +158,37 @@ const Session* Account::getSession() const {
 
 void Account::setSession(const Session* s) {
 	session = s;
+}
+
+const std::list<Permission>& Account::getPermissions() const {
+	return permissions;
+}
+
+void Account::setPermissions(const std::list<Permission>& l) {
+	permissions = l;
+}
+
+void Account::clearPermissions() {
+	permissions.clear();
+}
+
+void Account::addPermission(Permission p) {
+	permissions.insert(permissions.end(), p);
+}
+
+void Account::removePermission(Permission p) {
+	for (auto i = permissions.cbegin(); i != permissions.cend(); i++) {
+		if (*i == p) {
+			permissions.erase(i);
+		}
+	}
+}
+
+unsigned int Account::hasPermission(Permission p) const {
+	for (auto i = permissions.cbegin(); i != permissions.cend(); i++) {
+		if (*i == p) {
+			return 1;
+		}
+	}
+	return 0;
 }
