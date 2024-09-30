@@ -15,13 +15,14 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <vector>
 #include "command.h"
 #include "player.h"
+#include "commands/all.h"
 
 Command::~Command() {}
 
 static std::vector<std::unique_ptr<Command>> commands;
 
 void registerDefaultCommands() {
-	//commands.push_back(std::make_unique<AccountCommand>());
+	commands.emplace_back(new AccountCommand());
 }
 
 void registerCommand(std::unique_ptr<Command> cmd) {
