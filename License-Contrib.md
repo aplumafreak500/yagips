@@ -20,6 +20,7 @@ They are as follows:
 * SQLite3 \(<https://www.sqlite.org>\)
 * json-c \(<https://github.com/json-c/json-c>\)
 * LevelDB \(<https://github.com/google/leveldb>\)
+* Readline \(<https://www.gnu.org/software/readline>\)
 
 ## mt19937-64
 

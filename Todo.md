@@ -8,7 +8,8 @@ This list is subject to change.
 - [ ] Add Gettext \(or some other local i18n backend\)
 	- In-game server chat should use connected player's locale, either user-supplied or determined from the client's language setting
 - [ ] Add Getopt \(for command-line arguments\)
-- [ ] Add server console \(optionally using Readline\)
+- [x] Add server console \(optionally using Readline\)
+	- [ ] Add command history support when using Readline
 - [ ] Permissions system
 - [x] Store `git describe` string into Autoconf `PACKAGE_VERSION` string
 - [ ] Robust logging system

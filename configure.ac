@@ -75,6 +75,36 @@ AC_SUBST(JSON_C_CFLAGS)
 AC_CHECK_LIB(leveldb, leveldb_open, [], [
 	AC_MSG_ERROR([Required library 'leveldb' not found.])
 ])
+AC_ARG_WITH(
+	[readline],
+	AS_HELP_STRING(
+		[--with-readline],
+		[Support libreadline in the server console @<:@default=check@:>@]
+	),
+	[],
+	[with_readline=check]
+)
+READLINE=no
+AS_IF([test "x$with_readline" != "xno"], [
+	# TODO Determine actual minimum version
+	PKG_CHECK_MODULES(READLINE, readline >= 8.2, [
+		READLINE=yes
+	], [
+		AC_CHECK_LIB(readline, readline, [
+			READLINE_LIBS = "-lreadline -ltinfo"
+			READLINE=yes
+		], [
+			AS_IF([test "x$with_readline" != "xcheck"], [
+				AC_MSG_ERROR([Required library 'readline' not found.])
+			])
+		], -ltinfo)
+	])
+])
+AS_IF([test "x$READLINE" = "xyes"], [
+	AC_SUBST(READLINE_LIBS)
+	AC_SUBST(READLINE_CFLAGS)
+	AC_DEFINE([HAS_READLINE], [1], [If support for libreadline is enabled.])
+])
 # printf "\nChecking for required functions...\n\n"
 # TODO Check more required functions, possibly from the dependencies
 AC_CONFIG_HEADERS([config.h])
