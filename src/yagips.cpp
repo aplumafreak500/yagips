@@ -25,6 +25,8 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "data.h"
 #include "ec2b.h"
 #include "keys.h"
+#include "console.h"
+#include "command.h"
 
 extern "C" {
 	static int exitSignal = 0;
@@ -37,6 +39,7 @@ extern "C" {
 		pthread_t tid = pthread_self();
 		GameserverSignal = 1;
 		DispatchServerSignal = 1;
+		stop_console();
 		if (sig == SIGINT && pthread_equal(tid, parent)) {
 			timesCalled++;
 			if (timesCalled >= 3) {
@@ -150,7 +153,15 @@ extern "C" {
 			delete globalConfig;
 			return -terrno;
 		}
-		// TODO Server console
+		registerDefaultCommands();
+		// TODO Config option to disable the server console
+		// Note: Despite using tret, the server console runs in the main thread.
+		tret = console_main();
+		if (tret < 0) {
+			fprintf(stderr, "Server console thread returned status %d\n", tret);
+		}
+		GameserverSignal = 1;
+		DispatchServerSignal = 1;
 		terrno = pthread_join(gameserver, (void**) &tret);
 		if (terrno) {
 			fprintf(stderr, "Unable to watch the gameserver thread, errno = %d (%s)\n", terrno, strerror(terrno));
@@ -179,6 +190,7 @@ extern "C" {
 			sigaction(exitSignal, &SA_DFL, NULL);
 			kill(getpid(), exitSignal);
 		}
+		printf("\n");
 		return ret;
 	}
 }

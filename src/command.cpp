@@ -129,6 +129,11 @@ int handleCommand(const Player* player, const char* cmd) {
 			break;
 		}
 	}
+	*arg_dst = '\0';
+	if (argc < 32) {
+		argv[argc] = arg_ptr;
+		argc++;
+	}
 	return handleCommand(player, argc, argv);
 }
 
