@@ -13,7 +13,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#if 0 /*def HAS_READLINE */
+#ifdef HAS_READLINE
 #include <readline/readline.h>
 #endif
 #include "player.h"
@@ -28,16 +28,26 @@ void stop_console() {
 int console_main() {
 	int cmdret;
 	char* cmd = NULL;
-#if 0 /*def HAS_READLINE*/
-	// TODO
+#ifdef HAS_READLINE
+	rl_bind_key('\t', rl_insert);
 #else
 	char* buf = NULL;
 	ssize_t len = 0;
 	size_t buflen = 0;
 #endif
 	while(!console_signal) {
-#if 0 /*def HAS_READLINE*/
-		
+#ifdef HAS_READLINE
+		if (cmd != NULL) {
+			free(cmd);
+			cmd = NULL;
+		}
+		static char prompt[32];
+		prompt[31] = '\0';
+		snprintf(prompt, 31, "%s> ", PACKAGE_NAME);
+		cmd = readline(prompt);
+		if (cmd == NULL) {
+			break;
+		}
 #else
 		// Only print a prompt if both stdin and stdout are connected to a tty.
 		if (isatty(fileno(stdin)) && isatty(fileno(stdout))) {
@@ -46,7 +56,7 @@ int console_main() {
 		len = getline(&buf, &buflen, stdin);
 		if (len < 0) {
 			if (feof(stdin)) {
-				return 0;
+				break;
 			}
 			if (ferror(stdin)) {
 				fprintf(stderr, "Warning: getline returned error %d (%s)\n", errno, strerror(errno));
@@ -71,7 +81,7 @@ int console_main() {
 			fprintf(stderr, "Command `%s` ran successfully.\n", cmd);
 		}
 	}
-#if 0 /*def HAS_READLINE*/
+#ifndef HAS_READLINE
 	buf = NULL;
 #endif
 	if (cmd != NULL) {
