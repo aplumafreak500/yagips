@@ -20,6 +20,7 @@ public:
 	virtual ~Command();
 	virtual const std::string name() const = 0;
 	virtual const std::vector<std::string> aliases() const = 0;
+	virtual const std::string description() const = 0;
 	virtual const std::string usage() const = 0;
 	virtual int handle(const Player*, unsigned int, const char* const*) = 0;
 };
