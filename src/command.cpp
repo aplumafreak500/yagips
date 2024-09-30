@@ -151,7 +151,7 @@ int handleCommand(const Player* player, unsigned int argc, const char* const* ar
 		const std::vector<std::string> a = (*i)->aliases();
 		for (auto j = a.cbegin(); j != a.cend(); j++) {
 			if (*j == cmd) {
-	 			return (*i)->handle(player, argc - 1, &argv[1]);
+				return (*i)->handle(player, argc - 1, &argv[1]);
 			}
 		}
 	}
