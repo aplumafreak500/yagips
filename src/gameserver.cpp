@@ -100,6 +100,7 @@ void Gameserver::stop() {
 		if (sessionList[i] == NULL) continue;
 		sessionList[i]->close(6);
 		delete sessionList[i];
+		sessionList[i] = NULL;
 	}
 	// TODO: Wait for a timeout or until all sessions have shut down
 	if (fd != -1) {
@@ -355,6 +356,7 @@ extern "C" {
 										break;
 									case Session::NOT_CONNECTED:
 										delete sessionList[i];
+										sessionList[i] = NULL;
 										foundValidSession = 1;
 										break;
 									case Session::TIMEOUT:
@@ -374,6 +376,7 @@ extern "C" {
 									}
 									if (tries >= 5) {
 										delete sessionList[i];
+										sessionList[i] = NULL;
 										break;
 									}
 									if (foundValidSession) break;
