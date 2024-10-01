@@ -710,7 +710,7 @@ std::string handleLogin(const char* post) {
 		}
 		account = globalDbGate->getAccountByUsername(username);
 		if (account == NULL) {
-			if (1/* TODO auto-create account config */) {
+			if (0/* TODO auto-create account config */) {
 				account = globalDbGate->createAccount(username);
 			}
 			else {
