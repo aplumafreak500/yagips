@@ -220,6 +220,7 @@ Account* dbGate::createAccount(const char* username) {
 	account->getNewToken();
 	account->getNewSessionKey();
 	saveAccount(*account);
+	save();
 	return account;
 }
 
@@ -314,6 +315,7 @@ Player* dbGate::newPlayer() {
 	Player* player = new Player();
 	player->setUid(next_uid);
 	savePlayer(*player);
+	save();
 	return player;
 }
 
