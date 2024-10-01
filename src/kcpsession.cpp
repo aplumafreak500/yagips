@@ -38,6 +38,7 @@ KcpSession::KcpSession(unsigned long long id, sock_t* _client, Gameserver* _gs) 
 	ikcp_nodelay(kcp, 1, gs->getKcpInterval(), 2, 1);
 	ikcp_setmtu(kcp, 1400);
 	ikcp_wndsize(kcp, 256, 256);
+	kcp_next_update = 0;
 }
 
 KcpSession::~KcpSession() {
@@ -93,10 +94,9 @@ void KcpSession::update() {
 
 void KcpSession::update(unsigned int ms) {
 	if (kcp == NULL) return;
-	static unsigned int now = 0;
-	unsigned int next = ikcp_check(kcp, now);
-	if (next <= now) ikcp_update(kcp, now);
-	now += ms;
+	unsigned int next = ikcp_check(kcp, kcp_next_update);
+	if (next <= kcp_next_update) ikcp_update(kcp, kcp_next_update);
+	kcp_next_update += ms;
 }
 
 extern "C" {

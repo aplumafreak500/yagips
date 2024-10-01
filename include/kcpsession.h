@@ -32,5 +32,6 @@ private:
 	Gameserver* gs;
 	ikcpcb* kcp;
 	sock_t* client;
+	unsigned int kcp_next_update;
 };
 #endif
