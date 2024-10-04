@@ -64,6 +64,7 @@ Player::Player(const storage::PlayerInfo& p) {
 }
 
 Player::~Player() {
+	fprintf(stderr, "Warning: Call saveToDb before destructor\n");
 	saveToDb();
 }
 
