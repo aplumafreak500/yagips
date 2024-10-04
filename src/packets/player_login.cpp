@@ -13,11 +13,14 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string>
 #include "packet.h"
 #include "session.h"
+#include "runconfig.h"
 #include "player.pb.h"
 
 int handlePlayerLoginReq(Session& session, std::string& header, std::string& data) {
 	proto::PlayerLoginReq req;
 	proto::PlayerLoginRsp rsp;
+	proto::ResVersionConfig* res;
+	proto::ResVersionConfig* resNext;
 	Packet rsp_pkt(104);
 	if (session.getState() != Session::LOGIN_WAIT) {
 		// TODO should we send a response packet?
@@ -64,7 +67,6 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 	// else...
 	player->onLogin(session);
 	rsp.set_retcode(0);
-	// TODO Response packet contains ResVersionConfig info, hold off on sending it until we split the RegionInfo stuff from queryCurrRegionHttpRsp into a separate function
 	// TODO hk4e_cn for Chinese clients
 	rsp.set_game_biz("hk4e_global");
 	// TODO either pull from account object or from GeoIP
@@ -72,6 +74,69 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 	// Unknown exactly what these do.
 	rsp.set_is_use_ability_hash(1);
 	rsp.set_ability_hash_code(1844674);
+	const config_t* config = NULL;
+	if (globalConfig != NULL) {
+		config = globalConfig->getConfig();
+	}
+	if (config != NULL && config->regionInfo != NULL) {
+		if (config->regionInfo->res != NULL) {
+			rsp.set_client_data_version(config->regionInfo->res->dataVersion);
+			if (config->regionInfo->res->dataSuffix != NULL) {
+				rsp.set_client_version_suffix(config->regionInfo->res->dataSuffix);
+			}
+			if (config->regionInfo->res->dataRes != NULL) {
+				rsp.set_client_md5(config->regionInfo->res->dataRes);
+			}
+			rsp.set_client_silence_data_version(config->regionInfo->res->silenceVersion);
+			if (config->regionInfo->res->silenceSuffix != NULL) {
+				rsp.set_client_silence_version_suffix(config->regionInfo->res->silenceSuffix);
+			}
+			if (config->regionInfo->res->silenceRes != NULL) {
+				rsp.set_client_silence_md5(config->regionInfo->res->silenceRes);
+			}
+			res = new proto::ResVersionConfig;
+			res->set_version(config->regionInfo->res->resVersion);
+			if (config->regionInfo->res->resourceSuffix != NULL) {
+				res->set_version_suffix(config->regionInfo->res->resourceSuffix);
+			}
+			if (config->regionInfo->res->resourceRes != NULL) {
+				res->set_md5(config->regionInfo->res->resourceRes);
+			}
+			if (config->regionInfo->res->branch != NULL) {
+				res->set_branch(config->regionInfo->res->branch);
+			}
+			// TODO also read config->regionInfo->res->scriptVersion?
+			if (config->regionInfo->res->releaseTotalSize != NULL) {
+				res->set_release_total_size(config->regionInfo->res->releaseTotalSize);
+			}
+			rsp.set_is_relogin(config->regionInfo->res->relogin);
+			rsp.set_allocated_res_version_config(res);
+		}
+		if (config->regionInfo->resNext != NULL) {
+			if (config->regionInfo->resNext->resourceUrl != NULL) {
+				rsp.set_next_resource_url(config->regionInfo->resNext->resourceUrl);
+			}
+			resNext = new proto::ResVersionConfig;
+			resNext->set_version(config->regionInfo->resNext->resVersion);
+			if (config->regionInfo->resNext->resourceSuffix != NULL) {
+				resNext->set_version_suffix(config->regionInfo->resNext->resourceSuffix);
+			}
+			if (config->regionInfo->resNext->resourceRes != NULL) {
+				resNext->set_md5(config->regionInfo->resNext->resourceRes);
+			}
+			if (config->regionInfo->resNext->branch != NULL) {
+				resNext->set_branch(config->regionInfo->resNext->branch);
+			}
+			if (config->regionInfo->resNext->releaseTotalSize != NULL) {
+				resNext->set_release_total_size(config->regionInfo->resNext->releaseTotalSize);
+			}
+			resNext->set_relogin(config->regionInfo->resNext->relogin);
+			if (config->regionInfo->resNext->scriptVersion != NULL) {
+				resNext->set_next_script_version(config->regionInfo->resNext->scriptVersion);
+			}
+			rsp.set_allocated_next_res_version_config(resNext);
+		}
+	}
 	if (!rsp.SerializeToString(&data)) {
 		fprintf(stderr, "Error building packet data\n");
 		return -1;

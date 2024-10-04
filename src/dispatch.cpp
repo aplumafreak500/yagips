@@ -434,7 +434,6 @@ set_fields:
 		ret.set_msg("Server is missing region data");
 		goto build_rsp;
 	}
-	// TODO Here until end marker: Split into separate function that accepts a `struct RegionInfo` object and returns a proto::RegionInfo object. This is because PlayerLoginRsp also sends this data, so we need to share this code with it.
 	region = new proto::RegionInfo;
 	if (doGateserver) {
 		if (config->regionInfo->gateserverIp == NULL || config->regionInfo->gateserverPort == 0) {
@@ -564,7 +563,6 @@ set_fields:
 		region->set_secret_key(*regionKey);
 		delete regionKey;
 	}
-	// End TODO Split into separate function
 	ret.set_allocated_region_info(region);
 	if (config->regionInfo->sendStopServerOrForceUpdate == 1 && config->regionInfo->stopServer != NULL) {
 		stop = new proto::StopServerInfo;
