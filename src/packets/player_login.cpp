@@ -80,5 +80,7 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 	rsp_pkt.setData(data);
 	// for whatever reason, despite req using the session key, this packet uses the dispatch key... weird
 	rsp_pkt.setUseDispatchKey(1);
-	return session.sendPacket(rsp_pkt);
+	int ret = session.sendPacket(rsp_pkt);
+	if (!ret) session.setState(Session::ACTIVE);
+	return ret;
 }
