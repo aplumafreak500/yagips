@@ -15,6 +15,7 @@ class AvatarTeam;
 #include <string>
 #include <list>
 #include "avatar.h"
+#include "avatar.pb.h"
 class AvatarTeam {
 public:
 	AvatarTeam();
@@ -31,6 +32,7 @@ public:
 	const Avatar* getAvatar(unsigned long long) const;
 	int setAvatar(const Avatar*, unsigned int);
 	size_t size() const;
+	operator proto::AvatarTeam() const;
 private:
 	std::string name;
 	std::list<const Avatar*> avatars;

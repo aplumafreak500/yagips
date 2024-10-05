@@ -13,9 +13,21 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <list>
 #include "avatar.h"
 #include "team.h"
+#include "avatar.pb.h"
 
 AvatarTeam::AvatarTeam() {}
 AvatarTeam::~AvatarTeam() {}
+
+AvatarTeam::operator proto::AvatarTeam() const {
+	proto::AvatarTeam p;
+	p.set_team_name(name);
+	for (auto i = avatars.cbegin(); i != avatars.cend(); i++) {
+		if (*i != NULL) {
+			p.add_avatar_guid_list((*i)->getGuid());
+		}
+	}
+	return p;
+}
 
 const std::string& AvatarTeam::getName() const {
 	return name;
