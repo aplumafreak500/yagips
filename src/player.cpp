@@ -278,6 +278,7 @@ void Player::onLogin(Session& s) {
 	esn.set_scene_begin_time(curTimeMs());
 	esn.set_target_uid(uid);
 	esn.set_enter_scene_token(tpToken);
+	esn.set_is_first_login_enter_scene(1);
 	esn.set_type(proto::ENTER_SELF);
 	if (esn.SerializeToString(&pkt_data)) {
 		Packet esn_p(201);
