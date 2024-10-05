@@ -18,6 +18,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 extern "C" {
 	static int sendFromKcp(const unsigned char*, int, ikcpcb*, KcpSession*);
+	static void logFromKcp(const char*, ikcpcb*, KcpSession*);
 }
 
 KcpSession::KcpSession(unsigned long long id, sock_t* _client, Gameserver* _gs) {
@@ -39,6 +40,8 @@ KcpSession::KcpSession(unsigned long long id, sock_t* _client, Gameserver* _gs) 
 	ikcp_setmtu(kcp, 1400);
 	ikcp_wndsize(kcp, 256, 256);
 	kcp_next_update = 0;
+	kcp->writelog = (void(*)(const char*, ikcpcb*, void*)) logFromKcp;
+	kcp->logmask = -1;
 }
 
 KcpSession::~KcpSession() {
@@ -100,10 +103,17 @@ void KcpSession::update(unsigned int ms) {
 }
 
 extern "C" {
-	static int sendFromKcp(const unsigned char* buf, int len, __attribute__((unused)) ikcpcb* kcp, KcpSession* session) {
+	static int sendFromKcp(const unsigned char* buf, int len, ikcpcb*, KcpSession* session) {
 		if (session == NULL) return -1;
 		if (buf == NULL && len != 0) return -1;
 		// TODO: what about the `kcp` arg? Do we need to do anything with it?
 		return session->sendRaw(buf, len);
+	}
+
+	static void logFromKcp(const char* buf, ikcpcb*, KcpSession* session) {
+		if (session == NULL) return;
+		if (buf == NULL) return;
+		unsigned long long id = session->getSessionId();
+		fprintf(stderr, "KcpSession 0x%08llx: %s\n", id, buf);
 	}
 }
