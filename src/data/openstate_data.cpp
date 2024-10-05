@@ -173,15 +173,20 @@ int OpenStateData::load(const char* path) {
 			tmpEnt->openCond[1].param[1] = toInt(tryGetKey(tblEnt, "cond2Param2"));
 		}
 		// TODO Config option to force these openstate IDs to be configured statically
-		if (
-			tmpEnt->id == 1 || // Paimon menu
-			tmpEnt->id == 47 || tmpEnt->id == 48 // Paimon barriers
-		) {
+		if (tmpEnt->id == 1) { // Paimon menu
 			tmpEnt->is_default = 1;
 			tmpEnt->openCond[0].type = OPEN_STATE_COND_PLAYER_LEVEL;
 			tmpEnt->openCond[0].param[0] = 0;
 			tmpEnt->openCond[1].type = OPEN_STATE_COND_PLAYER_LEVEL;
 			tmpEnt->openCond[1].param[0] = 0;
+		}
+		if (tmpEnt->id == 47 || tmpEnt->id == 48) { // Paimon barriers
+			tmpEnt->is_default = 0;
+			tmpEnt->allowClientOpen = 0;
+			tmpEnt->openCond[0].type = OPEN_STATE_COND_PLAYER_LEVEL;
+			tmpEnt->openCond[0].param[0] = ~0;
+			tmpEnt->openCond[1].type = OPEN_STATE_COND_PLAYER_LEVEL;
+			tmpEnt->openCond[1].param[0] = ~0;
 		}
 		entries.push_back(*tmpEnt);
         delete tmpEnt;
