@@ -60,6 +60,8 @@ public:
 	int load();
 	int load(const char*);
 	const AvatarDataEnt* operator[](const unsigned int) const;
+	const AvatarDataEnt* at(const unsigned int) const;
+	size_t size() const;
 private:
 	std::vector<AvatarDataEnt> entries;
 };

@@ -372,3 +372,12 @@ const AvatarDataEnt* AvatarData::operator[](const unsigned int idx) const {
 	}
 	return NULL;
 }
+
+const AvatarDataEnt* AvatarData::at(const unsigned int idx) const {
+	if (idx >= entries.size()) return NULL;
+	return &entries[idx];
+}
+
+size_t AvatarData::size() const {
+	return entries.size();
+}

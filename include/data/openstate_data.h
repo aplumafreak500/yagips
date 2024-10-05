@@ -33,6 +33,8 @@ public:
 	int load();
 	int load(const char*);
 	const OpenStateDataEnt* operator[](const unsigned int) const;
+	const OpenStateDataEnt* at(const unsigned int) const;
+	size_t size() const;
 private:
 	std::vector<OpenStateDataEnt> entries;
 };

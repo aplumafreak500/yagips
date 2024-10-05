@@ -191,9 +191,14 @@ int OpenStateData::load(const char* path) {
 }
 
 const OpenStateDataEnt* OpenStateData::operator[](const unsigned int idx) const {
-	unsigned i;
-	for (i = 0; i < entries.size(); i++) {
-		if (entries[i].id == idx) return &entries[i];
-	}
-	return NULL;
+	return &entries[idx];
+}
+
+const OpenStateDataEnt* OpenStateData::at(const unsigned int idx) const {
+	if (idx >= entries.size()) return NULL;
+	return &entries[idx];
+}
+
+size_t OpenStateData::size() const {
+	return entries.size();
 }
