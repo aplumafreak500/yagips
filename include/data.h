@@ -12,6 +12,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #ifndef DATA_H
 #define DATA_H
 #include "data/avatar_data.h"
+#include "data/openstate_data.h"
 #include <stdio.h>
 #include <vector>
 #include <unordered_map>
@@ -21,11 +22,13 @@ typedef std::unordered_map<std::string, std::string> excelTableEnt;
 
 const std::vector<excelTableEnt>* loadJsonExcelData(FILE* const);
 const std::vector<excelTableEnt>* loadTsvExcelData(const std::vector<std::string>&, FILE* const);
+std::string tryGetKey(const excelTableEnt&, const std::string&);
 
 struct GameData {
 	GameData();
 	~GameData();
 	AvatarData* avatar_data;
+	OpenStateData* openstate_data;
 };
 
 extern GameData* globalGameData;

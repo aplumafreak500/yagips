@@ -16,6 +16,8 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <errno.h>
 #include <string>
 #include <map>
+#include <unordered_map>
+#include <stdexcept>
 #include <vector>
 #include "data.h"
 
@@ -120,15 +122,29 @@ const std::vector<excelTableEnt>* loadTsvExcelData(const std::vector<std::string
 	return tbl;
 }
 
+std::string tryGetKey(const excelTableEnt& v, const std::string& k) {
+	std::string r;
+	try {
+		r = v.at(k);
+	}
+	catch(const std::out_of_range&) {}
+	return r;
+}
+
 GameData::GameData() {
 	avatar_data = new AvatarData();
 	if (avatar_data->load()) {
 		fprintf(stderr, "Warning: Failed to load avatar data\n");
 	}
+	openstate_data = new OpenStateData();
+	if (openstate_data->load()) {
+		fprintf(stderr, "Warning: Failed to load openstate data\n");
+	}
 }
 
 GameData::~GameData() {
 	if (avatar_data != NULL) delete avatar_data;
+	if (openstate_data != NULL) delete openstate_data;
 }
 
 GameData* globalGameData;

@@ -257,6 +257,14 @@ idx1:
 	return ret;
 }
 
+unsigned int toInt(const std::string& x) {
+	return strtoul(x.c_str(), NULL, 0);
+}
+
+long double toFlt(const std::string& x) {
+	return strtold(x.c_str(), NULL);
+}
+
 extern "C" {
 	void DbgHexdump(const unsigned char* buf, size_t sz) {
 		size_t off;

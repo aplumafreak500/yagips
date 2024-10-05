@@ -9,19 +9,14 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#ifndef UTIL_H
-#define UTIL_H
 #include <stddef.h>
-#include <string>
-std::string b64enc(const std::string&);
-std::string b64dec(const std::string&);
-std::string hexenc(const std::string&);
-std::string hexdec(const std::string&);
-unsigned int toInt(const std::string&);
-long double toFlt(const std::string&);
-extern "C" {
-	void DbgHexdump(const unsigned char*, size_t);
-	unsigned long long rand_xoshiro256(unsigned long long [4]);
-	unsigned long long curTimeMs();
-}
-#endif
+#include "enum/openstate.h"
+
+const EnumTblEnt OpenStateCondTbl[] = {
+	ENUM(OPEN_STATE_COND_PLAYER_LEVEL),
+	ENUM(OPEN_STATE_COND_QUEST),
+	ENUM(OPEN_STATE_OFFERING_LEVEL),
+	ENUM(OPEN_STATE_CITY_REPUTATION_LEVEL),
+	ENUM(OPEN_STATE_COND_PARENT_QUEST),
+	{-1, NULL}
+};

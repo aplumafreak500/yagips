@@ -9,19 +9,31 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
-#ifndef UTIL_H
-#define UTIL_H
-#include <stddef.h>
-#include <string>
-std::string b64enc(const std::string&);
-std::string b64dec(const std::string&);
-std::string hexenc(const std::string&);
-std::string hexdec(const std::string&);
-unsigned int toInt(const std::string&);
-long double toFlt(const std::string&);
-extern "C" {
-	void DbgHexdump(const unsigned char*, size_t);
-	unsigned long long rand_xoshiro256(unsigned long long [4]);
-	unsigned long long curTimeMs();
-}
+#ifndef OPENSTATE_DATA_H
+#define OPENSTATE_DATA_H
+
+#include <vector>
+
+// Defined in the order they appear in OpenStateData.txt
+struct OpenStateDataEnt {
+	unsigned int id;
+	unsigned int is_default;
+	unsigned int allowClientOpen;
+	struct {
+		unsigned int type;
+		unsigned int param[2];
+	} openCond[2];
+	unsigned int uiOpenId;
+};
+
+class OpenStateData {
+public:
+	OpenStateData();
+	~OpenStateData();
+	int load();
+	int load(const char*);
+	const OpenStateDataEnt* operator[](const unsigned int) const;
+private:
+	std::vector<OpenStateDataEnt> entries;
+};
 #endif

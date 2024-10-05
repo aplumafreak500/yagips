@@ -61,7 +61,9 @@ Player::Player(const storage::PlayerInfo& p) {
 	pos = p.position();
 	nextGuid = p.next_guid();
 	// TODO: Props
-	// TODO: Openstates
+	for (int i = 0; i < p.open_states_size(); i++) {
+		openstates.push_back(p.open_states(i));
+	}
 }
 
 Player::~Player() {
@@ -98,7 +100,9 @@ Player::operator storage::PlayerInfo() const {
 	ret.set_allocated_position(_pos);
 	ret.set_scene_id(scene_id);
 	// TODO Props
-	// TODO Openstates
+	for (auto i = openstates.cbegin(); i != openstates.cend(); i++) {
+		ret.add_open_states(*i);
+	}
 	return ret;
 }
 
@@ -177,8 +181,9 @@ void Player::onLogin(Session& s) {
 	}
 	proto::OpenStateUpdateNotify osn;
 	auto os_list = osn.mutable_open_state_map();
-	// TODO Hardcoded list of openstates
-	(*os_list)[1] = 1;
+	for (auto i = openstates.cbegin(); i != openstates.cend(); i++) {
+		(*os_list)[*i] = 1;
+	}
 	if (osn.SerializeToString(&pkt_data)) {
 		Packet osn_p(124);
 		osn_p.setData(pkt_data);

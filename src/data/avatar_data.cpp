@@ -13,12 +13,11 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string.h>
 #include <errno.h>
 #include <vector>
-#include <unordered_map>
-#include <stdexcept>
 #include <json-c/json_tokener.h>
 #include <json-c/json_object.h>
 #include <sys/param.h>
 #include "runconfig.h"
+#include "util.h"
 #include "data.h"
 #include "data/avatar_data.h"
 #include "enum.h"
@@ -30,7 +29,7 @@ AvatarData::AvatarData() {}
 AvatarData::~AvatarData() {}
 
 // Field names for TSV
-const std::vector<std::string> field_names = {
+static const std::vector<std::string> field_names = {
 	"id",
 	"unk1", // 默认阵营 (default camp?)
 	"hpBase",
@@ -82,23 +81,6 @@ const std::vector<std::string> field_names = {
 	"name",
 	"desc"
 };
-
-static unsigned int toInt(const std::string& x) {
-	return strtoul(x.c_str(), NULL, 0);
-}
-
-static long double toFlt(const std::string& x) {
-	return strtold(x.c_str(), NULL);
-}
-
-static std::string tryGetKey(const std::unordered_map<std::string, std::string>& v, const std::string& k) {
-	std::string r;
-	try {
-		r = v.at(k);
-	}
-	catch(const std::out_of_range&) {}
-	return r;
-}
 
 int AvatarData::load() {
 	const config_t* config = globalConfig->getConfig();
