@@ -34,9 +34,11 @@ void genXorpadFromSeed2(unsigned long long, unsigned char*, size_t);
 class Ec2b {
 public:
 	Ec2b(); // default, key and seed left uninitalized
-	Ec2b(int); // Key and seed randomly generated
+	Ec2b(int); // Key and seed either randomly generated or zero-filled based on arg
+	Ec2b(unsigned long long); // xor derived from given mt seed; key and seed are generated randomly
+	Ec2b(unsigned long long, int); // xor derived from given mt seed; key and seed are set based on second arg
 	Ec2b(const char*); // Key and seed in file, path given in arg
-	Ec2b(FILE*); // Key and seed in file, caller is responsible for closing it. seek position is preserved
+	Ec2b(FILE*); // Key and seed in file, caller is responsible for closing it. Seek position is preserved
 	Ec2b(const std::string&); // Key and seed as ec2b struct
 	Ec2b(const char*, size_t); // as above but with c-style types
 	Ec2b(ec2b_t); // Key and seed already stored as type ec2b_t
@@ -50,14 +52,26 @@ public:
 	void setData(const std::string&);
 	const std::string& getXorpad() const;
 	unsigned long long getSeed() const;
+	void setSeed(unsigned long long);
+	void setSeed(unsigned long long, int);
 	operator std::string() const;
 	operator ec2b_t() const;
+	enum {
+		SEED_FROM_OBJECT = 0,
+		SEED_FROM_RAND,
+		SEED_FROM_SEED,
+		SEED_FROM_SEED_MT,
+		SEED_FROM_SEED_XOR,
+		SEED_FROM_ZERO,
+		SEED_FROM_CONST_HIGH_BYTE
+	};
 private:
 	std::string key;
 	std::string data;
 	std::string xorpad;
 	unsigned long long seed;
 	void deriveXor();
+	void getFromSeed(int);
 };
 #endif
 #endif
