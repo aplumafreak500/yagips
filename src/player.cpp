@@ -286,7 +286,12 @@ void Player::onLogin(Session& s) {
 	}
 	updateOpenstates(1);
 	proto::PlayerDataNotify pdn;
-	// TODO Fill this out
+	pdn.set_nick_name(name);
+	pdn.set_server_time(curTimeMs());
+	pdn.set_is_first_login_today(1); // TODO Add a check to see if this is actually true
+	// TODO Prop map
+	// TODO Hardcoded until proper region id handling is implemented
+	pdn.set_region_id(1);
 	if (pdn.SerializeToString(&pkt_data)) {
 		Packet pdn_p(108);
 		pdn_p.setData(pkt_data);
