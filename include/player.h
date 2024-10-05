@@ -21,6 +21,7 @@ class Player;
 #include "vector.h"
 #include "world.h"
 #include "scene.h"
+#include "avatar.h"
 #include "team.h"
 #include "storage.pb.h"
 
@@ -50,7 +51,9 @@ private:
 	unsigned int uid;
 	Session* session;
 	std::list<AvatarTeam> teams;
+	std::list<Avatar> avatars;
 	unsigned int curTeamIndex;
+	const Avatar* curAvatar;
 	World* world;
 	Scene* curScene;
 	Vector pos;

@@ -15,6 +15,7 @@ package storage;
 
 import "define.proto";
 import "item.proto";
+import "avatar.proto";
 
 // cached incrementers to save time looking for things
 // type 0 incrementer is stored in player object
@@ -76,34 +77,38 @@ message PlayerInfo {
 	bool show_avatars = 15;
 	repeated uint32 show_avatar_guid_list = 16;
 	repeated uint32 show_namecard_list = 17;
-	// TODO Teams (18)
-	// TODO Current Team (19)
-	map<uint32, uint32> props = 20;
-	// TODO Abilities (21)
-	uint32 scene_id = 22;
-	proto.Vector position = 23;
-	float rotation = 24;
-	repeated uint32 open_states = 25;
-	map<uint32, SceneData> scene_data = 26;
-	// TODO Markers (27)
-	uint32 region_id = 28;
-	uint32 widget_id = 29;
-	repeated uint32 wings = 30;
-	repeated uint32 namecards = 31;
-	repeated uint32 costumes = 32;
-	repeated uint32 unlocked_forge_items = 33;
-	repeated uint32 unlocked_alchemy_items = 34;
-	repeated uint32 unlocked_cook_items = 35;
-	repeated uint32 claimed_ar_rewards = 36;
-	// TODO Statue levels (37)
-	repeated proto.ForgeQueueData forge_queue = 38;
-	// TODO Cooking queue (39)
-	repeated proto.AvatarExpeditionInfo expeditions = 40;
-	// TODO Reputation levels (41)
-	// TODO Bounties (42)
-	// TODO Offering levels (43)
-	reserved 18, 19, 21, 27, 37, 39, 41, 42, 43;
-	reserved "teams", "cur_team", "abilities", "cooking_queue";
+	repeated proto.AvatarTeam teams = 18;
+	uint32 cur_team_id = 19;
+	uint64 cur_avatar_guid = 20;
+	map<uint32, uint32> props = 21;
+	// TODO Abilities (22)
+	uint32 scene_id = 23;
+	proto.Vector position = 24;
+	float rotation = 25;
+	repeated uint32 open_states = 26;
+	map<uint32, SceneData> scene_data = 27;
+	// TODO Markers (28)
+	uint32 region_id = 29;
+	uint32 widget_id = 30;
+	repeated uint32 wings = 31;
+	repeated uint32 namecards = 32;
+	repeated uint32 costumes = 33;
+	repeated uint32 unlocked_forge_items = 34;
+	repeated uint32 unlocked_alchemy_items = 35;
+	repeated uint32 unlocked_cook_items = 36;
+	repeated uint32 claimed_ar_rewards = 37;
+	// TODO Statue levels (38)
+	repeated proto.ForgeQueueData forge_queue = 39;
+	// TODO Cooking queue (40)
+	repeated proto.AvatarExpeditionInfo expeditions = 41;
+	// TODO Reputation levels (42)
+	// TODO Bounties (43)
+	// TODO Offering levels (44)
+	bool main_avatar_gender = 45;
+	bool is_born = 46;
+	uint64 last_login_ts = 47;
+	reserved 22, 28, 38, 40, 42, 43, 44;
+	reserved "abilities", "cooking_queue";
 };
 
 // Type 3: Friendship record
