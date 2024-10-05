@@ -20,6 +20,9 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "vector.h"
 #include "util.h"
 #include "avatar.h"
+#include "data.h"
+#include "data/openstate_data.h"
+#include "enum/openstate.h"
 #include "player.pb.h"
 #include "avatar.pb.h"
 #include "scene.pb.h"
@@ -138,6 +141,108 @@ void Player::setUid(unsigned int u) {
 	uid = u;
 }
 
+unsigned int Player::getOpenstate(unsigned int state) const {
+	for (auto i = openstates.cbegin(); i != openstates.end(); i++) {
+		if (state == *i) return 1;
+	}
+	return 0;
+}
+
+void Player::setOpenstate(unsigned int state) {
+	setOpenstate(state, 0);
+}
+
+void Player::setOpenstate(unsigned int state, int sendNotify) {
+	for (auto i = openstates.cbegin(); i != openstates.end(); i++) {
+		if (state == *i) return;
+	}
+	openstates.push_back(state);
+	if (sendNotify) {
+		if (session != NULL && session->getState() >= Session::LOGIN_WAIT) {
+			proto::OpenStateChangeNotify p;
+			std::string pkt_data;
+			auto os_list = p.mutable_open_state_map();
+			(*os_list)[state] = 1;
+			if (p.SerializeToString(&pkt_data)) {
+				Packet pkt(125);
+				pkt.setData(pkt_data);
+				session->sendPacket(pkt);
+			}
+		}
+	}
+}
+
+void Player::clearOpenstate(unsigned int state) {
+	clearOpenstate(state, 0);
+}
+
+void Player::clearOpenstate(unsigned int state, int sendNotify) {
+	for (auto i = openstates.cbegin(); i != openstates.end(); i++) {
+		if (state == *i) {
+			openstates.erase(i);
+		}
+	}
+	if (sendNotify) {
+		if (session != NULL && session->getState() >= Session::LOGIN_WAIT) {
+			proto::OpenStateChangeNotify p;
+			std::string pkt_data;
+			auto os_list = p.mutable_open_state_map();
+			(*os_list)[state] = 0;
+			if (p.SerializeToString(&pkt_data)) {
+				Packet pkt(125);
+				pkt.setData(pkt_data);
+				session->sendPacket(pkt);
+			}
+		}
+	}
+}
+
+void Player::updateOpenstates() {
+	updateOpenstates(0);
+}
+
+void Player::updateOpenstates(int sendNotify) {
+	if (globalGameData == NULL) return;
+	const OpenStateData* data = globalGameData->openstate_data;
+	if (data == NULL) return;
+	const OpenStateDataEnt* state;
+	for (unsigned int i = 0; i < data->size(); i++) {
+		state = (*data)[i];
+		if (state == NULL) continue;
+		if (state->is_default) {
+			setOpenstate(state->id, 0);
+			continue;
+		}
+		for (unsigned int j = 0; j < 2; j++) {
+			switch (state->openCond[j].type) {
+			default:
+				break;
+			case OPEN_STATE_COND_PLAYER_LEVEL:
+				if (ar >= state->openCond[j].param[0]) {
+					setOpenstate(state->id, 0);
+				}
+				break;
+			// TODO All other openstate conditions
+			}
+		}
+	}
+	if (sendNotify) {
+		if (session != NULL && session->getState() >= Session::LOGIN_WAIT) {
+			proto::OpenStateUpdateNotify p;
+			std::string pkt_data;
+			auto os_list = p.mutable_open_state_map();
+			for (auto i = openstates.cbegin(); i != openstates.cend(); i++) {
+				(*os_list)[*i] = 1;
+			}
+			if (p.SerializeToString(&pkt_data)) {
+				Packet pkt(124);
+				pkt.setData(pkt_data);
+				session->sendPacket(pkt);
+			}
+		}
+	}
+}
+
 void Player::onLogin(Session& s) {
 	KcpSession* kcp = s.getKcpSession();
 	if (kcp == NULL) return;
@@ -179,16 +284,7 @@ void Player::onLogin(Session& s) {
 		esn_p.setData(pkt_data);
 		s.sendPacket(esn_p);
 	}
-	proto::OpenStateUpdateNotify osn;
-	auto os_list = osn.mutable_open_state_map();
-	for (auto i = openstates.cbegin(); i != openstates.cend(); i++) {
-		(*os_list)[*i] = 1;
-	}
-	if (osn.SerializeToString(&pkt_data)) {
-		Packet osn_p(124);
-		osn_p.setData(pkt_data);
-		s.sendPacket(osn_p);
-	}
+	updateOpenstates(1);
 	proto::PlayerDataNotify pdn;
 	// TODO Fill this out
 	if (pdn.SerializeToString(&pkt_data)) {

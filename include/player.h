@@ -37,6 +37,13 @@ public:
 	void setAccount(const Account*);
 	unsigned int getUid() const;
 	void setUid(unsigned int);
+	unsigned int getOpenstate(unsigned int) const;
+	void setOpenstate(unsigned int);
+	void setOpenstate(unsigned int, int);
+	void clearOpenstate(unsigned int);
+	void clearOpenstate(unsigned int, int);
+	void updateOpenstates();
+	void updateOpenstates(int);
 	void onLogin(Session& session);
 private:
 	const Account* account;
