@@ -23,6 +23,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "data.h"
 #include "data/openstate_data.h"
 #include "enum/openstate.h"
+#include "prop.h"
 #include "player.pb.h"
 #include "avatar.pb.h"
 #include "scene.pb.h"
@@ -42,6 +43,17 @@ Player::Player() {
 	pos.y = 194.633;
 	pos.z = -1719.386;
 	scene_id = 3;
+	props[PROP_PLAYER_LEVEL] = ar;
+	props[PROP_PLAYER_EXP] = ar_exp;
+	props[PROP_PLAYER_WORLD_LEVEL] = worldLevel;
+	props[PROP_PLAYER_HCOIN] = 0;
+	props[PROP_PLAYER_SCOIN] = 0;
+	props[PROP_PLAYER_MCOIN] = 0;
+	props[PROP_PLAYER_RESIN] = 160;
+	props[PROP_PLAYER_LEGENDARY_KEY] = 0;
+	props[PROP_PLAYER_LEGENDARY_DAILY_TASK_NUM] = 0;
+	// TODO any other props that need explicit initalizing?
+	updateOpenstates();
 }
 
 Player::Player(const storage::PlayerInfo& p) {
@@ -63,10 +75,16 @@ Player::Player(const storage::PlayerInfo& p) {
 	pfp = p.pfp();
 	pos = p.position();
 	nextGuid = p.next_guid();
-	// TODO: Props
-	for (int i = 0; i < p.open_states_size(); i++) {
-		openstates.push_back(p.open_states(i));
+	for (auto i = p.props().cbegin(); i != p.props().cend(); i++) {
+		props[i->first] = i->second;
 	}
+	props[PROP_PLAYER_LEVEL] = ar;
+	props[PROP_PLAYER_EXP] = ar_exp;
+	props[PROP_PLAYER_WORLD_LEVEL] = worldLevel;
+	for (int j = 0; j < p.open_states_size(); j++) {
+		openstates.push_back(p.open_states(j));
+	}
+	updateOpenstates();
 }
 
 Player::~Player() {
@@ -79,6 +97,7 @@ Player::operator storage::PlayerInfo() const {
 	ret.set_uid(uid);
 	long long ctime;
 	if (account != NULL) {
+
 		ret.set_aid(account->getAccountId());
 	}
 	if (session != NULL) {
@@ -102,9 +121,25 @@ Player::operator storage::PlayerInfo() const {
 	*_pos = pos;
 	ret.set_allocated_position(_pos);
 	ret.set_scene_id(scene_id);
-	// TODO Props
-	for (auto i = openstates.cbegin(); i != openstates.cend(); i++) {
-		ret.add_open_states(*i);
+	auto* m = ret.mutable_props();
+	for (auto i = props.cbegin(); i != props.cend(); i++) {
+		switch(i->first) {
+		default:
+			(*m)[i->first] = i->second;
+			break;
+		case PROP_PLAYER_LEVEL:
+			(*m)[i->first] = ar;
+			break;
+		case PROP_PLAYER_EXP:
+			(*m)[i->first] = ar_exp;
+			break;
+		case PROP_PLAYER_WORLD_LEVEL:
+			(*m)[i->first] = worldLevel;
+			break;
+		}
+	}
+	for (auto j = openstates.cbegin(); j != openstates.cend(); j++) {
+		ret.add_open_states(*j);
 	}
 	return ret;
 }
@@ -279,6 +314,7 @@ void Player::onLogin(Session& s) {
 	esn.set_target_uid(uid);
 	esn.set_enter_scene_token(tpToken);
 	esn.set_is_first_login_enter_scene(1);
+	esn.set_enter_reason(1);
 	esn.set_type(proto::ENTER_SELF);
 	if (esn.SerializeToString(&pkt_data)) {
 		Packet esn_p(201);
@@ -290,7 +326,12 @@ void Player::onLogin(Session& s) {
 	pdn.set_nick_name(name);
 	pdn.set_server_time(curTimeMs());
 	pdn.set_is_first_login_today(1); // TODO Add a check to see if this is actually true
-	// TODO Prop map
+	auto* prop_map = pdn.mutable_prop_map();
+	for (auto p = props.cbegin(); p != props.cend(); p++) {
+		(*prop_map)[p->first].set_type(p->first);
+		(*prop_map)[p->first].set_val(p->second);
+		(*prop_map)[p->first].set_ival(p->second);
+	}
 	// TODO Hardcoded until proper region id handling is implemented
 	pdn.set_region_id(1);
 	if (pdn.SerializeToString(&pkt_data)) {

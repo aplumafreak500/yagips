@@ -80,7 +80,7 @@ message PlayerInfo {
 	repeated proto.AvatarTeam teams = 18;
 	uint32 cur_team_id = 19;
 	uint64 cur_avatar_guid = 20;
-	map<uint32, uint32> props = 21;
+	map<uint32, int64> props = 21;
 	// TODO Abilities (22)
 	uint32 scene_id = 23;
 	proto.Vector position = 24;

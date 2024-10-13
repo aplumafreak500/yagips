@@ -67,7 +67,7 @@ private:
 	std::string signature;
 	unsigned int namecard;
 	unsigned int pfp;
-	std::map<unsigned int, int> props;
+	std::map<unsigned int, long long> props;
 	std::list<unsigned int> openstates;
 };
 #endif
