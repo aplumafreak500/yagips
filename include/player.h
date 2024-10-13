@@ -45,6 +45,8 @@ public:
 	void clearOpenstate(unsigned int, int);
 	void updateOpenstates();
 	void updateOpenstates(int);
+	long long getProp(unsigned int) const;
+	void setProp(unsigned int, long long);
 	void onLogin(Session& session);
 private:
 	const Account* account;

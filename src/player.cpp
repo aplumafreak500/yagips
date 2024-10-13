@@ -278,6 +278,39 @@ void Player::updateOpenstates(int sendNotify) {
 	}
 }
 
+long long Player::getProp(unsigned int p) const {
+	switch(p) {
+	default:
+		try {
+			return props.at(p);
+		}
+		catch(const std::out_of_range& e) {
+			return 0;
+		}
+	case PROP_PLAYER_LEVEL:
+		return ar;
+	case PROP_PLAYER_EXP:
+		return ar_exp;
+	case PROP_PLAYER_WORLD_LEVEL:
+		return worldLevel;
+	}
+}
+
+void Player::setProp(unsigned int p, long long v) {
+	switch(p) {
+	case PROP_PLAYER_LEVEL:
+		ar = v;
+		break;
+	case PROP_PLAYER_EXP:
+		ar_exp = v;
+		break;
+	case PROP_PLAYER_WORLD_LEVEL:
+		worldLevel = v;
+		break;
+	}
+	props[p] = v;
+}
+
 void Player::onLogin(Session& s) {
 	KcpSession* kcp = s.getKcpSession();
 	if (kcp == NULL) return;
