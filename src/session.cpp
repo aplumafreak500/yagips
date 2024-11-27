@@ -100,7 +100,8 @@ const unsigned char* Session::getSessionKey() const {
 
 void Session::generateSessionKey() {
 	getrandom(&sessionSeed, sizeof(long long), 0);
-	genXorpadFromSeed2(sessionSeed, sessionKey, 4096);
+	// TODO: 4th argument controls rerolling the initial seed, which clients from (unknown) onward need. Add an argument to this function and then pass it to there.
+	genXorpadFromSeed(sessionSeed, sessionKey, 4096, 0, 1);
 }
 
 unsigned int Session::useSecretKey() const {

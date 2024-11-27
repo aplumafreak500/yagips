@@ -154,7 +154,7 @@ Ec2b::Ec2b(const char* _key, size_t keySz, const char* _data, size_t dataSz) {
 Ec2b::Ec2b(unsigned long long _seed) {
 	seed = _seed;
 	unsigned char _xorpad[4096];
-	genXorpadFromSeed(seed, _xorpad, 4096);
+	genXorpadFromSeed(seed, _xorpad, 4096, 0, 0);
 	xorpad.assign((const char*) _xorpad, 4096);
 	getFromSeed(Ec2b::SEED_FROM_RAND);
 }
@@ -162,7 +162,7 @@ Ec2b::Ec2b(unsigned long long _seed) {
 Ec2b::Ec2b(unsigned long long _seed, int method) {
 	seed = _seed;
 	unsigned char _xorpad[4096];
-	genXorpadFromSeed(seed, _xorpad, 4096);
+	genXorpadFromSeed(seed, _xorpad, 4096, 0, 0);
 	xorpad.assign((const char*) _xorpad, 4096);
 	getFromSeed(method);
 }
@@ -198,7 +198,7 @@ unsigned long long Ec2b::getSeed() const {
 void Ec2b::setSeed(unsigned long long s) {
 	seed = s;
 	unsigned char _xorpad[4096];
-	genXorpadFromSeed(seed, _xorpad, 4096);
+	genXorpadFromSeed(seed, _xorpad, 4096, 0, 0);
 	xorpad.assign((const char*) _xorpad, 4096);
 	getFromSeed(Ec2b::SEED_FROM_OBJECT);
 }
@@ -206,7 +206,7 @@ void Ec2b::setSeed(unsigned long long s) {
 void Ec2b::setSeed(unsigned long long s, int m) {
 	seed = s;
 	unsigned char _xorpad[4096];
-	genXorpadFromSeed(seed, _xorpad, 4096);
+	genXorpadFromSeed(seed, _xorpad, 4096, 0, 0);
 	xorpad.assign((const char*) _xorpad, 4096);
 	getFromSeed(m);
 }
@@ -242,7 +242,7 @@ void Ec2b::deriveXor() {
 		_seed ^= d[i];
 	}
 	seed = _seed;
-	genXorpadFromSeed(seed, _xorpad, 4096);
+	genXorpadFromSeed(seed, _xorpad, 4096, 0, 0);
 	xorpad.assign((const char*) _xorpad, 4096);
 }
 
@@ -605,25 +605,22 @@ extern "C" {
 		xorRoundKey(key, aesRoundKeys[0]);
 	}
 
-	void genXorpadFromSeed(unsigned long long seed, unsigned char* _xorpad, size_t sz) {
+	void genXorpadFromSeed(unsigned long long seed, unsigned char* _xorpad, size_t sz, unsigned int reroll, unsigned int be) {
 		if (_xorpad == NULL) return;
 		unsigned int i;
+		unsigned long long r;
 		unsigned long long* xorpad = (unsigned long long*) _xorpad;
 		init_genrand64(seed);
-		for (i = 0; i < (sz / sizeof(long long)); i++) {
-			xorpad[i] = genrand64_int64();
+		if (reroll) {
+			init_genrand64(genrand64_int64());
+			genrand64_int64();
 		}
-	}
-
-	void genXorpadFromSeed2(unsigned long long seed, unsigned char* _xorpad, size_t sz) {
-		if (_xorpad == NULL) return;
-		unsigned int i;
-		unsigned long long* xorpad = (unsigned long long*) _xorpad;
-		init_genrand64(seed);
-		//init_genrand64(genrand64_int64());
-		//genrand64_int64();
 		for (i = 0; i < (sz / sizeof(long long)); i++) {
-			xorpad[i] = htobe64(genrand64_int64());
+			r = genrand64_int64();
+			if (be) {
+				r = htobe64(r);
+			}
+			xorpad[i] = r;
 		}
 	}
 }

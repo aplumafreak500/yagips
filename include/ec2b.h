@@ -23,8 +23,7 @@ typedef struct {
 	unsigned char data[2048];
 } ec2b_t;
 
-void genXorpadFromSeed(unsigned long long, unsigned char*, size_t);
-void genXorpadFromSeed2(unsigned long long, unsigned char*, size_t);
+void genXorpadFromSeed(unsigned long long, unsigned char*, size_t, unsigned int, unsigned int);
 #ifdef __cplusplus
 }
 
