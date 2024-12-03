@@ -21,6 +21,7 @@ class Player;
 #include "vector.h"
 #include "world.h"
 #include "scene.h"
+#include "item.h"
 #include "avatar.h"
 #include "team.h"
 #include "storage.pb.h"
@@ -54,6 +55,7 @@ private:
 	Session* session;
 	std::list<AvatarTeam> teams;
 	std::list<Avatar> avatars;
+	std::list<Item> inventory;
 	unsigned int curTeamIndex;
 	const Avatar* curAvatar;
 	World* world;
