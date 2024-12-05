@@ -380,6 +380,39 @@ int dbGate::delLdbObject(const std::string& key) {
 	return ret;
 }
 
+storage::InventoryEntry* dbGate::getInventoryEntry(unsigned long long guid) {
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	std::string val = getLdbObject(key);
+	if (val.empty()) return NULL;
+	storage::InventoryEntry* ret = new storage::InventoryEntry();
+	if (!ret->ParseFromString(val)) {
+		delete ret;
+		return NULL;
+	}
+	return ret;
+}
+
+int dbGate::setInventoryEntry(const storage::InventoryEntry& ent) {
+	assert(ent.has_avatar() || ent.has_item());
+	unsigned long long guid = 0;
+	if (ent.has_avatar()) guid = ent.avatar().guid();
+	else if (ent.has_item()) guid = ent.item().guid();
+	static char key_c[12];
+	unsigned int* key_i = (unsigned int*) key_c;
+	key_i[0] = INVENTORY;
+	key_i[1] = guid >> 32;
+	key_i[2] = guid & -1;
+	std::string key(key_c, 12);
+	std::string val;
+	if (!ent.SerializeToString(&val)) return -1;
+	return setLdbObject(key, val);
+}
+
 Avatar* dbGate::getAvatarByGuid(unsigned long long guid) {
 	proto::AvatarInfo* v = getAvatarPbByGuid(guid);
 	if (v == NULL) return NULL;
@@ -389,19 +422,14 @@ Avatar* dbGate::getAvatarByGuid(unsigned long long guid) {
 }
 
 proto::AvatarInfo* dbGate::getAvatarPbByGuid(unsigned long long guid) {
-	static char key_c[12];
-	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = INVENTORY;
-	key_i[1] = guid >> 32;
-	key_i[2] = guid & -1;
-	std::string key(key_c, 12);
-	std::string val = getLdbObject(key);
-	if (val.empty()) return NULL;
-	proto::AvatarInfo* ret = new proto::AvatarInfo();
-	if (!ret->ParseFromString(val)) {
-		delete ret;
+	storage::InventoryEntry* ent = getInventoryEntry(guid);
+	if (!ent->has_avatar()) {
+		delete ent;
 		return NULL;
 	}
+	proto::AvatarInfo* ret = new proto::AvatarInfo();
+	*ret = ent->avatar();
+	delete ent;
 	return ret;
 }
 
@@ -411,16 +439,10 @@ int dbGate::saveAvatar(const Avatar& a) {
 }
 
 int dbGate::saveAvatar(const proto::AvatarInfo& a) {
-	unsigned long long guid = a.guid();
-	static char key_c[12];
-	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = INVENTORY;
-	key_i[1] = guid >> 32;
-	key_i[2] = guid & -1;
-	std::string key(key_c, 12);
-	std::string val;
-	if (!a.SerializeToString(&val)) return -1;
-	return setLdbObject(key, val);
+	storage::InventoryEntry ent;
+	proto::AvatarInfo* av_pb = ent.mutable_avatar();
+	*av_pb = a;
+	return setInventoryEntry(ent);
 }
 
 int dbGate::deleteAvatar(const Avatar& a) {
@@ -440,19 +462,14 @@ Item* dbGate::getItemByGuid(unsigned long long guid) {
 }
 
 proto::Item* dbGate::getItemPbByGuid(unsigned long long guid) {
-	static char key_c[12];
-	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = INVENTORY;
-	key_i[1] = guid >> 32;
-	key_i[2] = guid & -1;
-	std::string key(key_c, 12);
-	std::string val = getLdbObject(key);
-	if (val.empty()) return NULL;
-	proto::Item* ret = new proto::Item();
-	if (!ret->ParseFromString(val)) {
-		delete ret;
+	storage::InventoryEntry* ent = getInventoryEntry(guid);
+	if (!ent->has_avatar()) {
+		delete ent;
 		return NULL;
 	}
+	proto::Item* ret = new proto::Item();
+	*ret = ent->item();
+	delete ent;
 	return ret;
 }
 
@@ -462,16 +479,10 @@ int dbGate::saveItem(const Item& i) {
 }
 
 int dbGate::saveItem(const proto::Item& i) {
-	unsigned long long guid = i.guid();
-	static char key_c[12];
-	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = INVENTORY;
-	key_i[1] = guid >> 32;
-	key_i[2] = guid & -1;
-	std::string key(key_c, 12);
-	std::string val;
-	if (!i.SerializeToString(&val)) return -1;
-	return setLdbObject(key, val);
+	storage::InventoryEntry ent;
+	proto::Item* it_pb = ent.mutable_item();
+	*it_pb = i;
+	return setInventoryEntry(ent);
 }
 
 int dbGate::deleteItem(const Item& i) {

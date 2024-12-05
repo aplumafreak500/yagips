@@ -45,6 +45,8 @@ public:
 	std::string getLdbObject(const std::string&);
 	int setLdbObject(const std::string&, const std::string&);
 	int delLdbObject(const std::string&);
+	storage::InventoryEntry* getInventoryEntry(unsigned long long);
+	int setInventoryEntry(const storage::InventoryEntry&);
 	Avatar* getAvatarByGuid(unsigned long long);
 	proto::AvatarInfo* getAvatarPbByGuid(unsigned long long);
 	int saveAvatar(const Avatar&);
