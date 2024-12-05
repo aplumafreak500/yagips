@@ -176,6 +176,134 @@ void Player::setUid(unsigned int u) {
 	uid = u;
 }
 
+const Avatar* Player::getAvatarById(unsigned int id) const {
+	for (auto i = avatars.cbegin(); i != avatars.cend(); i++) {
+		if (id == (*i).getId()) return &(*i);
+	}
+	return NULL;
+}
+
+Avatar* Player::getAvatarById(unsigned int id) {
+	for (auto i = avatars.begin(); i != avatars.end(); i++) {
+		if (id == (*i).getId()) return &(*i);
+	}
+	return NULL;
+}
+
+const Avatar* Player::getAvatarByGuid(unsigned long long guid) const {
+	for (auto i = avatars.cbegin(); i != avatars.cend(); i++) {
+		if (guid == (*i).getGuid()) return &(*i);
+	}
+	return NULL;
+}
+
+Avatar* Player::getAvatarByGuid(unsigned long long guid) {
+	for (auto i = avatars.begin(); i != avatars.end(); i++) {
+		if (guid == (*i).getGuid()) return &(*i);
+	}
+	return NULL;
+}
+
+int Player::setAvatar(unsigned long long guid, Avatar& a) {
+	a.setGuid(guid);
+	for (auto i = avatars.begin(); i != avatars.end(); i++) {
+		if (guid == (*i).getGuid()) {
+			*i = a;
+			return 0;
+		}
+	}
+	avatars.push_back(a);
+	return 0;
+}
+
+int Player::setAvatar(unsigned long long guid, const Avatar& a) {
+	if (a.getGuid() != guid) return -1;
+	for (auto i = avatars.begin(); i != avatars.end(); i++) {
+		if (guid == (*i).getGuid()) {
+			*i = a;
+			return 0;
+		}
+	}
+	avatars.push_back(a);
+	return 0;
+}
+
+int Player::updateAvatar(const Avatar& a) {
+	for (auto i = avatars.begin(); i != avatars.end(); i++) {
+		if (a.getGuid() == (*i).getGuid()) {
+			*i = a;
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int Player::addAvatar(Avatar* a) {
+	if (a == NULL) return -1;
+	if (!(a->getGuid() & 0xffffffff)) {
+		a->setGuid(nextGuid);
+		nextGuid++;
+	}
+	if (!a->getUid()) a->setUid(uid);
+	avatars.push_back(*a);
+	return 0;
+}
+
+int Player::addAvatar(const Avatar* a) {
+	if (a == NULL) return -1;
+	avatars.push_back(*a);
+	return 0;
+}
+
+int Player::addAvatar(Avatar& a) {
+	if (!(a.getGuid() & 0xffffffff)) {
+		a.setGuid(nextGuid);
+		nextGuid++;
+	}
+	if (!a.getUid()) a.setUid(uid);
+	avatars.push_back(a);
+	return 0;
+}
+
+int Player::addAvatar(const Avatar& a) {
+	avatars.push_back(a);
+	return 0;
+}
+
+int Player::addAvatar(Avatar** a) {
+	if (a == NULL) return -1;
+	Avatar n;
+	n.setGuid(nextGuid);
+	nextGuid++;
+	n.setUid(uid);
+	avatars.push_back(n);
+	auto i = avatars.end();
+	assert((*i).getGuid() == n.getGuid());
+	*a = &(*i);
+	return 0;
+}
+
+int Player::addAvatar(unsigned int id, Avatar** a) {
+	return addAvatar(id, a, 0);
+}
+
+int Player::addAvatar(unsigned int id, Avatar** a, unsigned int is_trial) {
+	if (a == NULL) return -1;
+	Avatar n(id);
+	// TODO Allow trial avatars to be saved to db?
+	if (!is_trial) {
+		n.setGuid(nextGuid);
+		nextGuid++;
+		n.setUid(uid);
+	}
+	// TODO Else set trial avatar data
+	avatars.push_back(n);
+	auto i = avatars.end();
+	assert((*i).getGuid() == n.getGuid());
+	*a = &(*i);
+	return 0;
+}
+
 unsigned int Player::getOpenstate(unsigned int state) const {
 	for (auto i = openstates.cbegin(); i != openstates.end(); i++) {
 		if (state == *i) return 1;
