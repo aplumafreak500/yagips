@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2023 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -46,8 +46,8 @@ enum {
 	REGION_CNT
 };
 
-#define LIVE_MAJOR 4
-#define LIVE_MINOR 3
+#define LIVE_MAJOR 5
+#define LIVE_MINOR 4
 #define CUR_MAJOR 1
 #define CUR_MINOR 3
 
@@ -247,8 +247,9 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	}
 	// TODO Grab from config
 	// TODO Unknown what these do
+	// TODO Servers have been sending quite a different structure on this JSON object after roughly about client version 4.6
 	configBuf1[1023] = '\0';
-	snprintf(configBuf1, 1023, "{\"sdkenv\":\"%d\",\"checkdevice\":false,\"loadPatch\":false,\"showexception\":false,\"regionConfig\":\"pm|fk|add\",\"downloadMode\":0,\"codeSwitch\":[0]}", region == REGION_CN ? 0 : 2);
+	snprintf(configBuf1, 1023, "{\"sdkenv\":\"%d\",\"checkdevice\":false,\"loadPatch\":false,\"showexception\":true,\"regionConfig\":\"pm|fk|add\",\"downloadMode\":0,\"codeSwitch\":[0]}", region == REGION_CN ? 0 : 2);
 	config_sz = strlen(configBuf1);
 	if (hasRegionListSeed > 0) {
 		regionListKey = new Ec2b(regionListSeed);
@@ -423,7 +424,7 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 		doEnc = 0;
 	}
 	/* TODO Parse aid and check it. If negative, unset, or non-numeric, continue. Else, check that it exists in the db. If not, continue. Else, check for a ban. If there is one and it hasn't expired, send back a negative response with `msg` and `retcode` set appropriately. (Skip setting the gateserver and ResVersionConfig fields here.) If it has expired, delete it from the db and then continue. (is aid even sent by query_curr_region?) */
-	// TODO: Figure out what to do with the dispatch_seed. Yuuki verifies it as part of determining the client version; Grasscutter merely checks for its existence and uses a hardcoded signature if not present, but doesn't appear to do anything else with it if it is set.
+	// TODO: Figure out what to do with the dispatch_seed. Yuuki (and the official server) verifies it as part of determining the client version; Grasscutter merely checks for its existence and uses a hardcoded signature if not present, but doesn't appear to do anything else with it if it is set.
 	// TODO What other parameters do we need to check?
 	// TODO What other parameters does the official server check?
 	json_object_put(jobj);
@@ -565,6 +566,7 @@ set_fields:
 	}
 	ret.set_allocated_region_info(region);
 	if (config->regionInfo->sendStopServerOrForceUpdate == 1 && config->regionInfo->stopServer != NULL) {
+		// TODO change the retcode?
 		stop = new proto::StopServerInfo;
 		stop->set_stop_begin_time(config->regionInfo->stopServer->start);
 		stop->set_stop_end_time(config->regionInfo->stopServer->end);
@@ -577,19 +579,28 @@ set_fields:
 		ret.set_allocated_stop_server(stop);
 	}
 	if (config->regionInfo->sendStopServerOrForceUpdate == 2 && config->regionInfo->forceUpdateUrl != NULL) {
+		// TODO change the retcode?
 		upd = new proto::ForceUpdateInfo;
 		upd->set_force_update_url(config->regionInfo->forceUpdateUrl);
 		ret.set_allocated_force_udpate(upd);
 	}
 #if 0
+	// TODO Can this be different from the query_region_list seed, and if so, does it encrypt region_custom_config_encrypted?
 	if (hasDispatchSeed) {
 		clientSecretKey.assign((const char*) &dispatchSeed, sizeof(ec2b_t));
 		ret.set_client_secret_key(clientSecretKey);
 	}
 #endif
-	/* Unknown Fields TODO
-		* region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one below, or with the one from query_cur_region
-		* client_region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key or the one from this message (idk which). Also unknown how/if it differs from the one above, or with the one from query_cur_region
+	/* TODO
+		* region_custom_config_encrypted - JSON object encrypted with the client_secret_key (I think)
+			* Format: (from https://github.com/AndigenaTeam/andigenadispatch/blob/main/src/routes/region.rs#L79-81, unknown what other fields are there on official)
+				* coverSwitch - usually set to "[0]", unknown what it does
+				* perf_report_config_url - https://domain/config/verify (unknown what domain is used on official, what gets sent here, or how it's used by either client or server. Seems to default to https://log-upload{,-os}.mihoyo.com/perf/config/verify)
+				* perf_report_record_url - https://domain/dataUpload (Override the default server->client logging endpoint, unknown what vanilla servers set it to normally but it defaults client-side to https://log-upload{,-os}.mihoyo.com/sdk/dataUpload (at least for client version 1.3))
+	*/
+	// TODO perf urls should be able to be set in config
+	/* Unknown Field TODO
+		* client_region_custom_config_encrypted - unknown JSON object (I think) encrypted with either the region list client_secret_key, the top level client_secret_key, or the one from the RegionInfo message (idk which, most likely the latter). Also unknown how/if it differs from the one above, or with the one from query_cur_region
 	*/
 build_rsp:
 	if (!ret.SerializeToString(&ret_enc)) {
@@ -640,7 +651,7 @@ std::string handleLogin(const char* post) {
 	size_t post_len = strlen(post) + 1;
 	struct json_tokener* jtk = json_tokener_new();
 	if (jtk == NULL) {
-		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
+		return "{\"retcode\":-103,\"message\":\"Login failure: unable to allocate JSON tokener\"}";
 	}
 	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
 	if (jobj == NULL) {
@@ -738,7 +749,7 @@ std::string handleLogin(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Incorrect password\"}";
 	}
 #endif
-	std::string sessionKey = account->getNewSessionKey();
+	std::string authToken = account->getNewAuthToken();
 	if (deviceId != NULL) {
 		account->setDeviceId(deviceId);
 	}
@@ -747,7 +758,7 @@ std::string handleLogin(const char* post) {
 	json_object* njobj = json_object_new_object();
 	if (njobj == NULL) {
 		json_object_put(jobj);
-		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON object\"}";
+		return "{\"retcode\":-103,\"message\":\"Login failure: unable to allocate JSON object\"}";
 	}
 	json_object_object_add(njobj, "uid", json_object_new_uint64(account->getAccountId()));
 	if (isGuest) {
@@ -761,7 +772,7 @@ std::string handleLogin(const char* post) {
 		json_object_object_add(njobj, "name", json_object_new_string(account->getUsername().c_str()));
 		json_object_object_add(njobj, "email", json_object_new_string(account->getEmail().c_str()));
 		json_object_object_add(njobj, "is_email_verify", json_object_new_boolean(0)); // TODO Unknown what this does.
-		json_object_object_add(njobj, "token", json_object_new_string(sessionKey.c_str()));
+		json_object_object_add(njobj, "token", json_object_new_string(authToken.c_str()));
 		// Note: country and area_code might get rewritten by PHP, per the client IP address.
 		json_object_object_add(njobj, "country", json_object_new_string("ZZ"));
 		json_object_object_add(njobj, "area_code", NULL);
@@ -784,7 +795,7 @@ std::string handleVerify(const char* post) {
 	struct json_tokener* jtk = json_tokener_new();
 	unsigned int aid = 0;
 	if (jtk == NULL) {
-		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
+		return "{\"retcode\":-103,\"message\":\"Login failure: unable to allocate JSON tokener\"}";
 	}
 	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
 	if (jobj == NULL) {
@@ -835,7 +846,7 @@ std::string handleVerify(const char* post) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Account ID does not exist\"}";
 	}
-	if (strcmp(token, account->getSessionKey().c_str()) != 0) {
+	if (strcmp(token, account->getAuthToken().c_str()) != 0) {
 		json_object_put(jobj);
 		return "{\"retcode\":-101,\"message\":\"Cached token does not match\"}";
 	}
@@ -849,16 +860,16 @@ std::string handleVerify(const char* post) {
 #if 0
 	// according to config...
 	// regen the token
-	token = account->getNewSessionKey().c_str();
+	token = account->getNewAuthToken().c_str();
 	// or only regen the timestamp
-	account->setSessionKeyTimestamp();
+	account->setAuthTokenTimestamp();
 	globalDbGate->saveAccount(*account);
 #endif
 	std::string ret;
 	json_object* njobj = json_object_new_object();
 	if (njobj == NULL) {
 		json_object_put(jobj);
-		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON object\"}";
+		return "{\"retcode\":-103,\"message\":\"Login failure: unable to allocate JSON object\"}";
 	}
 	json_object_object_add(njobj, "uid", json_object_new_uint64(aid));
 	// TODO Official servers mask name and email for privacy reasons.
@@ -887,7 +898,7 @@ std::string handleCombo(const char* post) {
 	enum json_tokener_error jerr;
 	unsigned int aid = 0;
 	if (jtk == NULL) {
-		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
+		return "{\"retcode\":-103,\"message\":\"Login failure: unable to allocate JSON tokener\"}";
 	}
 	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
 	if (jobj == NULL) {
@@ -924,7 +935,7 @@ std::string handleCombo(const char* post) {
 	}
 	jtk = json_tokener_new();
 	if (jtk == NULL) {
-		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON tokener\"}";
+		return "{\"retcode\":-103,\"message\":\"Login failure: unable to allocate JSON tokener\"}";
 	}
 	dobj2 = json_tokener_parse_ex(jtk, data_str, data_str_len);
 	if (dobj2 == NULL) {
@@ -997,7 +1008,7 @@ std::string handleCombo(const char* post) {
 		return "{\"retcode\":-101,\"message\":\"Account ID does not exist\"}";
 	}
 	if (!isGuest) {
-		if (strcmp(token, account->getSessionKey().c_str()) != 0) {
+		if (strcmp(token, account->getAuthToken().c_str()) != 0) {
 			json_object_put(jobj);
 			json_object_put(dobj2);
 			return "{\"retcode\":-101,\"message\":\"Cached token does not match\"}";
@@ -1010,14 +1021,14 @@ std::string handleCombo(const char* post) {
 		}
 #endif
 	}
-	const char* comboToken = account->getNewToken().c_str();
+	const char* comboToken = account->getNewComboToken().c_str();
 	globalDbGate->saveAccount(*account);
 	std::string ret;
 	json_object* njobj = json_object_new_object();
 	if (njobj == NULL) {
 		json_object_put(jobj);
 		json_object_put(dobj2);
-		return "{\"retcode\":-103,\"message\":\"Login failure: ubable to allocate JSON object\"}";
+		return "{\"retcode\":-103,\"message\":\"Login failure: unable to allocate JSON object\"}";
 	}
 	json_object_object_add(njobj, "combo_token", json_object_new_string(comboToken));
 	json_object_object_add(njobj, "open_id", json_object_new_uint64(aid));
@@ -1033,6 +1044,187 @@ std::string handleCombo(const char* post) {
 	return ret;
 }
 
+// /binder/ticket (/hk4e_{cn,global}/mdk/shield/api/actionTicket)
+std::string handleActionTicket(const char* post) {
+	if (post == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
+	}
+	size_t post_len = strlen(post) + 1;
+	struct json_tokener* jtk = json_tokener_new();
+	enum json_tokener_error jerr;
+	unsigned int aid = 0;
+	if (jtk == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: unable to allocate JSON tokener\"}";
+	}
+	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
+	if (jobj == NULL) {
+		jerr = json_tokener_get_error(jtk);
+		if (jerr != json_tokener_continue) {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		return "{\"retcode\":-101,\"message\":\"Login failure: error parsing JSON data\"}";
+	}
+	if (json_tokener_get_parse_end(jtk) < post_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(jobj, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
+	}
+	struct json_object* dobj;
+	// TODO enforce ip-level bans (origin ip passed in by php)
+	// TODO Verify that action_type = "bind_realname"
+	const char* deviceId = NULL;
+	if (json_object_object_get_ex(jobj, "device_id", &dobj)) {
+		deviceId = json_object_get_string(dobj);
+		// TODO enforce device id level bans
+	}
+	if (!json_object_object_get_ex(jobj, "account_id", &dobj)) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account ID is not set\"}";
+	}
+	aid = json_object_get_int(dobj);
+	// TODO enforce aid-level bans
+	if (!json_object_object_get_ex(jobj, "game_token", &dobj)) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token is not set\"}";
+	}
+	const char* token = json_object_get_string(dobj);
+	if (token == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token is null\"}";
+	}
+	if (strlen(token) == 0) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token is empty\"}";
+	}
+	Account* account = globalDbGate->getAccountByAid(aid);
+	if (account == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Account ID does not exist\"}";
+	}
+	if (strcmp(token, account->getAuthToken().c_str()) != 0) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Cached token does not match\"}";
+	}
+#if 0
+	if (deviceId != NULL && strcmp(deviceId, account->getDeviceId().c_str()) != 0) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Token was created on another device\"}";
+	}
+#endif
+	std::string ret;
+	ret = "{\"retcode\":0,\"message\":\"ok\",\"data\":{\"ticket\":\"";
+	ret += account->getNewBinderToken();
+	ret += "\"}}";
+	json_object_put(jobj);
+	globalDbGate->saveAccount(*account);
+	return ret;
+}
+
+// /binder/ticket (/hk4e_{cn,global}/mdk/shield/api/bindRealname)
+std::string handleBindRealname(const char* post) {
+	if (post == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
+	}
+	size_t post_len = strlen(post) + 1;
+	struct json_tokener* jtk = json_tokener_new();
+	enum json_tokener_error jerr;
+	if (jtk == NULL) {
+		return "{\"retcode\":-103,\"message\":\"Login failure: unable to allocate JSON tokener\"}";
+	}
+	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
+	if (jobj == NULL) {
+		jerr = json_tokener_get_error(jtk);
+		if (jerr != json_tokener_continue) {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		return "{\"retcode\":-101,\"message\":\"Login failure: error parsing JSON data\"}";
+	}
+	if (json_tokener_get_parse_end(jtk) < post_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(jobj, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Login failure: JSON data is not an object\"}";
+	}
+	struct json_object* dobj;
+	// TODO enforce ip-level bans (origin ip passed in by php)
+	const char* deviceId = NULL;
+	const char* binderToken = NULL;
+	const char* realname = NULL;
+	const char* idNumber = NULL;
+	if (json_object_object_get_ex(jobj, "device_id", &dobj)) {
+		deviceId = json_object_get_string(dobj);
+		// TODO enforce device id level bans
+	}
+	if (!json_object_object_get_ex(jobj, "action_ticket", &dobj)) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Binder token is not set\"}";
+	}
+	binderToken = json_object_get_string(dobj);
+	if (binderToken == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Binder token is null\"}";
+	}
+	if (strlen(binderToken) == 0) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Binder token is empty\"}";
+	}
+	Account* account = globalDbGate->getAccountByBinderToken(b64dec(binderToken).c_str());
+	if (account == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Binder token is invalid or account does not exist\"}";
+	}
+#if 0
+	if (deviceId != NULL && strcmp(deviceId, account->getDeviceId().c_str()) != 0) {
+		json_object_put(jobj);
+		return "{\"retcode\":-101,\"message\":\"Binder token was created on another device\"}";
+	}
+#endif
+	if (json_object_object_get_ex(jobj, "realname", &dobj)) {
+		realname = json_object_get_string(dobj);
+	}
+	if (json_object_object_get_ex(jobj, "identity_card", &dobj)) {
+		idNumber = json_object_get_string(dobj);
+	}
+	// This is where the official server verifies realname and (more importantly) identity_card using some sort of external service. Not only do we not have access to said service (it's intended for compliance with Chinese laws against online gaming addiction in minors), it's a bit pointless for a private server anyways, so we don't bother checking it at all. (However, one unintended use case is to implement 2FA and/or actual password auth with it...)
+	// TODO Verify it with the data we have, if it's present?
+	// TODO Config option to actually store it to begin with
+#if 0
+	if (realname != NULL) account->setRealName(realname);
+	if (idNumber != NULL) account->setIdNumber(idNumber);
+#else
+	if (realname != NULL) realname = "";
+	if (idNumber != NULL) idNumber = "";
+#endif
+	account->setBinderTokenTimestamp(0);
+	globalDbGate->saveAccount(*account);
+	std::string ret;
+	json_object* njobj = json_object_new_object();
+	if (njobj == NULL) {
+		json_object_put(jobj);
+		return "{\"retcode\":-103,\"message\":\"Login failure: unable to allocate JSON object\"}";
+	}
+	// TODO Official servers mask username (not realname!?) and email for privacy reasons.
+	json_object_object_add(njobj, "name", json_object_new_string(account->getUsername().c_str()));
+	json_object_object_add(njobj, "email", json_object_new_string(account->getEmail().c_str()));
+	json_object_object_add(njobj, "realname", json_object_new_string(realname));
+	json_object_object_add(njobj, "identity_card", json_object_new_string(idNumber));
+	ret = "{\"retcode\":0,\"message\":\"ok\",\"data\":";
+	ret += json_object_to_json_string_ext(njobj, JSON_C_TO_STRING_PLAIN);
+	ret += "}";
+	json_object_put(njobj);
+	json_object_put(jobj);
+	return ret;
+}
+
 extern "C" {
 	volatile int DispatchServerSignal = 0;
 
@@ -1042,6 +1234,8 @@ extern "C" {
 		SDK_GET_AUTH_TOKEN,			// Generate new auth token
 		SDK_CHECK_AUTH_TOKEN,		// Verify auth token
 		SDK_CHECK_COMBO_TOKEN,		// Verify auth token and send back combo token
+		SDK_ACTION_TICKET,			// CN server only, verify auth token and send back binder token
+		SDK_BIND_REALNAME,			// CN server only, verify binder token, check realname/id number and store them for later verification. Used to enforce things like age and time limits on the official server; completely irrelevant on OS servers
 		SDK_GACHA_CUR,				// Current banners
 		SDK_GACHA_HIST,				// Gacha history
 		SDK_REDEEM,					// Redeem gift codes and IAPs, also out-of-game rewards (hurichurl's treasure trove, daily check in, etc.)
@@ -1059,6 +1253,8 @@ extern "C" {
 		[SDK_GET_AUTH_TOKEN] = "/session/new", // "short" for /hk4e_{cn,global}/mdk/shield/api/login
 		[SDK_CHECK_AUTH_TOKEN] = "/session/verify", // "short" for /hk4e_{cn,global}/mdk/shield/api/verify
 		[SDK_CHECK_COMBO_TOKEN] = "/session/combo", // "short" for /hk4e_{cn,global}/combo/granter/login/v2/login
+		[SDK_ACTION_TICKET] = "/binder/ticket", // "short" for /hk4e_{cn,global}/mdk/shield/api/actionTicket
+		[SDK_BIND_REALNAME] = "/binder/verify", // "short" for /hk4e_{cn,global}/mdk/shield/api/bindRealname
 		[SDK_GACHA_CUR] = "/gacha/details",
 		[SDK_GACHA_HIST] = "/gacha/history",
 		[SDK_REDEEM] = "/redeem",
@@ -1349,6 +1545,18 @@ write_rsp:
 					break;
 				case SDK_CHECK_COMBO_TOKEN:
 					rsp_str = handleCombo(body);
+					mime = "application/json";
+					rsp_body = rsp_str.c_str();
+					rsp_len = rsp_str.size();
+					break;
+				case SDK_ACTION_TICKET:
+					rsp_str = handleActionTicket(body);
+					mime = "application/json";
+					rsp_body = rsp_str.c_str();
+					rsp_len = rsp_str.size();
+					break;
+				case SDK_BIND_REALNAME:
+					rsp_str = handleBindRealname(body);
 					mime = "application/json";
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();

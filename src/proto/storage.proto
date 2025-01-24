@@ -43,13 +43,17 @@ message AccountInfo {
 	string username = 2;
 	string email = 3;
 	string password = 4;
-	bytes token = 5;
-	bytes session_key = 6;
-	int64 session_key_ts = 7;
+	bytes combo_token = 5;
+	bytes auth_token = 6;
+	int64 auth_token_ts = 7;
 	string device_id = 8;
 	bool is_guest = 9;
 	uint32 reserved_uid = 10;
 	repeated uint32 permissions = 13;
+	string real_name = 14;
+	string id_number = 15;
+	bytes bind_token = 16;
+	int64 bind_token_ts = 17;
 };
 
 // Type 2: Player data

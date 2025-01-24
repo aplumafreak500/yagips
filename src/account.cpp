@@ -26,10 +26,14 @@ Account::Account(const storage::AccountInfo& p) {
 	username = p.username();
 	password_hash = p.password();
 	email = p.email();
+	realName = p.real_name();
+	idNumber = p.id_number();
 	deviceId = p.device_id();
-	token = hexenc(p.token());
-	sessionKey = b64enc(p.session_key());
-	sessionKeyTimestamp = p.session_key_ts();
+	authToken = b64enc(p.auth_token());
+	authTokenTimestamp = p.auth_token_ts();
+	comboToken = hexenc(p.combo_token());
+	binderToken = b64enc(p.bind_token());
+	binderTokenTimestamp = p.bind_token_ts();
 	guest = p.is_guest();
 	// TODO Reserved uid
 	session = NULL;
@@ -46,10 +50,14 @@ Account::operator storage::AccountInfo() const {
 	ret.set_username(username);
 	ret.set_password(password_hash);
 	ret.set_email(email);
+	ret.set_real_name(realName);
+	ret.set_id_number(idNumber);
 	ret.set_device_id(deviceId);
-	ret.set_token(hexdec(token));
-	ret.set_session_key(b64dec(sessionKey));
-	ret.set_session_key_ts(sessionKeyTimestamp);
+	ret.set_auth_token(b64dec(authToken));
+	ret.set_auth_token_ts(authTokenTimestamp);
+	ret.set_combo_token(hexdec(comboToken));
+	ret.set_bind_token(b64dec(binderToken));
+	ret.set_bind_token_ts(binderTokenTimestamp);
 	// TODO Reserved uid
 	for (auto i = permissions.cbegin(); i != permissions.cend(); i++) {
 		ret.add_permissions(static_cast<unsigned int>(*i));
@@ -97,47 +105,91 @@ void Account::setEmail(const std::string& e) {
 	email = e;
 }
 
-const std::string& Account::getToken() const {
-	return token;
+const std::string& Account::getRealName() const {
+	return realName;
 }
 
-void Account::setToken(const std::string& t) {
-	token = t;
+void Account::setRealName(const std::string& r) {
+	realName = r;
 }
 
-const std::string& Account::getNewToken() {
-	char rawtoken[16]; // for a 32-character token. TODO pull from config
-	getrandom(rawtoken, 16, 0);
-	token = hexenc(std::string(rawtoken, 16));
-	return token;
+const std::string& Account::getIdNumber() const {
+	return idNumber;
 }
 
-const std::string& Account::getSessionKey() const {
-	return sessionKey;
+void Account::setIdNumber(const std::string& i) {
+	idNumber = i;
 }
 
-void Account::setSessionKey(const std::string& k) {
-	sessionKey = k;
+const std::string& Account::getAuthToken() const {
+	return authToken;
 }
 
-const std::string& Account::getNewSessionKey() {
+void Account::setAuthToken(const std::string& t) {
+	authToken = t;
+}
+
+const std::string& Account::getNewAuthToken() {
 	char rawtoken[24]; // for a 32-character token. TODO pull from config
 	getrandom(rawtoken, 24, 0);
-	sessionKey = b64enc(std::string(rawtoken, 24));
-	sessionKeyTimestamp = time(NULL);
-	return sessionKey;
+	authToken = b64enc(std::string(rawtoken, 24));
+	authTokenTimestamp = time(NULL);
+	return authToken;
 }
 
-long long Account::getSessionKeyTimestamp() const {
-	return sessionKeyTimestamp;
+const std::string& Account::getComboToken() const {
+	return comboToken;
 }
 
-void Account::setSessionKeyTimestamp() {
-	sessionKeyTimestamp = time(NULL);
+void Account::setComboToken(const std::string& t) {
+	comboToken = t;
 }
 
-void Account::setSessionKeyTimestamp(long long t) {
-	sessionKeyTimestamp = t;
+const std::string& Account::getNewComboToken() {
+	char rawtoken[16]; // for a 32-character token. TODO pull from config
+	getrandom(rawtoken, 16, 0);
+	comboToken = hexenc(std::string(rawtoken, 16));
+	return comboToken;
+}
+
+const std::string& Account::getBinderToken() const {
+	return binderToken;
+}
+
+void Account::setBinderToken(const std::string& t) {
+	binderToken = t;
+}
+
+const std::string& Account::getNewBinderToken() {
+	char rawtoken[6]; // for an 8-character token. TODO pull from config
+	getrandom(rawtoken, 6, 0);
+	binderToken = b64enc(std::string(rawtoken, 6));
+	binderTokenTimestamp = time(NULL);
+	return binderToken;
+}
+
+long long Account::getAuthTokenTimestamp() const {
+	return authTokenTimestamp;
+}
+
+void Account::setAuthTokenTimestamp() {
+	authTokenTimestamp = time(NULL);
+}
+
+void Account::setAuthTokenTimestamp(long long t) {
+	authTokenTimestamp = t;
+}
+
+long long Account::getBinderTokenTimestamp() const {
+	return authTokenTimestamp;
+}
+
+void Account::setBinderTokenTimestamp() {
+	binderTokenTimestamp = time(NULL);
+}
+
+void Account::setBinderTokenTimestamp(long long t) {
+	binderTokenTimestamp = t;
 }
 
 unsigned int Account::isGuest() const {

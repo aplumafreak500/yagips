@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2024 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -64,7 +64,7 @@ int handleGetPlayerTokenReq(Session& session, std::string&, std::string& data) {
 	// For now, we enforce it so everything can be in one place until the relevant protocols and storage structs are finalized.
 	// TODO If that config entry is disabled, we need to sync the token to db so that PlayerLoginReq works properly
 #if 1
-	std::string ctoken = account->getToken();
+	std::string ctoken = account->getComboToken();
 	if (ctoken.empty()) {
 		fprintf(stderr, "Stored account token is empty\n");
 		// TODO Send a response packet first
@@ -107,7 +107,7 @@ int handleGetPlayerTokenReq(Session& session, std::string&, std::string& data) {
 	rsp.set_retcode(0);
 	rsp.set_msg("ok");
 	rsp.set_uid(player->getUid());
-	rsp.set_token(account->getToken());
+	rsp.set_token(account->getComboToken());
 	// TODO Check account if guest
 	rsp.set_account_type(1);
 	rsp.set_channel_id(1);

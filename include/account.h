@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2024 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -31,19 +31,29 @@ public:
 	void setDeviceId(const std::string&);
 	const std::string& getEmail() const;
 	void setEmail(const std::string&);
-	const std::string& getToken() const;
-	void setToken(const std::string&);
-	const std::string& getNewToken();
-	const std::string& getSessionKey() const;
-	void setSessionKey(const std::string&);
-	const std::string& getNewSessionKey();
+	const std::string& getRealName() const;
+	void setRealName(const std::string&);
+	const std::string& getIdNumber() const;
+	void setIdNumber(const std::string&);
+	const std::string& getAuthToken() const;
+	void setAuthToken(const std::string&);
+	const std::string& getNewAuthToken();
+	const std::string& getComboToken() const;
+	void setComboToken(const std::string&);
+	const std::string& getNewComboToken();
+	const std::string& getBinderToken() const;
+	void setBinderToken(const std::string&);
+	const std::string& getNewBinderToken();
 	unsigned int getAccountId() const;
 	void setAccountId(unsigned int);
 	unsigned int isGuest() const;
 	void setIsGuest(unsigned int);
-	long long getSessionKeyTimestamp() const;
-	void setSessionKeyTimestamp();
-	void setSessionKeyTimestamp(long long);
+	long long getAuthTokenTimestamp() const;
+	void setAuthTokenTimestamp();
+	void setAuthTokenTimestamp(long long);
+	long long getBinderTokenTimestamp() const;
+	void setBinderTokenTimestamp();
+	void setBinderTokenTimestamp(long long);
 	const Session* getSession() const;
 	void setSession(const Session*);
 	const std::list<Permission>& getPermissions() const;
@@ -58,11 +68,15 @@ private:
 	std::string password_hash;
 	std::string deviceId;
 	std::string email;
-	std::string token;
-	std::string sessionKey;
+	std::string realName;
+	std::string idNumber;
+	std::string authToken;
+	std::string comboToken;
+	std::string binderToken;
 	unsigned int aid;
 	unsigned int guest;
-	long long sessionKeyTimestamp;
+	long long authTokenTimestamp;
+	long long binderTokenTimestamp;
 	const Session* session;
 	std::list<Permission> permissions;
 };

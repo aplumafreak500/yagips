@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2024 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -103,8 +103,8 @@ Account* dbGate::getAccountByUsername(const char* username) {
 	return account;
 }
 
-Account* dbGate::getAccountByToken(const char* token) {
-	if (token == NULL) return NULL;
+Account* dbGate::getAccountByAuthToken(const char* authToken) {
+	if (authToken == NULL) return NULL;
 	Account* account = NULL;
 	unsigned int key_type;
 	storage::AccountInfo* pval = new storage::AccountInfo();
@@ -115,7 +115,8 @@ Account* dbGate::getAccountByToken(const char* token) {
 		if (key_type != ACCOUNT) continue;
 		val = it->value().ToString();
 		if (!pval->ParseFromString(val)) continue;
-		if (pval->token() == token) {
+		if (pval->auth_token() == authToken) {
+			// TODO check for expiry
 			account = new Account(*pval);
 			break;
 		}
@@ -129,8 +130,8 @@ Account* dbGate::getAccountByToken(const char* token) {
 	return account;
 }
 
-Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
-	if (sessionKey == NULL) return NULL;
+Account* dbGate::getAccountByComboToken(const char* token) {
+	if (token == NULL) return NULL;
 	Account* account = NULL;
 	unsigned int key_type;
 	storage::AccountInfo* pval = new storage::AccountInfo();
@@ -141,7 +142,34 @@ Account* dbGate::getAccountBySessionKey(const char* sessionKey) {
 		if (key_type != ACCOUNT) continue;
 		val = it->value().ToString();
 		if (!pval->ParseFromString(val)) continue;
-		if (pval->session_key() == sessionKey) {
+		if (pval->combo_token() == token) {
+			account = new Account(*pval);
+			break;
+		}
+		pval->Clear();
+	}
+	if (!it->status().ok()) {
+		fprintf(stderr, "Warning: Error searching leveldb keys: %s\n", it->status().ToString().c_str());
+	}
+	delete it;
+	delete pval;
+	return account;
+}
+
+Account* dbGate::getAccountByBinderToken(const char* token) {
+	if (token == NULL) return NULL;
+	Account* account = NULL;
+	unsigned int key_type;
+	storage::AccountInfo* pval = new storage::AccountInfo();
+	std::string val;
+	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
+		if (key_type != ACCOUNT) continue;
+		val = it->value().ToString();
+		if (!pval->ParseFromString(val)) continue;
+		if (pval->bind_token() == token) {
+			// TODO check for expiry
 			account = new Account(*pval);
 			break;
 		}
@@ -217,8 +245,7 @@ Account* dbGate::createAccount(const char* username) {
 	else {
 		account->setIsGuest(1);
 	}
-	account->getNewToken();
-	account->getNewSessionKey();
+	account->getNewAuthToken();
 	saveAccount(*account);
 	save();
 	return account;
@@ -354,6 +381,7 @@ std::string dbGate::getLdbObject(const std::string& key) {
 	DbgHexdump((unsigned char*) ret.c_str(), ret.size());
 	return ret;
 }
+
 int dbGate::setLdbObject(const std::string& key, const std::string& val) {
 	int ret = 0;
 	leveldb::Status s = db->Put(leveldb::WriteOptions(), key, val);

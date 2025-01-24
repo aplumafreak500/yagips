@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2024 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -43,7 +43,7 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 	// TODO do we need to do ban checks here?
 	// unlike with GetPlayerTokenReq, this check is completely unconditional
 	const char* token = req.token().c_str();
-	std::string ctoken = account->getToken();
+	std::string ctoken = account->getComboToken();
 	if (ctoken.empty()) {
 		fprintf(stderr, "Stored token is empty\n");
 		// TODO Send a response packet first

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2024 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -30,8 +30,9 @@ public:
 	Account* getAccountByUid(unsigned int);
 	Account* getAccountByUsername(const char*);
 	Account* getAccountByDeviceId(const char*);
-	Account* getAccountByToken(const char*);
-	Account* getAccountBySessionKey(const char*);
+	Account* getAccountByAuthToken(const char*);
+	Account* getAccountByComboToken(const char*);
+	Account* getAccountByBinderToken(const char*);
 	Account* createAccount(const char*);
 	int saveAccount(const Account&);
 	int deleteAccount(const Account&);
@@ -42,27 +43,31 @@ public:
 	Player* newPlayer();
 	int savePlayer(const Player&);
 	int deletePlayer(const Player&);
-	std::string getLdbObject(const std::string&);
-	int setLdbObject(const std::string&, const std::string&);
-	int delLdbObject(const std::string&);
+	/* Inventory manager */
 	storage::InventoryEntry* getInventoryEntry(unsigned long long);
 	int setInventoryEntry(const storage::InventoryEntry&);
+	/* Avatars */
 	Avatar* getAvatarByGuid(unsigned long long);
 	proto::AvatarInfo* getAvatarPbByGuid(unsigned long long);
 	int saveAvatar(const Avatar&);
 	int saveAvatar(const proto::AvatarInfo&);
 	int deleteAvatar(const Avatar&);
 	int deleteAvatar(const proto::AvatarInfo&);
+	/* Items */
 	Item* getItemByGuid(unsigned long long);
 	proto::Item* getItemPbByGuid(unsigned long long);
 	int saveItem(const Item&);
 	int saveItem(const proto::Item&);
 	int deleteItem(const Item&);
 	int deleteItem(const proto::Item&);
+	/* Low level routines */
+	std::string getLdbObject(const std::string&);
+	int setLdbObject(const std::string&, const std::string&);
+	int delLdbObject(const std::string&);
 	int deleteByGuid(unsigned long long);
 	enum LevelDbKeyType : unsigned int {
 		INVENTORY = 0, // items and avatars
-		ACCOUNT, // account objects (also includes bans) (unused for now)
+		ACCOUNT, // account objects (also includes bans)
 		PLAYER, // player objects
 		FRIEND, // friendships
 		GACHA, // gacha log

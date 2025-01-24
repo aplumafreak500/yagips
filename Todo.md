@@ -1,4 +1,4 @@
-# Things that still need to be done before the first beta release \(last updated 2014-09-24\)
+# Things that still need to be done before the first beta release \(last updated 2025-01-24\)
 
 Pull requests are absolutely welcome! Feel free to contribute if you're interested in doing any of these.
 
@@ -27,6 +27,7 @@ This list is subject to change.
 
 ## dispatch
 - [ ] Multi-language config for region titles and "server is down" messages
+- [ ] On version mismatch, present a URL to a compatible game client and/or a patching howto
 - [ ] Split HTTP and account stuff into `sdk.cpp`
 
 ## sdk
@@ -39,31 +40,46 @@ This list is subject to change.
 		- [ ] yagips -> GIO: either manual parsing \(through picohttpparser\) or direct HTTP request via libcurl
 	- [ ] Ourself: TCP/Protobuf, possibly with TLS, fall back to HTTP
 - [ ] Add optional TLS support
-- [ ] Add semi-optional support for gnutls for crypto functions instead of forcing OpenSSL
-	- Either gnutls or OpenSSL must be used, not both nor neither
+- [ ] Add semi-optional support for gnutls or mbedtls for crypto functions instead of forcing OpenSSL
+	- Either one of these must be used, not all of them nor none at all
 - [ ] HTTP command parser
 - [ ] Barebones "get player data" endpoint
 - [ ] Barebones "set player data" endpoint
 - [ ] Better support for Chinese clients
+	- [x] Account binder \(ID verification\)
 - [ ] Web tokens \(distinct from in-game session tokens\)
 - [ ] Browser-based frontend UI
+	- Work in progress \(about 5% complete\)
+- [ ] Support for logging in with multiple devices
+- [ ] Third-party authentication
+	- planned: Google, Facebook/Meta, Twitter/X, Discord
+- [ ] Allow alternative URIs for auth-related endpoints (for use without PHP proxy)
 
 ## gameserver
 - [ ] Player data \(Traveler name, signature, namecard, avatar showcase, etc.\)
-- [ ] Player props \(adventure rank, world level, stanima, etc.\)
+	- Work in progress \(about 40% complete\)
+- [x] Player props \(adventure rank, world level, stanima, etc.\)
 - [ ] Avatar props \(current and max HP, battle stats, etc.\)
+	- Work in progress \(about 10% complete\)
 - [x] Figure out why session timeout always triggers
 - [x] Figure out why KCP update never triggers
 - [ ] Proper scene handling
 - [ ] Proper avatar storage and switching
 - [ ] Team management
-- [ ] Save and load player's last position
+	- Work in progress \(about 60% complete\)
+- [x] Save and load player's last position
 - [ ] Barebones inventory
+	- Work in progress \(about 20% complete\)
 - [ ] Barebones scene tags and openstates
+	- Openstate system is in place. Scene tags need more work on "Proper scene handling" first
 - [ ] Barebones scene points \(teleport\)
 - [ ] In-game chat command parser \("Ayaka bot"\)
 	- albeit different, since Ayaka wasn't added until client version 2.0
 - [ ] Use dispatch key to encrypt token exchange packets
+
+## Other
+- [ ] Auto-deploy PHP assets based on host enviornment
+- [ ] Auto-deploy frontend \(possibly into root of PHP branch\)
 
 # Things that still need to be done before the first full release
 - [ ] Gacha
@@ -78,3 +94,13 @@ This list is subject to change.
 - [ ] Simple events
 - [ ] Complete inventory
 - [ ] Support for cmake in addition to autoconf
+
+# Things that would be nice to have, but aren't strictly required
+- Client patch for auth RSA and \(for later client versions\) dispatch RSA
+	- Android has priority, as PC version already has readily avalable dispatch RSA patches
+	- Though for PC, a launcher like Weedwacker would be nice too
+- Support more client versions
+	- Configure-time proto selection
+- Decentralized server core \(like GIO\)
+	- Ability to directly interface with internal GIO cross-server protocol
+- Set up for porting core server functionality to support sister game clients \(`hkrpg`/`zzz`/`bk3`\)
