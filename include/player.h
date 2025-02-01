@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2024 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -35,6 +35,8 @@ public:
 	int loadFromDb();
 	int loadFromDb(unsigned int);
 	int saveToDb() const;
+	int loadInventoryAndAvatars();
+	int saveInventoryAndAvatars() const;
 	const Account* getAccount() const;
 	void setAccount(const Account*);
 	unsigned int getUid() const;
@@ -53,6 +55,34 @@ public:
 	int addAvatar(Avatar**);
 	int addAvatar(unsigned int, Avatar**);
 	int addAvatar(unsigned int, Avatar**, unsigned int);
+	int swapToAvatar(unsigned int);
+	int swapToAvatar(unsigned long long);
+	int swapToAvatar(const Avatar*);
+	const AvatarTeam* getAvatarTeam(unsigned int) const;
+	AvatarTeam* getAvatarTeam(unsigned int);
+	const AvatarTeam* getCurrAvatarTeam() const;
+	AvatarTeam* getCurrAvatarTeam();
+	int swapToTeam(unsigned int);
+	int swapToTeam(const AvatarTeam*);
+	int addAvatarTeam();
+	int addAvatarTeam(const std::string&);
+	int addAvatarTeam(const AvatarTeam*);
+	int addAvatarTeam(const std::string, const std::list<const Avatar*>);
+	int setAvatarTeam(const AvatarTeam*, unsigned int);
+	int setAvatarTeam(const std::string, const std::list<const Avatar*>, unsigned int);
+	int delAvatarTeam(unsigned int);
+	int addAvatarToTeam(const Avatar*);
+	int addAvatarToTeam(const Avatar*, AvatarTeam*);
+	int addAvatarToTeam(unsigned int);
+	int addAvatarToTeam(unsigned int, AvatarTeam*);
+	int addAvatarToTeam(unsigned long long);
+	int addAvatarToTeam(unsigned long long, AvatarTeam*);
+	int removeAvatarFromTeam(const Avatar*);
+	int removeAvatarFromTeam(const Avatar*, AvatarTeam*);
+	int removeAvatarFromTeam(unsigned int);
+	int removeAvatarFromTeam(unsigned int, AvatarTeam*);
+	int removeAvatarFromTeam(unsigned long long);
+	int removeAvatarFromTeam(unsigned long long, AvatarTeam*);
 	unsigned int getOpenstate(unsigned int) const;
 	void setOpenstate(unsigned int);
 	void setOpenstate(unsigned int, int);

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2024 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -97,7 +97,6 @@ Player::operator storage::PlayerInfo() const {
 	ret.set_uid(uid);
 	long long ctime;
 	if (account != NULL) {
-
 		ret.set_aid(account->getAccountId());
 	}
 	if (session != NULL) {
@@ -158,6 +157,17 @@ int Player::loadFromDb(unsigned int _uid) {
 
 int Player::saveToDb() const {
 	return globalDbGate->savePlayer(*this);
+}
+
+int Player::loadInventoryAndAvatars() {
+	storage::InventoryEntry* ent = NULL;
+	for (unsigned long long i = 0; i < nextGuid; i++) {
+		ent = globalDbGate->getInventoryEntry(((unsigned long long) uid << 32) | i);
+		if (ent == NULL) continue;
+		if (ent->has_avatar()) addAvatar(ent->avatar());
+		// TODO else if (ent->has_item()) ;
+	}
+	return 0;
 }
 
 const Account* Player::getAccount() const {
@@ -301,6 +311,186 @@ int Player::addAvatar(unsigned int id, Avatar** a, unsigned int is_trial) {
 	auto i = avatars.end();
 	assert((*i).getGuid() == n.getGuid());
 	*a = &(*i);
+	return 0;
+}
+
+int Player::swapToAvatar(unsigned int id) {
+	return swapToAvatar(getAvatarById(id));
+}
+
+int Player::swapToAvatar(unsigned long long guid) {
+	return swapToAvatar(getAvatarByGuid(guid));
+}
+
+int Player::swapToAvatar(const Avatar* a) {
+	if (a == NULL) return -1;
+	// TODO Implement switching cooldown
+	curAvatar = a;
+	// TODO Send packet to client indicating status
+	return 0;
+}
+
+const AvatarTeam* Player::getAvatarTeam(unsigned int i) const {
+	if (i >= teams.size()) return NULL;
+	for (auto j = teams.cbegin(); j != teams.cend(); j++) {
+		if (i == 0) return &(*j);
+		i--;
+	}
+	return NULL;
+}
+
+AvatarTeam* Player::getAvatarTeam(unsigned int i) {
+	if (i >= teams.size()) return NULL;
+	for (auto j = teams.begin(); j != teams.end(); j++) {
+		if (i == 0) return &(*j);
+		i--;
+	}
+	return NULL;
+}
+
+const AvatarTeam* Player::getCurrAvatarTeam() const {
+	return getAvatarTeam(curTeamIndex);
+}
+
+AvatarTeam* Player::getCurrAvatarTeam() {
+	return getAvatarTeam(curTeamIndex);
+}
+
+int Player::swapToTeam(unsigned int i) {
+	if (i >= teams.size()) return -1;
+	int ret = curTeamIndex;
+	curTeamIndex = i;
+	return ret;
+}
+
+int Player::swapToTeam(const AvatarTeam* team) {
+	unsigned int i = 0;
+	int ret = curTeamIndex;
+	for (auto j = teams.cbegin(); j != teams.cend(); j++) {
+		if (team == &(*j)) {
+			curTeamIndex = i;
+			return ret;
+		}
+		i++;
+	}
+	return -1;
+}
+
+int Player::addAvatarTeam() {
+	return addAvatarTeam("New Team");
+}
+
+int Player::addAvatarTeam(const std::string& name) {
+	AvatarTeam team;
+	team.setName(name);
+	teams.push_back(std::move(team));
+	return 0;
+}
+
+int Player::addAvatarTeam(const AvatarTeam* team) {
+	if (team == NULL) return -1;
+	teams.push_back(*team);
+	return 0;
+}
+
+int Player::addAvatarTeam(const std::string name, const std::list<const Avatar*> avatars) {
+	AvatarTeam team;
+	team.setName(name);
+	team.setAvatars(avatars);
+	teams.push_back(std::move(team));
+	return 0;
+}
+
+int Player::setAvatarTeam(const AvatarTeam* team, unsigned int idx) {
+	unsigned int i = 0;
+	for (auto j = teams.begin(); j != teams.end(); j++) {
+		if (i == idx) {
+			*j = *team;
+			return 0;
+		}
+		i++;
+	}
+	return -1;
+}
+
+int Player::setAvatarTeam(const std::string name, const std::list<const Avatar*> avatars, unsigned int idx) {
+	unsigned int i = 0;
+	for (auto j = teams.begin(); j != teams.end(); j++) {
+		if (i == idx) {
+			AvatarTeam team;
+			team.setName(name);
+			team.setAvatars(avatars);
+			*j = std::move(team);
+			return 0;
+		}
+		i++;
+	}
+	return -1;
+}
+
+int Player::delAvatarTeam(unsigned int idx) {
+	unsigned int i = 0;
+	for (auto j = teams.cbegin(); j != teams.cend(); j++) {
+		if (i == idx) {
+			teams.erase(j);
+			return 0;
+		}
+		i++;
+	}
+	return -1;
+}
+
+int Player::addAvatarToTeam(const Avatar* av) {
+	return addAvatarToTeam(av, getCurrAvatarTeam());
+}
+
+int Player::addAvatarToTeam(const Avatar* av, AvatarTeam* team) {
+	if (team == NULL || av == NULL) return -1;
+	return team->addAvatar(av);
+}
+
+int Player::addAvatarToTeam(unsigned int idx) {
+	return addAvatarToTeam(idx, getCurrAvatarTeam());
+}
+
+int Player::addAvatarToTeam(unsigned int idx, AvatarTeam* team) {
+	if (team == NULL) return -1;
+	return team->addAvatar(getAvatarById(idx));
+}
+
+int Player::addAvatarToTeam(unsigned long long guid) {
+	return addAvatarToTeam(guid, getCurrAvatarTeam());
+}
+
+int Player::addAvatarToTeam(unsigned long long guid, AvatarTeam* team) {
+	if (team == NULL) return -1;
+	return team->addAvatar(getAvatarByGuid(guid));
+}
+
+int Player::removeAvatarFromTeam(const Avatar* av) {
+	return removeAvatarFromTeam(av, getCurrAvatarTeam());
+}
+
+int Player::removeAvatarFromTeam(const Avatar* av, AvatarTeam* team) {
+	if (av != NULL && team != NULL) team->delAvatar(av);
+	return 0;
+}
+
+int Player::removeAvatarFromTeam(unsigned int idx) {
+	return removeAvatarFromTeam(idx, getCurrAvatarTeam());
+}
+
+int Player::removeAvatarFromTeam(unsigned int idx, AvatarTeam* team) {
+	if (team != NULL) team->delAvatar(getAvatarById(idx));
+	return 0;
+}
+
+int Player::removeAvatarFromTeam(unsigned long long guid) {
+	return removeAvatarFromTeam(guid, getCurrAvatarTeam());
+}
+
+int Player::removeAvatarFromTeam(unsigned long long guid, AvatarTeam* team) {
+	if (team != NULL) team->delAvatar(getAvatarByGuid(guid));
 	return 0;
 }
 
