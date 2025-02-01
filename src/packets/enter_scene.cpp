@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2024 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -11,15 +11,41 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include <stdio.h>
 #include <string>
+#include "player.h"
 #include "packet.h"
 #include "session.h"
 #include "packet_head.pb.h"
 #include "scene.pb.h"
 
-int handleEnterSceneReadyReq(Session& session, std::string& header, std::string& data) {
+int handleEnterSceneReadyReq(Session& session, std::string&, std::string& data) {
 	proto::EnterSceneReadyRsp rsp;
+	proto::EnterScenePeerNotify notif;
 	Packet rsp_pkt(283);
-	rsp.set_enter_scene_token(1); // TODO Pull from player class instead of hardcoding it
+	Packet notif_pkt(284);
+/*	Player* player = session.getPlayer();
+	if (player == NULL) {
+		fprintf(stderr, "No player associated with current session\n");
+		// TODO should we send a response packet?
+		return -1;
+	}*/
+	// TODO Pull from player object instead of hardcoding it
+	notif.set_enter_scene_token(1);
+	// TODO Hardcoded until proper handling for scenes and worlds are implemented
+	notif.set_dest_scene_id(3);
+	notif.set_peer_id(1);
+	notif.set_host_peer_id(1);
+	if (!notif.SerializeToString(&data)) {
+		fprintf(stderr, "Error building packet data (EnterScenePeerNotify)\n");
+		// TODO should we send a response packet?
+		return -1;
+	}
+	notif_pkt.setData(data);
+	if (session.sendPacket(notif_pkt) < 0) {
+		fprintf(stderr, "Error sending packet data (EnterScenePeerNotify)\n");
+		// TODO should we send a response packet?
+		return -1;
+	}
+	rsp.set_enter_scene_token(1); // TODO Pull from player object instead of hardcoding it
 	if (!rsp.SerializeToString(&data)) {
 		fprintf(stderr, "Error building packet data\n");
 		return -1;
