@@ -267,6 +267,7 @@ long double toFlt(const std::string& x) {
 
 extern "C" {
 	void DbgHexdump(const unsigned char* buf, size_t sz) {
+		if (sz == 0) return;
 		size_t off;
 		unsigned char abuf[17];
 		abuf[16] = '\0';
