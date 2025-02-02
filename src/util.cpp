@@ -286,11 +286,13 @@ extern "C" {
 				abuf[off % 16] = buf[off];
 			}
 		}
-		abuf[off % 16] = '\0';
-		for (off %=16; off < 16; off++) {
-			fprintf(stderr, "   ");
+		if ((off % 16) != 0) {
+			abuf[off % 16] = '\0';
+			for (off %=16; off < 16; off++) {
+				fprintf(stderr, "   ");
+			}
 		}
-		fprintf(stderr, "  %s\n", abuf);
+		fprintf(stderr, " %s\n", abuf);
 	}
 
 	#define rotl(x, k) ((x << k) | (x >> (64 - k)))
