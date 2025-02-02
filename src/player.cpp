@@ -186,6 +186,14 @@ void Player::setUid(unsigned int u) {
 	uid = u;
 }
 
+unsigned int Player::getTpToken() const {
+	return tpToken;
+}
+
+void Player::setTpToken(unsigned int t) {
+	tpToken = t;
+}
+
 const Avatar* Player::getAvatarById(unsigned int id) const {
 	for (auto i = avatars.cbegin(); i != avatars.cend(); i++) {
 		if (id == (*i).getId()) return &(*i);
@@ -688,6 +696,7 @@ void Player::onLogin(Session& s) {
 	pdn.set_region_id(1);
 	if (pdn.SerializeToString(&pkt_data)) {
 		Packet pdn_p(108);
+		pdn_p.buildHeader(2);
 		pdn_p.setData(pkt_data);
 		s.sendPacket(pdn_p);
 	}

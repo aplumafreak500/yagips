@@ -41,6 +41,8 @@ public:
 	void setAccount(const Account*);
 	unsigned int getUid() const;
 	void setUid(unsigned int);
+	unsigned int getTpToken() const;
+	void setTpToken(unsigned int);
 	const Avatar* getAvatarById(unsigned int) const;
 	Avatar* getAvatarById(unsigned int);
 	const Avatar* getAvatarByGuid(unsigned long long) const;
