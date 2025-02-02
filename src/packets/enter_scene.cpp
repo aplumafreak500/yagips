@@ -22,14 +22,13 @@ int handleEnterSceneReadyReq(Session& session, std::string&, std::string& data) 
 	proto::EnterScenePeerNotify notif;
 	Packet rsp_pkt(283);
 	Packet notif_pkt(284);
-/*	Player* player = session.getPlayer();
+	Player* player = session.getPlayer();
 	if (player == NULL) {
 		fprintf(stderr, "No player associated with current session\n");
 		// TODO should we send a response packet?
 		return -1;
-	}*/
-	// TODO Pull from player object instead of hardcoding it
-	notif.set_enter_scene_token(1);
+	}
+	notif.set_enter_scene_token(player->getTpToken());
 	// TODO Hardcoded until proper handling for scenes and worlds are implemented
 	notif.set_dest_scene_id(3);
 	notif.set_peer_id(1);
@@ -45,7 +44,7 @@ int handleEnterSceneReadyReq(Session& session, std::string&, std::string& data) 
 		// TODO should we send a response packet?
 		return -1;
 	}
-	rsp.set_enter_scene_token(1); // TODO Pull from player object instead of hardcoding it
+	rsp.set_enter_scene_token(player->getTpToken());
 	if (!rsp.SerializeToString(&data)) {
 		fprintf(stderr, "Error building packet data\n");
 		return -1;
