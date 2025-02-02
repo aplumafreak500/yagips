@@ -75,6 +75,7 @@ extern "C" {
 			fclose(fp);
 			memcpy(dispatchKey, ec2b->getXorpad().c_str(), 4096);
 			dispatchXorSeed = ec2b->getSeed();
+			dispatchSeed = *ec2b;
 			hasDispatchSeed = 1;
 			delete ec2b;
 		}

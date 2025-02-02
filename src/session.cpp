@@ -156,12 +156,9 @@ int Session::sendPacket(Packet& packet) {
 	if (!packet.useDispatchKey() && use_secret_key) {
 		key = sessionKey;
 	}
-#if 0
-	// TODO: verify that the key being used is in fact query_curr_region->client_secret_key before using this.
 	else {
-		if (hasDispatchKey) key = dispatchKey;
+		if (hasDispatchSeed) key = dispatchKey;
 	}
-#endif
 	if (key != NULL) {
 		HyvCryptXor(buf, sz, key, 4096);
 	}
@@ -191,12 +188,9 @@ extern "C" {
 				if (session->useSecretKey()) {
 					key = session->getSessionKey();
 				}
-#if 0
-				// TODO: verify that the key being used is in fact query_curr_region->client_secret_key before using this.
 				else {
-					if (hasDispatchKey) key = dispatchKey;
+					if (hasDispatchSeed) key = dispatchKey;
 				}
-#endif
 				if (key != NULL) {
 					HyvCryptXor(pkt_buf, pkt_size, key, 4096);
 				}

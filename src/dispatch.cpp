@@ -84,7 +84,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 		ret.set_retcode(-1);
 		goto build_rsp;
 	}
-	post_len = strlen(post) + 1;
+	post_len = strlen(post);
 	jtk = json_tokener_new();
 	if (jtk == NULL) {
 		ret.set_retcode(-1);
@@ -289,7 +289,7 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	proto::StopServerInfo* stop;
 	proto::ForceUpdateInfo* upd;
 	std::string ret_enc;
-	std::string clientSecretKey;
+	std::string dispatchKey;
 	const config_t* config;
 	size_t post_len;
 	struct json_tokener* jtk;
@@ -318,7 +318,7 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 		ret.set_msg("Client is missing POST data");
 		goto set_fields;
 	}
-	post_len = strlen(post) + 1;
+	post_len = strlen(post);
 	jtk = json_tokener_new();
 	if (jtk == NULL) {
 		ret.set_retcode(-1);
@@ -545,24 +545,9 @@ set_fields:
 			region->set_allocated_next_res_version_config(resNext);
 		}
 	}
-	if (hasRegionSeed < 0) {
-		pathBuf[4095] = '\0';
-		snprintf(pathBuf, 4095, "%s/keys/regionSeed.bin", globalConfig->getConfig()->dataPath);
-		regionSeed_p = fopen(pathBuf, "rb");
-		if (regionSeed_p == NULL) {
-			fprintf(stderr, "Warning: Can't open %s (errno %d: %s)\n", pathBuf, errno, strerror(errno));
-			hasRegionSeed = 0;
-		}
-		else {
-			fread(&regionSeed, sizeof(ec2b_t), 1, regionSeed_p);
-			fclose(regionSeed_p);
-			hasRegionSeed = 1;
-		}
-	}
-	if (hasRegionSeed > 0) {
-		regionKey = new Ec2b(regionSeed);
-		region->set_secret_key(*regionKey);
-		delete regionKey;
+	if (hasDispatchSeed) {
+		dispatchKey.assign((const char*) &dispatchSeed, sizeof(ec2b_t));
+		region->set_secret_key(dispatchKey);
 	}
 	ret.set_allocated_region_info(region);
 	if (config->regionInfo->sendStopServerOrForceUpdate == 1 && config->regionInfo->stopServer != NULL) {
@@ -584,13 +569,26 @@ set_fields:
 		upd->set_force_update_url(config->regionInfo->forceUpdateUrl);
 		ret.set_allocated_force_udpate(upd);
 	}
-#if 0
 	// TODO Can this be different from the query_region_list seed, and if so, does it encrypt region_custom_config_encrypted?
-	if (hasDispatchSeed) {
-		clientSecretKey.assign((const char*) &dispatchSeed, sizeof(ec2b_t));
-		ret.set_client_secret_key(clientSecretKey);
+	if (hasRegionSeed < 0) {
+		pathBuf[4095] = '\0';
+		snprintf(pathBuf, 4095, "%s/keys/regionSeed.bin", globalConfig->getConfig()->dataPath);
+		regionSeed_p = fopen(pathBuf, "rb");
+		if (regionSeed_p == NULL) {
+			fprintf(stderr, "Warning: Can't open %s (errno %d: %s)\n", pathBuf, errno, strerror(errno));
+			hasRegionSeed = 0;
+		}
+		else {
+			fread(&regionSeed, sizeof(ec2b_t), 1, regionSeed_p);
+			fclose(regionSeed_p);
+			hasRegionSeed = 1;
+		}
 	}
-#endif
+	if (hasRegionSeed > 0) {
+		regionKey = new Ec2b(regionSeed);
+		ret.set_client_secret_key(*regionKey);
+		delete regionKey;
+	}
 	/* TODO
 		* region_custom_config_encrypted - JSON object encrypted with the client_secret_key (I think)
 			* Format: (from https://github.com/AndigenaTeam/andigenadispatch/blob/main/src/routes/region.rs#L79-81, unknown what other fields are there on official)
@@ -648,7 +646,7 @@ std::string handleLogin(const char* post) {
 	if (post == NULL) {
 		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
 	}
-	size_t post_len = strlen(post) + 1;
+	size_t post_len = strlen(post);
 	struct json_tokener* jtk = json_tokener_new();
 	if (jtk == NULL) {
 		return "{\"retcode\":-103,\"message\":\"Login failure: unable to allocate JSON tokener\"}";
@@ -791,7 +789,7 @@ std::string handleVerify(const char* post) {
 	if (post == NULL) {
 		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
 	}
-	size_t post_len = strlen(post) + 1;
+	size_t post_len = strlen(post);
 	struct json_tokener* jtk = json_tokener_new();
 	unsigned int aid = 0;
 	if (jtk == NULL) {
@@ -893,7 +891,7 @@ std::string handleCombo(const char* post) {
 	if (post == NULL) {
 		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
 	}
-	size_t post_len = strlen(post) + 1;
+	size_t post_len = strlen(post);
 	struct json_tokener* jtk = json_tokener_new();
 	enum json_tokener_error jerr;
 	unsigned int aid = 0;
@@ -1049,7 +1047,7 @@ std::string handleActionTicket(const char* post) {
 	if (post == NULL) {
 		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
 	}
-	size_t post_len = strlen(post) + 1;
+	size_t post_len = strlen(post);
 	struct json_tokener* jtk = json_tokener_new();
 	enum json_tokener_error jerr;
 	unsigned int aid = 0;
@@ -1130,7 +1128,7 @@ std::string handleBindRealname(const char* post) {
 	if (post == NULL) {
 		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
 	}
-	size_t post_len = strlen(post) + 1;
+	size_t post_len = strlen(post);
 	struct json_tokener* jtk = json_tokener_new();
 	enum json_tokener_error jerr;
 	if (jtk == NULL) {
@@ -1399,6 +1397,7 @@ extern "C" {
 					status = 400;
 					goto write_rsp;
 				}
+				pkt_buf[actual_len] = '\0';
 				if (strncmp(meth, "POST", 4) == 0) {
 					body = pkt_buf + pret;
 				}
