@@ -1223,6 +1223,79 @@ std::string handleBindRealname(const char* post) {
 	return ret;
 }
 
+// /log
+std::string handleClientLog(const char* post) {
+	if (post == NULL) {
+		return "{\"retcode\":-1,\"message\":\"Error: `post` is NULL\"}";
+	}
+	size_t post_len = strlen(post);
+	struct json_tokener* jtk = json_tokener_new();
+	enum json_tokener_error jerr;
+	if (jtk == NULL) {
+		return "{\"retcode\":-1,\"message\":\"Error: unable to allocate JSON tokener\"}";
+	}
+	struct json_object* jobj = json_tokener_parse_ex(jtk, post, post_len);
+	if (jobj == NULL) {
+		jerr = json_tokener_get_error(jtk);
+		if (jerr != json_tokener_continue) {
+			fprintf(stderr, "Error parsing JSON POST data: %s\n", json_tokener_error_desc(jerr));
+		}
+		json_tokener_free(jtk);
+		return "{\"retcode\":-1,\"message\":\"Error parsing JSON data\"}";
+	}
+	if (json_tokener_get_parse_end(jtk) < post_len) {
+		fprintf(stderr, "Warning: JSON in POST data has extra trailing data, it will be ignored\n");
+	}
+	json_tokener_free(jtk);
+	if (!json_object_is_type(jobj, json_type_object)) {
+		fprintf(stderr, "Error: JSON in POST data is not an object.\n");
+		json_object_put(jobj);
+		return "{\"retcode\":-1,\"message\":\"Error: JSON data is not an object\"}";
+	}
+	struct json_object* dobj;
+	const char* clientIp = NULL;
+	const char* msg = NULL;
+	const char* errorType = NULL;
+	unsigned int ec = 0;
+	unsigned int ecSub = 0;
+	unsigned int uid = 0;
+	if (json_object_object_get_ex(jobj, "clientIp", &dobj)) {
+		clientIp = json_object_get_string(dobj);
+	}
+	if (json_object_object_get_ex(jobj, "logType", &dobj)) {
+		errorType = json_object_get_string(dobj);
+	}
+	if (json_object_object_get_ex(jobj, "uid", &dobj)) {
+		uid = json_object_get_int(dobj);
+	}
+	if (json_object_object_get_ex(jobj, "errorCodeToPlatform", &dobj)) {
+		ec = json_object_get_int(dobj);
+	}
+	if (json_object_object_get_ex(jobj, "subErrorCode", &dobj)) {
+		ecSub = json_object_get_int(dobj);
+	}
+	if (json_object_object_get_ex(jobj, "logStr", &dobj)) {
+		msg = json_object_get_string(dobj);
+	}
+	else {
+		if (!ec) return "{\"retcode\":-1,\"message\":\"Error: logStr is not set\"}";
+	}
+	if (!ec) {
+		if (msg == NULL) {
+			return "{\"retcode\":-1,\"message\":\"Error: logStr is null\"}";
+		}
+		if (strlen(msg) == 0) {
+			return "{\"retcode\":-1,\"message\":\"Error: logStr is empty\"}";
+		}
+	}
+	if (msg == NULL) msg = "<null>";
+	if (clientIp == NULL) clientIp = "<null>";
+	if (errorType == NULL) clientIp = "Unspecified";
+	fprintf(stderr, "Client connected from IP %s says: `%s` (ec: %d ecSub: %d uid: %d errorType: %s)\n", clientIp, msg, -ec, ecSub, uid, errorType);
+	json_object_put(jobj);
+	return "{\"retcode\":0,\"message\":\"ok\"}";
+}
+
 extern "C" {
 	volatile int DispatchServerSignal = 0;
 
@@ -1242,6 +1315,7 @@ extern "C" {
 		SDK_GET_PLAYER_DATA,		// player data including in-game info (traveler's diary/battle chronicle) and also account details (useful for external dispatch servers)
 		SDK_SET_PLAYER_DATA,		// set password/oath tokens or reset the account, also a low-level interface to directly set in-game data without going through gm
 		SDK_ADMIN,					// Shut down or restart the server, manage the banlist, change abyss/gacha/event schedules
+		SDK_LOG,					// Client->server log
 		SDK_ENDPOINT_CNT
 	};
 
@@ -1261,6 +1335,7 @@ extern "C" {
 		[SDK_GET_PLAYER_DATA] = "/player/",
 		[SDK_SET_PLAYER_DATA] = "/set-player/",
 		[SDK_ADMIN] = "/admin",
+		[SDK_LOG] = "/log",
 	};
 
 	// Backend for the dispatch server
@@ -1556,6 +1631,12 @@ write_rsp:
 					break;
 				case SDK_BIND_REALNAME:
 					rsp_str = handleBindRealname(body);
+					mime = "application/json";
+					rsp_body = rsp_str.c_str();
+					rsp_len = rsp_str.size();
+					break;
+				case SDK_LOG:
+					rsp_str = handleClientLog(body);
 					mime = "application/json";
 					rsp_body = rsp_str.c_str();
 					rsp_len = rsp_str.size();
