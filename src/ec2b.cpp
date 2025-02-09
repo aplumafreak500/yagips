@@ -251,7 +251,7 @@ void Ec2b::getFromSeed(int method) {
 	unsigned long long* d = (unsigned long long*) _d;
 	unsigned char _k[16];
 	unsigned long long* k = (unsigned long long*) _k;
-	unsigned long long _seed = seed;
+	unsigned long long _seed = ~0;
 	unsigned long long xorseed[4] = {0, 0, 0, 0};
 	unsigned int i;
 	switch(method) {
@@ -300,12 +300,13 @@ void Ec2b::getFromSeed(int method) {
 		}
 		method = Ec2b::SEED_FROM_RAND;
 	}
-	_seed ^= ~0xceac3b5a867837ac;
 	for (i = 0; i < 256; i++) {
 		_seed ^= d[i];
 	}
 	_seed ^= k[1];
-	k[0] ^= _seed;
+	_seed ^= 0xceac3b5a867837ac;
+	_seed ^= seed;
+	k[0] = _seed;
 	unscrambleKey(_k);
 	key.assign((const char*) _k, 16);
 }
