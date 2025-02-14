@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2024 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -13,10 +13,20 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <list>
 #include "avatar.h"
 #include "team.h"
+#include "player.h"
 #include "avatar.pb.h"
 
 AvatarTeam::AvatarTeam() {}
 AvatarTeam::~AvatarTeam() {}
+
+AvatarTeam::AvatarTeam(const proto::AvatarTeam& p, const Player& player) {
+	const Avatar* a;
+	name = p.team_name();
+	for (int i = 0; i < p.avatar_guid_list_size(); i++) {
+		a = player.getAvatarByGuid(p.avatar_guid_list(i));
+		avatars.push_back(a);
+	}
+}
 
 AvatarTeam::operator proto::AvatarTeam() const {
 	proto::AvatarTeam p;

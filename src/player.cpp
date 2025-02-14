@@ -85,6 +85,13 @@ Player::Player(const storage::PlayerInfo& p) {
 		openstates.push_back(p.open_states(j));
 	}
 	updateOpenstates();
+#if 0
+	loadInventoryAndAvatars();
+	for (auto i = p.teams().cbegin(); i != p.teams().cend(); i++) {
+		AvatarTeam t(*i, *this);
+		teams.push_back(std::move(t));
+	}
+#endif
 }
 
 Player::~Player() {
@@ -137,9 +144,15 @@ Player::operator storage::PlayerInfo() const {
 			break;
 		}
 	}
-	for (auto j = openstates.cbegin(); j != openstates.cend(); j++) {
-		ret.add_open_states(*j);
+	for (auto i = openstates.cbegin(); i != openstates.cend(); i++) {
+		ret.add_open_states(*i);
 	}
+#if 0
+	for (auto i = teams.cbegin(); i != teams.cend(); i++) {
+		proto::AvatarTeam* t = ret.add_teams();
+		*t = *i;
+	}
+#endif
 	return ret;
 }
 
@@ -156,6 +169,9 @@ int Player::loadFromDb(unsigned int _uid) {
 }
 
 int Player::saveToDb() const {
+#if 0
+	saveInventoryAndItems();
+#endif
 	return globalDbGate->savePlayer(*this);
 }
 
