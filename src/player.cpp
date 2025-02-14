@@ -170,6 +170,14 @@ int Player::loadInventoryAndAvatars() {
 	return 0;
 }
 
+int Player::saveInventoryAndAvatars() const {
+	for (auto i = avatars.cbegin(); i != avatars.cend(); i++) {
+		globalDbGate->saveAvatar(*i);
+	}
+	// TODO Items
+	return 0;
+}
+
 const Account* Player::getAccount() const {
 	return account;
 }
@@ -656,7 +664,7 @@ void Player::onLogin(Session& s) {
 	at.set_team_name("yagips test team");
 	auto m = adn.mutable_avatar_team_map();
 	(*m)[1] = at;
-	adn.set_choose_avatar_guid(228); // TODO what actually needs to go here?
+	adn.set_choose_avatar_guid(guid);
 	adn.set_cur_avatar_team_id(1);
 	if (adn.SerializeToString(&pkt_data)) {
 		Packet adn_p(1716);
