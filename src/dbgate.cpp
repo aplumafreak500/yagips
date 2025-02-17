@@ -245,7 +245,6 @@ Account* dbGate::createAccount(const char* username) {
 	else {
 		account->setIsGuest(1);
 	}
-	account->getNewAuthToken();
 	saveAccount(*account);
 	save();
 	return account;
