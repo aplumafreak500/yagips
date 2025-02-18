@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2024 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -15,6 +15,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "dbgate.h"
 #include "data.h"
 #include "data/avatar_data.h"
+#include "data/avatar_skill_depot_data.h"
 #include "avatar.h"
 #include "define.pb.h"
 
@@ -36,11 +37,13 @@ Avatar::Avatar() {
 Avatar::~Avatar() {}
 
 Avatar::Avatar(unsigned int _id) {
-	bornTime = time(NULL);
 	const AvatarData* tbl = globalGameData->avatar_data;
 	data = (*tbl)[_id];
-	id = _id;
 	skillDepotId = data->skill_depot_id;
+	const AvatarSkillDepotData* stbl = globalGameData->avatar_skill_depot_data;
+	skillDepot = (*stbl)[skillDepotId];
+	bornTime = time(NULL);
+	id = _id;
 	level = 1;
 	exp = 0;
 	friendship = 1;
@@ -57,12 +60,14 @@ Avatar::Avatar(unsigned int _id) {
 }
 
 Avatar::Avatar(const proto::AvatarInfo& pb) {
-	const AvatarData* tbl = globalGameData->avatar_data;
 	id = pb.avatar_id();
+	skillDepotId = pb.skill_depot_id();
+	const AvatarData* tbl = globalGameData->avatar_data;
 	data = (*tbl)[id];
+	const AvatarSkillDepotData* stbl = globalGameData->avatar_skill_depot_data;
+	skillDepot = (*stbl)[skillDepotId];
 	guid = pb.guid();
 	bornTime = pb.born_time();
-	skillDepotId = pb.skill_depot_id();
 	wings = pb.wearing_flycloak_id();
 	friendship = pb.fetter_info().exp_level();
 	if (friendship >= 10) {
@@ -72,12 +77,13 @@ Avatar::Avatar(const proto::AvatarInfo& pb) {
 	else {
 		friendship_exp = pb.fetter_info().exp_number();
 	}
+	// this is quite the lazy way to do it lol
+	constellation = pb.talent_id_list_size();
 	// TODO Auxiliary friendship data
 	// TODO Has obtained namecard
 	// TODO Costume
 	// TODO Artifacts/weapon
 	// TODO Skill map
-	// TODO Talent ids
 	// TODO Skill level map (talent levels)
 	// TODO Fight props
 	// TODO Avatar type
@@ -106,8 +112,11 @@ Avatar::operator proto::AvatarInfo() const {
 	// TODO Check current hp first
 	pb.set_life_state(1);
 	// TODO Artifacts/weapon
+	unsigned int i;
+	for (i = 0; i < constellation; i++) {
+		pb.add_talent_id_list(skillDepot->constellationSkills[i]);
+	}
 	// TODO Skill map
-	// TODO Talent ids
 	// TODO Skill level map (talent levels)
 	// TODO Fight props
 	// TODO Avatar type

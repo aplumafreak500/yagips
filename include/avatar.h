@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 /* This file is part of yagips.
 
-©2024 Alex Pensinger (ArcticLuma113)
+©2025 Alex Pensinger (ArcticLuma113)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
@@ -16,6 +16,7 @@ class Avatar;
 #include "item.h"
 #include "player.h"
 #include "data/avatar_data.h"
+#include "data/avatar_skill_depot_data.h"
 #include "define.pb.h"
 
 class Avatar {
@@ -124,6 +125,7 @@ private:
 	unsigned int full_cd;
 	unsigned int energy; // TODO make type a float?
 	const AvatarDataEnt* data;
+	const AvatarSkillDepotDataEnt* skillDepot;
 	// TODO Skill map
 	// TODO Talent ids
 	// TODO Fight props
