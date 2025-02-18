@@ -27,6 +27,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "player.pb.h"
 #include "avatar.pb.h"
 #include "scene.pb.h"
+#include "item.pb.h"
 #include "define.pb.h"
 #include "storage.pb.h"
 
@@ -170,7 +171,7 @@ int Player::loadFromDb(unsigned int _uid) {
 
 int Player::saveToDb() const {
 #if 0
-	saveInventoryAndItems();
+	saveInventoryAndAvatars();
 #endif
 	return globalDbGate->savePlayer(*this);
 }
@@ -678,6 +679,7 @@ void Player::onLogin(Session& s) {
 	AvatarTeam at;
 	at.setName("yagips test team");
 	addAvatarToTeam(guid, &at);
+	addAvatarTeam(&at);
 	avp = adn.add_avatar_list();
 	*avp = av;
 	atp = at;
@@ -693,21 +695,6 @@ void Player::onLogin(Session& s) {
 	}
 	proto::Vector* _pos = new proto::Vector();
 	*_pos = pos;
-	proto::PlayerEnterSceneNotify esn;
-	esn.set_scene_id(scene_id);
-	esn.set_allocated_pos(_pos);
-	esn.set_scene_begin_time(curTimeMs());
-	esn.set_target_uid(uid);
-	esn.set_enter_scene_token(tpToken);
-	esn.set_is_first_login_enter_scene(1);
-	esn.set_world_level(worldLevel);
-	esn.set_enter_reason(1);
-	esn.set_type(proto::ENTER_SELF);
-	if (esn.SerializeToString(&pkt_data)) {
-		Packet esn_p(201);
-		esn_p.setData(pkt_data);
-		s.sendPacket(esn_p);
-	}
 	updateOpenstates(1);
 	proto::PlayerDataNotify pdn;
 	pdn.set_nick_name(name);
@@ -726,6 +713,44 @@ void Player::onLogin(Session& s) {
 		pdn_p.buildHeader(2);
 		pdn_p.setData(pkt_data);
 		s.sendPacket(pdn_p);
+	}
+	proto::PlayerStoreNotify psn;
+	psn.set_store_type(proto::StoreType::STORE_PACK);
+	// TODO Make this configurable
+	psn.set_weight_limit(5000);
+	// TODO Fill in `item_list`
+	if (psn.SerializeToString(&pkt_data)) {
+		Packet psn_p(601);
+		psn_p.buildHeader(2);
+		psn_p.setData(pkt_data);
+		s.sendPacket(psn_p);
+	}
+	proto::StoreWeightLimitNotify swln;
+	// TODO Make these configurable
+	swln.set_store_type(proto::StoreType::STORE_PACK);
+	swln.set_weight_limit(5000);
+	swln.set_material_count_limit(3000);
+	swln.set_weapon_count_limit(1000);
+	swln.set_reliquary_count_limit(2000);
+	if (swln.SerializeToString(&pkt_data)) {
+		Packet swln_p(602);
+		swln_p.setData(pkt_data);
+		s.sendPacket(swln_p);
+	}
+	proto::PlayerEnterSceneNotify esn;
+	esn.set_scene_id(scene_id);
+	esn.set_allocated_pos(_pos);
+	esn.set_scene_begin_time(curTimeMs());
+	esn.set_target_uid(uid);
+	esn.set_enter_scene_token(tpToken);
+	esn.set_is_first_login_enter_scene(1);
+	esn.set_world_level(worldLevel);
+	esn.set_enter_reason(1);
+	esn.set_type(proto::ENTER_SELF);
+	if (esn.SerializeToString(&pkt_data)) {
+		Packet esn_p(201);
+		esn_p.setData(pkt_data);
+		s.sendPacket(esn_p);
 	}
 	s.setState(Session::ACTIVE);
 }
