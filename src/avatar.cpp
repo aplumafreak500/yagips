@@ -157,6 +157,8 @@ void Avatar::setId(unsigned int i, unsigned int recalc) {
 		const AvatarData* tbl = globalGameData->avatar_data;
 		data = (*tbl)[i];
 		skillDepotId = data->skill_depot_id;
+		const AvatarSkillDepotData* stbl = globalGameData->avatar_skill_depot_data;
+		skillDepot = (*stbl)[skillDepotId];
 		// TODO redo stats/props
 	}
 }
@@ -511,12 +513,16 @@ unsigned int Avatar::getSkillDepotId() const {
 
 unsigned int Avatar::setSkillDepotId() {
 	skillDepotId = data->skill_depot_id;
+	const AvatarSkillDepotData* stbl = globalGameData->avatar_skill_depot_data;
+	skillDepot = (*stbl)[skillDepotId];
 	return skillDepotId;
 }
 
 // Needs a return type due to above overload.
 unsigned int Avatar::setSkillDepotId(unsigned int i) {
 	skillDepotId = i;
+	const AvatarSkillDepotData* stbl = globalGameData->avatar_skill_depot_data;
+	skillDepot = (*stbl)[skillDepotId];
 	return skillDepotId;
 }
 
