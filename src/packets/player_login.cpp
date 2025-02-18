@@ -16,7 +16,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "runconfig.h"
 #include "player.pb.h"
 
-int handlePlayerLoginReq(Session& session, std::string& header, std::string& data) {
+int handlePlayerLoginReq(Session& session, std::string&, std::string& data) {
 	proto::PlayerLoginReq req;
 	proto::PlayerLoginRsp rsp;
 	proto::ResVersionConfig* res;
@@ -141,7 +141,7 @@ int handlePlayerLoginReq(Session& session, std::string& header, std::string& dat
 		fprintf(stderr, "Error building packet data\n");
 		return -1;
 	}
-	rsp_pkt.setHeader(header);
+	rsp_pkt.buildHeader(1);
 	rsp_pkt.setData(data);
 	// for whatever reason, despite req using the session key, this packet uses the dispatch key... weird
 	rsp_pkt.setUseDispatchKey(1);
