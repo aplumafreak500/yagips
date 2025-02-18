@@ -12,6 +12,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #ifndef DATA_H
 #define DATA_H
 #include "data/avatar_data.h"
+#include "data/avatar_skill_depot_data.h"
 #include "data/openstate_data.h"
 #include <stdio.h>
 #include <vector>
@@ -28,6 +29,7 @@ struct GameData {
 	GameData();
 	~GameData();
 	AvatarData* avatar_data;
+	AvatarSkillDepotData* avatar_skill_depot_data;
 	OpenStateData* openstate_data;
 };
 

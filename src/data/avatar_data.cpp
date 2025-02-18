@@ -12,10 +12,11 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/param.h>
+#include <string>
 #include <vector>
 #include <json-c/json_tokener.h>
 #include <json-c/json_object.h>
-#include <sys/param.h>
 #include "runconfig.h"
 #include "util.h"
 #include "data.h"

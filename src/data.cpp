@@ -136,6 +136,10 @@ GameData::GameData() {
 	if (avatar_data->load()) {
 		fprintf(stderr, "Warning: Failed to load avatar data\n");
 	}
+	avatar_skill_depot_data = new AvatarSkillDepotData();
+	if (avatar_skill_depot_data->load()) {
+		fprintf(stderr, "Warning: Failed to load skill depot data\n");
+	}
 	openstate_data = new OpenStateData();
 	if (openstate_data->load()) {
 		fprintf(stderr, "Warning: Failed to load openstate data\n");
@@ -144,6 +148,7 @@ GameData::GameData() {
 
 GameData::~GameData() {
 	if (avatar_data != NULL) delete avatar_data;
+	if (avatar_skill_depot_data != NULL) delete avatar_skill_depot_data;
 	if (openstate_data != NULL) delete openstate_data;
 }
 
