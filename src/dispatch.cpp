@@ -128,6 +128,7 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 	}
 	memset(sregion, '\0', 3);
 	memset(sclient, '\0', 32);
+	// TODO: `REL` is replaced with `CB` for beta clients, if we ever support them in the future
 	sret = sscanf(data, "%2cREL%31[^0-9.]%d.%d.%d", sregion, sclient, &major, &minor, &patch);
 	if (sret == EOF || sret < 5) {
 		// Version is present, but in an invalid format
@@ -353,28 +354,26 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 	// TODO enforce ip-level bans (origin ip passed in by php)
 	if (!json_object_object_get_ex(jobj, "version", &dobj)) {
 		// Version isn't even present
-		json_object_put(jobj);
 		ret.set_retcode(-1);
 		ret.set_msg("Version is not set");
-		goto set_fields;
+		goto set_fields2;
 	}
 	data = json_object_get_string(dobj);
 	if (data == NULL) {
 		// Version is present, but set to null
-		json_object_put(jobj);
 		ret.set_retcode(-1);
 		ret.set_msg("Version is null");
-		goto set_fields;
+		goto set_fields2;
 	}
 	memset(sregion, '\0', 3);
 	memset(sclient, '\0', 32);
+	// TODO: `REL` is replaced with `CB` for beta clients, if we ever support them in the future
 	sret = sscanf(data, "%2cREL%31[^0-9.]%d.%d.%d", sregion, sclient, &major, &minor, &patch);
 	if (sret == EOF || sret < 5) {
 		// Version is present, but in an invalid format
-		json_object_put(jobj);
 		ret.set_retcode(-1);
 		ret.set_msg("Version format is invalid");
-		goto set_fields;
+		goto set_fields2;
 	}
 	if (strncmp(sregion, "OS", 3) == 0) iregion = REGION_OS;
 	else if (strncmp(sregion, "CN", 3) == 0) iregion = REGION_CN;
@@ -404,14 +403,14 @@ std::string getQueryCurrRegionHttpRsp(std::string& sign, const char* post) {
 		// Deny beta clients (for now).
 		patch > 1
 	) {
-		json_object_put(jobj);
 		ret.set_retcode(-1);
 		ret.set_msg("Version mismatch");
 		// TODO Also send force_update_url and/or stop_server? GC does the latter in cases of version mismatch.
-		goto set_fields;
+		goto set_fields2;
 	}
 	doResVersionConfig = 1;
 	doGateserver = 1;
+set_fields2:
 	if (json_object_object_get_ex(jobj, "skipSign", &dobj)) {
 		doSign = (~json_object_get_boolean(dobj)) & 1;
 	}
@@ -777,7 +776,7 @@ std::string handleLogin(const char* post) {
 		ret = "{\"retcode\":0,\"message\":\"ok\",\"data\":{\"account\":";
 		ret += json_object_to_json_string_ext(njobj, JSON_C_TO_STRING_PLAIN);
 		// Not sure what any of these do.
-		ret += ",\"device_grant_required\":false,\"realname_operation\":null,\"realperson_required\":false,\"safe_mobile_required\":false}}";
+		ret += ",\"device_grant_required\":false,\"realname_operation\":0,\"realperson_required\":false,\"safe_mobile_required\":false}}";
 	}
 	json_object_put(njobj);
 	json_object_put(jobj);
@@ -880,7 +879,8 @@ std::string handleVerify(const char* post) {
 	json_object_object_add(njobj, "area_code", NULL);
 	ret = "{\"retcode\":0,\"message\":\"ok\",\"data\":{\"account\":";
 	ret += json_object_to_json_string_ext(njobj, JSON_C_TO_STRING_PLAIN);
-	ret += "}}";
+	// Not sure what any of these do.
+	ret += ",\"device_grant_required\":false,\"realname_operation\":0,\"realperson_required\":false,\"safe_mobile_required\":false}}";
 	json_object_put(njobj);
 	json_object_put(jobj);
 	return ret;
