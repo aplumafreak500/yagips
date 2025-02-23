@@ -13,6 +13,11 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string>
 #include "session.h"
 #include "packet.h"
+#include "proto/player.pb.h"
+#include "proto/scene.pb.h"
+#include "proto/social.pb.h"
+#include "proto/misc.pb.h"
+
 // TODO Use a file full of enum constants that can be auto generated. This is due to the fact that opcode IDs (usually) change from one client version to the next.
 
 extern int handlePingReq(Session&, std::string&, std::string&);
@@ -31,15 +36,15 @@ int processPacket(Session& session, Packet& packet, int* isValid) {
 		fprintf(stderr, "Don't know how to handle opcode %d\n", opcode);
 		if (isValid != NULL) *isValid = 0;
 		return -opcode;
-	case 5:
+	case proto::PingReq_CmdId_CMD_ID:
 		return handlePingReq(session, header, data);
-	case 101:
+	case proto::GetPlayerTokenReq_CmdId_CMD_ID:
 		return handleGetPlayerTokenReq(session, header, data);
-	case 103:
+	case proto::PlayerLoginReq_CmdId_CMD_ID:
 		return handlePlayerLoginReq(session, header, data);
-	case 282:
+	case proto::EnterSceneReadyReq_CmdId_CMD_ID:
 		return handleEnterSceneReadyReq(session, header, data);
-	case 4039:
+	case proto::GetPlayerBlacklistReq_CmdId_CMD_ID:
 		return handleGetPlayerBlacklistReq(session, header, data);
 	}
 }

@@ -17,7 +17,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 int handleGetPlayerBlacklistReq(Session& session, std::string&, std::string& data) {
 	proto::GetPlayerBlacklistRsp rsp;
-	Packet rsp_pkt(4040);
+	Packet rsp_pkt(proto::GetPlayerBlacklistRsp_CmdId_CMD_ID);
 	rsp.set_retcode(0);
 	// TODO Implement
 	if (!rsp.SerializeToString(&data)) {

@@ -21,7 +21,7 @@ int handlePlayerLoginReq(Session& session, std::string&, std::string& data) {
 	proto::PlayerLoginRsp rsp;
 	proto::ResVersionConfig* res;
 	proto::ResVersionConfig* resNext;
-	Packet rsp_pkt(104);
+	Packet rsp_pkt(proto::PlayerLoginRsp_CmdId_CMD_ID);
 	if (session.getState() != Session::LOGIN_WAIT) {
 		// TODO should we send a response packet?
 		fprintf(stderr, "Session state is not LOGIN_WAIT\n");
@@ -63,9 +63,6 @@ int handlePlayerLoginReq(Session& session, std::string&, std::string& data) {
 		session.close(12);
 		return -1;
 	}
-	// TODO once we implement proper avatar storage, send out DoSetPlayerBornDataNotify if avatar storage is empty. This triggers the opening cutscene in the client.
-	// else...
-	player->onLogin(session);
 	rsp.set_retcode(0);
 	// TODO hk4e_cn for Chinese clients
 	rsp.set_game_biz("hk4e_global");
@@ -74,6 +71,7 @@ int handlePlayerLoginReq(Session& session, std::string&, std::string& data) {
 	// Unknown exactly what these do.
 	rsp.set_is_use_ability_hash(1);
 	rsp.set_ability_hash_code(1844674);
+	//rsp.set_is_sc_open(1);
 	const config_t* config = NULL;
 	if (globalConfig != NULL) {
 		config = globalConfig->getConfig();
@@ -144,8 +142,12 @@ int handlePlayerLoginReq(Session& session, std::string&, std::string& data) {
 	rsp_pkt.buildHeader(1);
 	rsp_pkt.setData(data);
 	// for whatever reason, despite req using the session key, this packet uses the dispatch key... weird
-	rsp_pkt.setUseDispatchKey(1);
+	//rsp_pkt.setUseDispatchKey(1);
 	int ret = session.sendPacket(rsp_pkt);
-	if (!ret) session.setState(Session::ACTIVE);
+	if (!ret) {
+		// TODO once we implement proper avatar storage, send out DoSetPlayerBornDataNotify if avatar storage is empty. This triggers the opening cutscene in the client.
+		// else...
+		player->onLogin(session);
+	}
 	return ret;
 }

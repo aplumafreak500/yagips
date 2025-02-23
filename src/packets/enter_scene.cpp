@@ -20,8 +20,8 @@ You should have received a copy of the GNU Affero General Public License along w
 int handleEnterSceneReadyReq(Session& session, std::string&, std::string& data) {
 	proto::EnterSceneReadyRsp rsp;
 	proto::EnterScenePeerNotify notif;
-	Packet rsp_pkt(283);
-	Packet notif_pkt(284);
+	Packet rsp_pkt(proto::EnterSceneReadyRsp_CmdId_CMD_ID);
+	Packet notif_pkt(proto::EnterScenePeerNotify_CmdId_CMD_ID);
 	Player* player = session.getPlayer();
 	if (player == NULL) {
 		fprintf(stderr, "No player associated with current session\n");

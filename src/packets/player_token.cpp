@@ -24,7 +24,7 @@ int handleGetPlayerTokenReq(Session& session, std::string&, std::string& data) {
 	proto::GetPlayerTokenReq req;
 	proto::GetPlayerTokenRsp rsp;
 	unsigned long long encryptSeed;
-	Packet rsp_pkt(102);
+	Packet rsp_pkt(proto::GetPlayerTokenRsp_CmdId_CMD_ID);
 	if (session.getState() != Session::TOKEN_WAIT) {
 		fprintf(stderr, "Session state is not TOKEN_WAIT\n");
 		// TODO should we send a response packet?

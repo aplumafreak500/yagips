@@ -34,7 +34,7 @@ You should have received a copy of the GNU Affero General Public License along w
 Player::Player() {
 	account = NULL;
 	session = NULL;
-	tpToken = 1;
+	tpToken = 1000;
 	nextGuid = 1;
 	ar = 1;
 	ar_exp = 0;
@@ -148,7 +148,7 @@ Player::operator storage::PlayerInfo() const {
 	for (auto i = openstates.cbegin(); i != openstates.cend(); i++) {
 		ret.add_open_states(*i);
 	}
-#if 0
+#if 1
 	for (auto i = teams.cbegin(); i != teams.cend(); i++) {
 		proto::AvatarTeam* t = ret.add_teams();
 		*t = *i;
@@ -170,7 +170,7 @@ int Player::loadFromDb(unsigned int _uid) {
 }
 
 int Player::saveToDb() const {
-#if 0
+#if 1
 	saveInventoryAndAvatars();
 #endif
 	return globalDbGate->savePlayer(*this);
@@ -550,7 +550,7 @@ void Player::setOpenstate(unsigned int state, int sendNotify) {
 			auto os_list = p.mutable_open_state_map();
 			(*os_list)[state] = 1;
 			if (p.SerializeToString(&pkt_data)) {
-				Packet pkt(125);
+				Packet pkt(proto::OpenStateChangeNotify_CmdId_CMD_ID);
 				pkt.setData(pkt_data);
 				session->sendPacket(pkt);
 			}
@@ -575,7 +575,7 @@ void Player::clearOpenstate(unsigned int state, int sendNotify) {
 			auto os_list = p.mutable_open_state_map();
 			(*os_list)[state] = 0;
 			if (p.SerializeToString(&pkt_data)) {
-				Packet pkt(125);
+				Packet pkt(proto::OpenStateChangeNotify_CmdId_CMD_ID);
 				pkt.setData(pkt_data);
 				session->sendPacket(pkt);
 			}
@@ -621,7 +621,7 @@ void Player::updateOpenstates(int sendNotify) {
 				(*os_list)[*i] = 1;
 			}
 			if (p.SerializeToString(&pkt_data)) {
-				Packet pkt(124);
+				Packet pkt(proto::OpenStateUpdateNotify_CmdId_CMD_ID);
 				pkt.setData(pkt_data);
 				session->sendPacket(pkt);
 			}
@@ -687,14 +687,13 @@ void Player::onLogin(Session& s) {
 	(*m)[1] = atp;
 	adn.set_choose_avatar_guid(guid);
 	adn.set_cur_avatar_team_id(1);
+	adn.add_owned_flycloak_list(140001);
 	if (adn.SerializeToString(&pkt_data)) {
-		Packet adn_p(1716);
+		Packet adn_p(proto::AvatarDataNotify_CmdId_CMD_ID);
 		adn_p.buildHeader(s.nextSeq());
 		adn_p.setData(pkt_data);
 		s.sendPacket(adn_p);
 	}
-	proto::Vector* _pos = new proto::Vector();
-	*_pos = pos;
 	updateOpenstates(1);
 	proto::PlayerDataNotify pdn;
 	pdn.set_nick_name(name);
@@ -709,7 +708,7 @@ void Player::onLogin(Session& s) {
 	// TODO Hardcoded until proper region id handling is implemented
 	pdn.set_region_id(1);
 	if (pdn.SerializeToString(&pkt_data)) {
-		Packet pdn_p(108);
+		Packet pdn_p(proto::PlayerDataNotify_CmdId_CMD_ID);
 		pdn_p.buildHeader(2);
 		pdn_p.setData(pkt_data);
 		s.sendPacket(pdn_p);
@@ -720,7 +719,7 @@ void Player::onLogin(Session& s) {
 	psn.set_weight_limit(5000);
 	// TODO Fill in `item_list`
 	if (psn.SerializeToString(&pkt_data)) {
-		Packet psn_p(601);
+		Packet psn_p(proto::PlayerStoreNotify_CmdId_CMD_ID);
 		psn_p.buildHeader(2);
 		psn_p.setData(pkt_data);
 		s.sendPacket(psn_p);
@@ -733,11 +732,13 @@ void Player::onLogin(Session& s) {
 	swln.set_weapon_count_limit(1000);
 	swln.set_reliquary_count_limit(2000);
 	if (swln.SerializeToString(&pkt_data)) {
-		Packet swln_p(602);
+		Packet swln_p(proto::StoreWeightLimitNotify_CmdId_CMD_ID);
 		swln_p.setData(pkt_data);
 		s.sendPacket(swln_p);
 	}
 	proto::PlayerEnterSceneNotify esn;
+	proto::Vector* _pos = new proto::Vector();
+	*_pos = pos;
 	esn.set_scene_id(scene_id);
 	esn.set_allocated_pos(_pos);
 	esn.set_scene_begin_time(curTimeMs());
@@ -748,7 +749,7 @@ void Player::onLogin(Session& s) {
 	esn.set_enter_reason(1);
 	esn.set_type(proto::ENTER_SELF);
 	if (esn.SerializeToString(&pkt_data)) {
-		Packet esn_p(201);
+		Packet esn_p(proto::PlayerEnterSceneNotify_CmdId_CMD_ID);
 		esn_p.setData(pkt_data);
 		s.sendPacket(esn_p);
 	}
