@@ -177,6 +177,7 @@ int Player::saveToDb() const {
 }
 
 int Player::loadInventoryAndAvatars() {
+	// TODO Move to dbgate.cpp (pass Player as `*this` and then call addItem or addAvatar)
 	storage::InventoryEntry* ent = NULL;
 	for (unsigned long long i = 0; i < nextGuid; i++) {
 		ent = globalDbGate->getInventoryEntry(((unsigned long long) uid << 32) | i);
@@ -221,28 +222,28 @@ void Player::setTpToken(unsigned int t) {
 
 const Avatar* Player::getAvatarById(unsigned int id) const {
 	for (auto i = avatars.cbegin(); i != avatars.cend(); i++) {
-		if (id == (*i).getId()) return &(*i);
+		if (id == i->getId()) return &(*i);
 	}
 	return NULL;
 }
 
 Avatar* Player::getAvatarById(unsigned int id) {
 	for (auto i = avatars.begin(); i != avatars.end(); i++) {
-		if (id == (*i).getId()) return &(*i);
+		if (id == i->getId()) return &(*i);
 	}
 	return NULL;
 }
 
 const Avatar* Player::getAvatarByGuid(unsigned long long guid) const {
 	for (auto i = avatars.cbegin(); i != avatars.cend(); i++) {
-		if (guid == (*i).getGuid()) return &(*i);
+		if (guid == i->getGuid()) return &(*i);
 	}
 	return NULL;
 }
 
 Avatar* Player::getAvatarByGuid(unsigned long long guid) {
 	for (auto i = avatars.begin(); i != avatars.end(); i++) {
-		if (guid == (*i).getGuid()) return &(*i);
+		if (guid == i->getGuid()) return &(*i);
 	}
 	return NULL;
 }
@@ -250,7 +251,7 @@ Avatar* Player::getAvatarByGuid(unsigned long long guid) {
 int Player::setAvatar(unsigned long long guid, Avatar& a) {
 	a.setGuid(guid);
 	for (auto i = avatars.begin(); i != avatars.end(); i++) {
-		if (guid == (*i).getGuid()) {
+		if (guid == i->getGuid()) {
 			*i = a;
 			return 0;
 		}
@@ -262,7 +263,7 @@ int Player::setAvatar(unsigned long long guid, Avatar& a) {
 int Player::setAvatar(unsigned long long guid, const Avatar& a) {
 	if (a.getGuid() != guid) return -1;
 	for (auto i = avatars.begin(); i != avatars.end(); i++) {
-		if (guid == (*i).getGuid()) {
+		if (guid == i->getGuid()) {
 			*i = a;
 			return 0;
 		}
@@ -273,7 +274,7 @@ int Player::setAvatar(unsigned long long guid, const Avatar& a) {
 
 int Player::updateAvatar(const Avatar& a) {
 	for (auto i = avatars.begin(); i != avatars.end(); i++) {
-		if (a.getGuid() == (*i).getGuid()) {
+		if (a.getGuid() == i->getGuid()) {
 			*i = a;
 			return 0;
 		}
@@ -321,7 +322,7 @@ int Player::addAvatar(Avatar** a) {
 	n.setUid(uid);
 	avatars.push_back(n);
 	auto i = avatars.end();
-	assert((*i).getGuid() == n.getGuid());
+	assert(i->getGuid() == n.getGuid());
 	*a = &(*i);
 	return 0;
 }
@@ -342,7 +343,7 @@ int Player::addAvatar(unsigned int id, Avatar** a, unsigned int is_trial) {
 	// TODO Else set trial avatar data
 	avatars.push_back(n);
 	auto i = avatars.end();
-	assert((*i).getGuid() == n.getGuid());
+	assert(i->getGuid() == n.getGuid());
 	*a = &(*i);
 	return 0;
 }
@@ -524,6 +525,125 @@ int Player::removeAvatarFromTeam(unsigned long long guid) {
 
 int Player::removeAvatarFromTeam(unsigned long long guid, AvatarTeam* team) {
 	if (team != NULL) team->delAvatar(getAvatarByGuid(guid));
+	return 0;
+}
+
+
+const Item* Player::getItemById(unsigned int id) const {
+	for (auto i = inventory.cbegin(); i != inventory.cend(); i++) {
+		if (id == i->id) return &(*i);
+	}
+	return NULL;
+}
+
+Item* Player::getItemById(unsigned int id) {
+	for (auto i = inventory.begin(); i != inventory.end(); i++) {
+		if (id == i->id) return &(*i);
+	}
+	return NULL;
+}
+
+const Item* Player::getItemByGuid(unsigned long long guid) const {
+	for (auto i = inventory.cbegin(); i != inventory.cend(); i++) {
+		if (guid == i->guid) return &(*i);
+	}
+	return NULL;
+}
+
+Item* Player::getItemByGuid(unsigned long long guid) {
+	for (auto i = inventory.begin(); i != inventory.end(); i++) {
+		if (guid == i->guid) return &(*i);
+	}
+	return NULL;
+}
+
+int Player::setItem(unsigned long long guid, Item& item) {
+	item.guid = guid;
+	for (auto i = inventory.begin(); i != inventory.end(); i++) {
+		if (guid == i->guid) {
+			*i = item;
+			return 0;
+		}
+	}
+	inventory.push_back(item);
+	return 0;
+}
+
+int Player::setItem(unsigned long long guid, const Item& item) {
+	if (item.guid != guid) return -1;
+	for (auto i = inventory.begin(); i != inventory.end(); i++) {
+		if (guid == i->guid) {
+			*i = item;
+			return 0;
+		}
+	}
+	inventory.push_back(item);
+	return 0;
+}
+
+int Player::updateItem(const Item& item) {
+	for (auto i = inventory.begin(); i != inventory.end(); i++) {
+		if (item.guid == i->guid) {
+			*i = item;
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int Player::addItem(Item* item) {
+	if (item == NULL) return -1;
+	if (!(item->guid >> 32)) item->guid = (unsigned long long) uid << 32;
+	if (!(item->guid & 0xffffffff)) {
+		item->guid |= nextGuid;
+		nextGuid++;
+	}
+	inventory.push_back(*item);
+	return 0;
+}
+
+int Player::addItem(const Item* item) {
+	if (item == NULL) return -1;
+	inventory.push_back(*item);
+	return 0;
+}
+
+int Player::addItem(Item& item) {
+	if (!(item.guid >> 32)) item.guid = (unsigned long long) uid << 32;
+	if (!(item.guid & 0xffffffff)) {
+		item.guid |= nextGuid;
+		nextGuid++;
+	}
+	inventory.push_back(item);
+	return 0;
+}
+
+int Player::addItem(const Item& item) {
+	inventory.push_back(item);
+	return 0;
+}
+
+int Player::addItem(Item** item) {
+	if (item == NULL) return -1;
+	Item n;
+	n.guid = ((unsigned long long) uid << 32) | nextGuid;
+	nextGuid++;
+	inventory.push_back(n);
+	auto i = inventory.end();
+	assert(i->guid == n.guid);
+	*item = &(*i);
+	return 0;
+}
+
+int Player::addItem(unsigned int id, Item** item) {
+	if (item == NULL) return -1;
+	Item n(id);
+	n.guid = ((unsigned long long) uid << 32) | nextGuid;
+	nextGuid++;
+	inventory.push_back(n);
+	auto i = inventory.end();
+	assert(i->guid == n.guid);
+	*item = &(*i);
 	return 0;
 }
 
