@@ -863,6 +863,7 @@ void Player::onLogin(Session& s) {
 	addAvatarToTeam(guid, &at);
 	addAvatarTeam(&at);
 	avp = adn.add_avatar_list();
+	avp->add_equip_guid_list(guid | 0x1000000);
 	*avp = av;
 	atp = at;
 	auto m = adn.mutable_avatar_team_map();
@@ -895,11 +896,24 @@ void Player::onLogin(Session& s) {
 		pdn_p.setData(pkt_data);
 		s.sendPacket(pdn_p);
 	}
+	// TODO Hardcoded until proper inventory handling is implemented
+	Item it(14502);
+	it.guid = guid | 0x1000000;
+	it.type = ITEM_WEAPON;
+	it.data.weapon.level = 90;
+	it.data.weapon.exp = 700000;
+	it.data.weapon.locked = 1;
+	it.data.weapon.ascension = 6;
+	it.data.weapon.refinement = 5;
+	it.data.weapon.numAffixes = 1;
+	it.data.weapon.affixes[0] = 1145024;
+	addItem(it);
 	proto::PlayerStoreNotify psn;
 	psn.set_store_type(proto::StoreType::STORE_PACK);
 	// TODO Make this configurable
 	psn.set_weight_limit(5000);
-	// TODO Fill in `item_list`
+	proto::Item* it_p = psn.add_item_list();
+	*it_p = it;
 	if (psn.SerializeToString(&pkt_data)) {
 		Packet psn_p(proto::PlayerStoreNotify_CmdId_CMD_ID);
 		psn_p.buildHeader(2);
