@@ -348,6 +348,37 @@ int Player::addAvatar(unsigned int id, Avatar** a, unsigned int is_trial) {
 	return 0;
 }
 
+int Player::delAvatar(unsigned int id) {
+	for (auto i = avatars.begin(); i != avatars.end(); i++) {
+		if (id == i->getId()) {
+			avatars.erase(i);
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int Player::delAvatar(unsigned long long guid) {
+	for (auto i = avatars.begin(); i != avatars.end(); i++) {
+		if (guid == i->getGuid()) {
+			avatars.erase(i);
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int Player::delAvatar(const Avatar* a) {
+	if (a == NULL) return 0;
+	for (auto i = avatars.begin(); i != avatars.end(); i++) {
+		if (a->getGuid() == i->getGuid()) {
+			avatars.erase(i);
+			return 0;
+		}
+	}
+	return -1;
+}
+
 int Player::swapToAvatar(unsigned int id) {
 	return swapToAvatar(getAvatarById(id));
 }
@@ -645,6 +676,37 @@ int Player::addItem(unsigned int id, Item** item) {
 	assert(i->guid == n.guid);
 	*item = &(*i);
 	return 0;
+}
+
+int Player::delItem(unsigned int id) {
+	for (auto i = inventory.begin(); i != inventory.end(); i++) {
+		if (id == i->id) {
+			inventory.erase(i);
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int Player::delItem(unsigned long long guid) {
+	for (auto i = inventory.begin(); i != inventory.end(); i++) {
+		if (guid == i->guid) {
+			inventory.erase(i);
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int Player::delItem(const Item* item) {
+	if (item == NULL) return 0;
+	for (auto i = inventory.begin(); i != inventory.end(); i++) {
+		if (item->guid == i->guid) {
+			inventory.erase(i);
+			return 0;
+		}
+	}
+	return -1;
 }
 
 unsigned int Player::getOpenstate(unsigned int state) const {

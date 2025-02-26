@@ -57,6 +57,9 @@ public:
 	int addAvatar(Avatar**);
 	int addAvatar(unsigned int, Avatar**);
 	int addAvatar(unsigned int, Avatar**, unsigned int);
+	int delAvatar(unsigned int);
+	int delAvatar(unsigned long long);
+	int delAvatar(const Avatar*);
 	int swapToAvatar(unsigned int);
 	int swapToAvatar(unsigned long long);
 	int swapToAvatar(const Avatar*);
@@ -98,6 +101,9 @@ public:
 	int addItem(const Item&);
 	int addItem(Item**);
 	int addItem(unsigned int, Item**);
+	int delItem(unsigned int);
+	int delItem(unsigned long long);
+	int delItem(const Item*);
 	unsigned int getOpenstate(unsigned int) const;
 	void setOpenstate(unsigned int);
 	void setOpenstate(unsigned int, int);
