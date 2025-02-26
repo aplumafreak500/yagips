@@ -78,6 +78,7 @@ Avatar::Avatar(const proto::AvatarInfo& pb) {
 		friendship_exp = pb.fetter_info().exp_number();
 	}
 	// this is quite the lazy way to do it lol
+	// TODO Maybe there's a better way to do this, especially where the Traveler is concerned...
 	constellation = pb.talent_id_list_size();
 	// TODO Auxiliary friendship data
 	// TODO Has obtained namecard
@@ -113,6 +114,7 @@ Avatar::operator proto::AvatarInfo() const {
 	pb.set_life_state(1);
 	// TODO Artifacts/weapon
 	unsigned int i;
+	// TODO Maybe there's a better way to do this, especially where the Traveler is concerned...
 	for (i = 0; i < constellation; i++) {
 		pb.add_talent_id_list(skillDepot->constellationSkills[i]);
 	}

@@ -402,6 +402,9 @@ extern "C" {
 								}
 							}
 						}
+						else if (hs->magic1 == htobe32(0x194) && hs->magic2 == htobe32(0x19419494)) { // A shutdown packet, possibly for a session that already closed
+							continue;
+						}
 						else if (pkt_size >= 28) { // Unfortunately, if a packet is sized bigger than KCP's header, there's no viable way to check for valid KCP headers that don't belong to a connected client, compared to completely invalid packets altogether.
 							fprintf(stderr, "Warning: Invalid packet received (or session id is not registered)\n");
 							fprintf(stderr, "Hexdump of Packet:\n");

@@ -41,7 +41,7 @@ KcpSession::KcpSession(unsigned long long id, sock_t* _client, Gameserver* _gs) 
 	ikcp_wndsize(kcp, 256, 256);
 	kcp_next_update = 0;
 	kcp->writelog = (void(*)(const char*, ikcpcb*, void*)) logFromKcp;
-	kcp->logmask = -1;
+	kcp->logmask = 0;//-1
 }
 
 KcpSession::~KcpSession() {

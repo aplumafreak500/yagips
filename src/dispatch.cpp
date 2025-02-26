@@ -1123,7 +1123,7 @@ std::string handleActionTicket(const char* post) {
 	return ret;
 }
 
-// /binder/ticket (/hk4e_{cn,global}/mdk/shield/api/bindRealname)
+// /binder/verify (/hk4e_{cn,global}/mdk/shield/api/bindRealname)
 std::string handleBindRealname(const char* post) {
 	if (post == NULL) {
 		return "{\"retcode\":-103,\"message\":\"Login failure: `post` is NULL\"}";
@@ -1305,7 +1305,7 @@ extern "C" {
 		SDK_GET_AUTH_TOKEN,			// Generate new auth token
 		SDK_CHECK_AUTH_TOKEN,		// Verify auth token
 		SDK_CHECK_COMBO_TOKEN,		// Verify auth token and send back combo token
-		SDK_ACTION_TICKET,			// CN server only, verify auth token and send back binder token
+		SDK_ACTION_TICKET,			// Verify auth token and send back binder token
 		SDK_BIND_REALNAME,			// CN server only, verify binder token, check realname/id number and store them for later verification. Used to enforce things like age and time limits on the official server; completely irrelevant on OS servers
 		SDK_GACHA_CUR,				// Current banners
 		SDK_GACHA_HIST,				// Gacha history

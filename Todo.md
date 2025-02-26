@@ -103,4 +103,4 @@ This list is subject to change.
 	- Configure-time proto selection
 - Decentralized server core \(like GIO\)
 	- Ability to directly interface with internal GIO cross-server protocol
-- Set up for porting core server functionality to support sister game clients \(`hkrpg`/`zzz`/`bk3`\)
+- Set up for porting core server functionality to support sister game clients \(`hkrpg`/`nap`/`bk3`\)
