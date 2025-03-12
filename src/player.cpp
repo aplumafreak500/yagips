@@ -34,7 +34,9 @@ You should have received a copy of the GNU Affero General Public License along w
 Player::Player() {
 	account = NULL;
 	session = NULL;
-	tpToken = 1000;
+	curAvatar = NULL;
+	curTeamIndex = 0;
+	tpToken = 0; // 1000
 	nextGuid = 1;
 	ar = 1;
 	ar_exp = 0;
@@ -92,6 +94,8 @@ Player::Player(const storage::PlayerInfo& p) {
 		AvatarTeam t(*i, *this);
 		teams.push_back(std::move(t));
 	}
+	curTeamIndex = p.cur_team_id();
+	curAvatar = getAvatarByGuid(p.cur_avatar_guid());
 #endif
 }
 
@@ -153,6 +157,8 @@ Player::operator storage::PlayerInfo() const {
 		proto::AvatarTeam* t = ret.add_teams();
 		*t = *i;
 	}
+	ret.set_cur_team_id(curTeamIndex);
+	ret.set_cur_avatar_guid(curAvatar->getGuid());
 #endif
 	return ret;
 }
@@ -183,7 +189,7 @@ int Player::loadInventoryAndAvatars() {
 		ent = globalDbGate->getInventoryEntry(((unsigned long long) uid << 32) | i);
 		if (ent == NULL) continue;
 		if (ent->has_avatar()) addAvatar(ent->avatar());
-		// TODO else if (ent->has_item()) ;
+		else if (ent->has_item()) addItem(ent->item());
 	}
 	return 0;
 }
@@ -192,7 +198,9 @@ int Player::saveInventoryAndAvatars() const {
 	for (auto i = avatars.cbegin(); i != avatars.cend(); i++) {
 		globalDbGate->saveAvatar(*i);
 	}
-	// TODO Items
+	for (auto i = inventory.cbegin(); i != inventory.cend(); i++) {
+		globalDbGate->saveItem(*i);
+	}
 	return 0;
 }
 
@@ -218,6 +226,14 @@ unsigned int Player::getTpToken() const {
 
 void Player::setTpToken(unsigned int t) {
 	tpToken = t;
+}
+
+const Avatar* Player::getCurAvatar() const {
+	return curAvatar;
+}
+
+Avatar* Player::getCurAvatar() {
+	return getAvatarByGuid(curAvatar->getGuid());
 }
 
 const Avatar* Player::getAvatarById(unsigned int id) const {
@@ -413,11 +429,11 @@ AvatarTeam* Player::getAvatarTeam(unsigned int i) {
 	return NULL;
 }
 
-const AvatarTeam* Player::getCurrAvatarTeam() const {
+const AvatarTeam* Player::getCurAvatarTeam() const {
 	return getAvatarTeam(curTeamIndex);
 }
 
-AvatarTeam* Player::getCurrAvatarTeam() {
+AvatarTeam* Player::getCurAvatarTeam() {
 	return getAvatarTeam(curTeamIndex);
 }
 
@@ -433,6 +449,10 @@ int Player::swapToTeam(const AvatarTeam* team) {
 	int ret = curTeamIndex;
 	for (auto j = teams.cbegin(); j != teams.cend(); j++) {
 		if (team == &(*j)) {
+			curTeamIndex = i;
+			return ret;
+		}
+		if (*team == *j) {
 			curTeamIndex = i;
 			return ret;
 		}
@@ -506,7 +526,7 @@ int Player::delAvatarTeam(unsigned int idx) {
 }
 
 int Player::addAvatarToTeam(const Avatar* av) {
-	return addAvatarToTeam(av, getCurrAvatarTeam());
+	return addAvatarToTeam(av, getCurAvatarTeam());
 }
 
 int Player::addAvatarToTeam(const Avatar* av, AvatarTeam* team) {
@@ -515,7 +535,7 @@ int Player::addAvatarToTeam(const Avatar* av, AvatarTeam* team) {
 }
 
 int Player::addAvatarToTeam(unsigned int idx) {
-	return addAvatarToTeam(idx, getCurrAvatarTeam());
+	return addAvatarToTeam(idx, getCurAvatarTeam());
 }
 
 int Player::addAvatarToTeam(unsigned int idx, AvatarTeam* team) {
@@ -524,7 +544,7 @@ int Player::addAvatarToTeam(unsigned int idx, AvatarTeam* team) {
 }
 
 int Player::addAvatarToTeam(unsigned long long guid) {
-	return addAvatarToTeam(guid, getCurrAvatarTeam());
+	return addAvatarToTeam(guid, getCurAvatarTeam());
 }
 
 int Player::addAvatarToTeam(unsigned long long guid, AvatarTeam* team) {
@@ -533,7 +553,7 @@ int Player::addAvatarToTeam(unsigned long long guid, AvatarTeam* team) {
 }
 
 int Player::removeAvatarFromTeam(const Avatar* av) {
-	return removeAvatarFromTeam(av, getCurrAvatarTeam());
+	return removeAvatarFromTeam(av, getCurAvatarTeam());
 }
 
 int Player::removeAvatarFromTeam(const Avatar* av, AvatarTeam* team) {
@@ -542,7 +562,7 @@ int Player::removeAvatarFromTeam(const Avatar* av, AvatarTeam* team) {
 }
 
 int Player::removeAvatarFromTeam(unsigned int idx) {
-	return removeAvatarFromTeam(idx, getCurrAvatarTeam());
+	return removeAvatarFromTeam(idx, getCurAvatarTeam());
 }
 
 int Player::removeAvatarFromTeam(unsigned int idx, AvatarTeam* team) {
@@ -551,7 +571,7 @@ int Player::removeAvatarFromTeam(unsigned int idx, AvatarTeam* team) {
 }
 
 int Player::removeAvatarFromTeam(unsigned long long guid) {
-	return removeAvatarFromTeam(guid, getCurrAvatarTeam());
+	return removeAvatarFromTeam(guid, getCurAvatarTeam());
 }
 
 int Player::removeAvatarFromTeam(unsigned long long guid, AvatarTeam* team) {
@@ -858,10 +878,12 @@ void Player::onLogin(Session& s) {
 	Avatar av(10000029); // Klee can help!
 	av.setGuid(guid);
 	addAvatar(av);
+	swapToAvatar(guid);
 	AvatarTeam at;
 	at.setName("yagips test team");
 	addAvatarToTeam(guid, &at);
 	addAvatarTeam(&at);
+	swapToTeam(&at);
 	avp = adn.add_avatar_list();
 	avp->add_equip_guid_list(guid | 0x1000000);
 	*avp = av;

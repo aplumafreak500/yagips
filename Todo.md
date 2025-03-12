@@ -69,7 +69,7 @@ This list is subject to change.
 	- Work in progress \(about 60% complete\)
 - [x] Save and load player's last position
 - [ ] Barebones inventory
-	- Work in progress \(about 20% complete\)
+	- Work in progress \(about 25% complete\)
 - [ ] Barebones scene tags and openstates
 	- Openstate system is in place. Scene tags need more work on "Proper scene handling" first
 - [ ] Barebones scene points \(teleport\)

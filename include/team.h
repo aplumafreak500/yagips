@@ -35,6 +35,8 @@ public:
 	int setAvatar(const Avatar*, unsigned int);
 	size_t size() const;
 	operator proto::AvatarTeam() const;
+	bool operator ==(const AvatarTeam&) const;
+	bool operator !=(const AvatarTeam&) const;
 private:
 	std::string name;
 	std::list<const Avatar*> avatars;

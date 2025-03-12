@@ -137,3 +137,33 @@ int AvatarTeam::setAvatar(const Avatar* a, unsigned int i) {
 size_t AvatarTeam::size() const {
 	return avatars.size();
 }
+
+bool AvatarTeam::operator ==(const AvatarTeam& t) const {
+	if (name != t.getName()) return false;
+	std::list<const Avatar*> c_avatars = t.getAvatars();
+	if (avatars == c_avatars) {
+		// high confidence, since we only store pointers
+		return true;
+	}
+	if (avatars.size() != t.size()) return false;
+	auto i = avatars.cbegin();
+	auto j = c_avatars.cbegin();
+	while (1) {
+		if (&(*i) != &(*j)) {
+			//if (*i != *j) return false; // TODO
+			if ((*i)->getGuid() != (*j)->getGuid()) return false;
+		}
+		i++;
+		if (i == avatars.cend()) {
+			if (j == c_avatars.cend()) break;
+			return false;
+		}
+		i++;
+		j++;
+	}
+	return true;
+}
+
+bool AvatarTeam::operator !=(const AvatarTeam& t) const {
+	return !(*this == t);
+}

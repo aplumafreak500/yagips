@@ -47,6 +47,8 @@ public:
 	Avatar* getAvatarById(unsigned int);
 	const Avatar* getAvatarByGuid(unsigned long long) const;
 	Avatar* getAvatarByGuid(unsigned long long);
+	const Avatar* getCurAvatar() const;
+	Avatar* getCurAvatar();
 	int setAvatar(unsigned long long, Avatar&);
 	int setAvatar(unsigned long long, const Avatar&);
 	int updateAvatar(const Avatar&);
@@ -65,8 +67,8 @@ public:
 	int swapToAvatar(const Avatar*);
 	const AvatarTeam* getAvatarTeam(unsigned int) const;
 	AvatarTeam* getAvatarTeam(unsigned int);
-	const AvatarTeam* getCurrAvatarTeam() const;
-	AvatarTeam* getCurrAvatarTeam();
+	const AvatarTeam* getCurAvatarTeam() const;
+	AvatarTeam* getCurAvatarTeam();
 	int swapToTeam(unsigned int);
 	int swapToTeam(const AvatarTeam*);
 	int addAvatarTeam();
