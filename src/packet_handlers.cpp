@@ -16,14 +16,14 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "proto/player.pb.h"
 #include "proto/scene.pb.h"
 #include "proto/social.pb.h"
+#include "proto/fight.pb.h"
 #include "proto/misc.pb.h"
-
-// TODO Use a file full of enum constants that can be auto generated. This is due to the fact that opcode IDs (usually) change from one client version to the next.
 
 extern int handlePingReq(Session&, std::string&, std::string&);
 extern int handleGetPlayerTokenReq(Session&, std::string&, std::string&);
 extern int handlePlayerLoginReq(Session&, std::string&, std::string&);
 extern int handleEnterSceneReadyReq(Session&, std::string&, std::string&);
+extern int handleSceneInitFinishReq(Session&, std::string&, std::string&);
 extern int handleGetPlayerBlacklistReq(Session&, std::string&, std::string&);
 
 int processPacket(Session& session, Packet& packet, int* isValid) {
@@ -44,7 +44,12 @@ int processPacket(Session& session, Packet& packet, int* isValid) {
 		return handlePlayerLoginReq(session, header, data);
 	case proto::EnterSceneReadyReq_CmdId_CMD_ID:
 		return handleEnterSceneReadyReq(session, header, data);
+	case proto::SceneInitFinishReq_CmdId_CMD_ID:
+		return handleSceneInitFinishReq(session, header, data);
 	case proto::GetPlayerBlacklistReq_CmdId_CMD_ID:
 		return handleGetPlayerBlacklistReq(session, header, data);
+	case proto::EvtAiSyncCombatThreatInfoNotify_CmdId_CMD_ID:
+		// TODO properly handle. It's here for now so the logs don't get spammed, as the client seems to love sending this repeatedly, especially when logging in
+		return 0;
 	}
 }
