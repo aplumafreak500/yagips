@@ -142,7 +142,7 @@ int handlePlayerLoginReq(Session& session, std::string&, std::string& data) {
 	rsp_pkt.buildHeader(1);
 	rsp_pkt.setData(data);
 	// for whatever reason, despite req using the session key, this packet uses the dispatch key... weird
-	//rsp_pkt.setUseDispatchKey(1);
+	rsp_pkt.setUseDispatchKey(1);
 	int ret = session.sendPacket(rsp_pkt);
 	if (!ret) {
 		// TODO once we implement proper avatar storage, send out DoSetPlayerBornDataNotify if avatar storage is empty. This triggers the opening cutscene in the client.

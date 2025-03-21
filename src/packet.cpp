@@ -18,12 +18,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include "packet_head.pb.h"
 #include "misc.pb.h"
 
-Packet::Packet() {
-	rawpkt_buf = NULL;
-	rawpkt_sz = 0;
-	opcode = 0;
-	use_dispatch_key = 0;
-}
+Packet::Packet() : Packet(0) {}
 
 Packet::Packet(unsigned short opc) {
 	rawpkt_buf = NULL;
@@ -74,8 +69,10 @@ int Packet::parse(const unsigned char* buf, size_t sz) {
 	data.assign((const char*) buf + hdr_sz + 10, data_sz);
 	rawpkt_buf = (unsigned char*) buf;
 	rawpkt_sz = sz;
-#if 0
+#if 1
 	if (opcode != proto::PingReq_CmdId_CMD_ID) {
+		fprintf(stderr, "parsed packet hexdump (header)\n");
+		DbgHexdump((unsigned char*) header.c_str(), header.size());
 		fprintf(stderr, "parsed packet hexdump (data)\n");
 		DbgHexdump((unsigned char*) data.c_str(), data.size());
 	}
@@ -91,8 +88,10 @@ int Packet::build() {
 int Packet::build(unsigned char* buf, size_t* sz) {
 	if (buf == NULL) return -1;
 	if (sz == NULL) return -1;
-#if 0
+#if 1
 	if (opcode != proto::PingRsp_CmdId_CMD_ID) {
+		fprintf(stderr, "built packet hexdump (header)\n");
+		DbgHexdump((unsigned char*) header.c_str(), header.size());
 		fprintf(stderr, "built packet hexdump (data)\n");
 		DbgHexdump((unsigned char*) data.c_str(), data.size());
 	}

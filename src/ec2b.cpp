@@ -25,7 +25,8 @@ extern "C" {
 	static void unscrambleKey(unsigned char[16]);
 }
 
-Ec2b::Ec2b() {}
+Ec2b::Ec2b() : Ec2b(Ec2b::SEED_FROM_RAND) {}
+
 Ec2b::~Ec2b() {}
 
 Ec2b::Ec2b(int method) {
@@ -91,16 +92,7 @@ Ec2b::Ec2b(FILE* f) {
 	}
 }
 
-Ec2b::Ec2b(const std::string& buf) {
-	assert(buf.size() >= 0x81c);
-	const ec2b_t* ec2b = (const ec2b_t*) buf.c_str();
-	assert(ec2b->magic == be32toh(0x45633262));
-	assert(ec2b->keyLen == 16);
-	assert(ec2b->dataLen == 2048);
-	key.assign((const char*) ec2b->key, ec2b->keyLen);
-	data.assign((const char*) ec2b->data, ec2b->dataLen);
-	deriveXor();
-}
+Ec2b::Ec2b(const std::string& buf) : Ec2b(buf.c_str(), buf.size()) {}
 
 Ec2b::Ec2b(const char* buf, size_t sz) {
 	if (buf != NULL) {
@@ -115,14 +107,7 @@ Ec2b::Ec2b(const char* buf, size_t sz) {
 	}
 }
 
-Ec2b::Ec2b(ec2b_t ec2b) {
-	assert(ec2b.magic == be32toh(0x45633262));
-	assert(ec2b.keyLen == 16);
-	assert(ec2b.dataLen == 2048);
-	key.assign((const char*) ec2b.key, ec2b.keyLen);
-	data.assign((const char*) ec2b.data, ec2b.dataLen);
-	deriveXor();
-}
+Ec2b::Ec2b(ec2b_t ec2b) : Ec2b(&ec2b) {}
 
 Ec2b::Ec2b(const ec2b_t* ec2b) {
 	if (ec2b != NULL) {
@@ -151,13 +136,7 @@ Ec2b::Ec2b(const char* _key, size_t keySz, const char* _data, size_t dataSz) {
 	deriveXor();
 }
 
-Ec2b::Ec2b(unsigned long long _seed) {
-	seed = _seed;
-	unsigned char _xorpad[4096];
-	genXorpadFromSeed(seed, _xorpad, 4096, 0, 0);
-	xorpad.assign((const char*) _xorpad, 4096);
-	getFromSeed(Ec2b::SEED_FROM_RAND);
-}
+Ec2b::Ec2b(unsigned long long _seed) : Ec2b(_seed, Ec2b::SEED_FROM_RAND) {}
 
 Ec2b::Ec2b(unsigned long long _seed, int method) {
 	seed = _seed;

@@ -15,7 +15,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 typedef google::protobuf::uint32 uint32;
 
-Item::Item() {}
+Item::Item() : Item(0) {}
 
 Item::Item(unsigned int _id) {
 	id = _id;
