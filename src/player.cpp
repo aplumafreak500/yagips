@@ -158,7 +158,7 @@ Player::operator storage::PlayerInfo() const {
 		*t = *i;
 	}
 	ret.set_cur_team_id(curTeamIndex);
-	ret.set_cur_avatar_guid(curAvatar->getGuid());
+	if (curAvatar != NULL) ret.set_cur_avatar_guid(curAvatar->getGuid());
 #endif
 	return ret;
 }
