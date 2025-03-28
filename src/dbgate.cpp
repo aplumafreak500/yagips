@@ -10,6 +10,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. */
 
 #include <stdio.h>
+#include <endian.h>
 #include <leveldb/db.h>
 #include <stdexcept>
 #include "account.h"
@@ -56,8 +57,8 @@ int dbGate::save() {
 Account* dbGate::getAccountByAid(unsigned int aid) {
 	static char key_c[8];
 	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = ACCOUNT;
-	key_i[1] = aid;
+	key_i[0] = htobe32(ACCOUNT);
+	key_i[1] = htobe32(aid);
 	std::string key(key_c, 8);
 	std::string val = getLdbObject(key);
 	if (val.empty()) return NULL;
@@ -86,7 +87,7 @@ Account* dbGate::getAccountByUsername(const char* username) {
 	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
 		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
-		if (key_type != ACCOUNT) continue;
+		if (key_type != htobe32(ACCOUNT)) continue;
 		val = it->value().ToString();
 		if (!pval->ParseFromString(val)) continue;
 		if (pval->username() == username) {
@@ -112,7 +113,7 @@ Account* dbGate::getAccountByAuthToken(const char* authToken) {
 	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
 		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
-		if (key_type != ACCOUNT) continue;
+		if (key_type != htobe32(ACCOUNT)) continue;
 		val = it->value().ToString();
 		if (!pval->ParseFromString(val)) continue;
 		if (pval->auth_token() == authToken) {
@@ -139,7 +140,7 @@ Account* dbGate::getAccountByComboToken(const char* token) {
 	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
 		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
-		if (key_type != ACCOUNT) continue;
+		if (key_type != htobe32(ACCOUNT)) continue;
 		val = it->value().ToString();
 		if (!pval->ParseFromString(val)) continue;
 		if (pval->combo_token() == token) {
@@ -165,7 +166,7 @@ Account* dbGate::getAccountByBinderToken(const char* token) {
 	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
 		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
-		if (key_type != ACCOUNT) continue;
+		if (key_type != htobe32(ACCOUNT)) continue;
 		val = it->value().ToString();
 		if (!pval->ParseFromString(val)) continue;
 		if (pval->bind_token() == token) {
@@ -192,7 +193,7 @@ Account* dbGate::getAccountByDeviceId(const char* deviceId) {
 	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
 		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
-		if (key_type != ACCOUNT) continue;
+		if (key_type != htobe32(ACCOUNT)) continue;
 		val = it->value().ToString();
 		if (!pval->ParseFromString(val)) continue;
 		if (pval->device_id() == deviceId) {
@@ -227,9 +228,9 @@ Account* dbGate::createAccount(const char* username) {
 	unsigned int* key_i = (unsigned int*) key_c;
 	std::string key;
 	std::string val;
-	key_i[0] = ACCOUNT;
+	key_i[0] = htobe32(ACCOUNT);
 	while(1) {
-		key_i[1] = next_aid;
+		key_i[1] = htobe32(next_aid);
 		key.assign(key_c, 8);
 		val = getLdbObject(key);
 		if (val.empty()) break;
@@ -253,8 +254,8 @@ Account* dbGate::createAccount(const char* username) {
 int dbGate::saveAccount(const Account& account) {
 	static char key_c[8];
 	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = ACCOUNT;
-	key_i[1] = account.getAccountId();
+	key_i[0] = htobe32(ACCOUNT);
+	key_i[1] = htobe32(account.getAccountId());
 	std::string key(key_c, 8);
 	std::string val;
 	storage::AccountInfo a = account;
@@ -266,8 +267,8 @@ int dbGate::deleteAccount(const Account& account) {
 	// TODO Delete player objects owned by this aid
 	static char key_c[8];
 	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = ACCOUNT;
-	key_i[1] = account.getAccountId();
+	key_i[0] = htobe32(ACCOUNT);
+	key_i[1] = htobe32(account.getAccountId());
 	std::string key(key_c, 8);
 	return delLdbObject(key);
 }
@@ -284,7 +285,7 @@ Player* dbGate::getPlayerByAid(unsigned int aid) {
 	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
 		memcpy(&key_type, it->key().ToString().c_str(), sizeof(unsigned int));
-		if (key_type != PLAYER) continue;
+		if (key_type != htobe32(PLAYER)) continue;
 		val = it->value().ToString();
 		if (!pval->ParseFromString(val)) continue;
 		if (pval->aid() == aid) {
@@ -304,8 +305,8 @@ Player* dbGate::getPlayerByAid(unsigned int aid) {
 Player* dbGate::getPlayerByUid(unsigned int uid) {
 	static char key_c[8];
 	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = PLAYER;
-	key_i[1] = uid;
+	key_i[0] = htobe32(PLAYER);
+	key_i[1] = htobe32(uid);
 	std::string key(key_c, 8);
 	std::string val = getLdbObject(key);
 	if (val.empty()) return NULL;
@@ -328,10 +329,10 @@ Player* dbGate::newPlayer() {
 	unsigned int* key_i = (unsigned int*) key_c;
 	std::string key;
 	std::string val;
-	key_i[0] = PLAYER;
+	key_i[0] = htobe32(PLAYER);
 	// TODO Allow reserving uid values
 	while(1) {
-		key_i[1] = next_uid;
+		key_i[1] = htobe32(next_uid);
 		key.assign(key_c, 8);
 		val = getLdbObject(key);
 		if (val.empty()) break;
@@ -348,8 +349,8 @@ Player* dbGate::newPlayer() {
 int dbGate::savePlayer(const Player& player) {
 	static char key_c[8];
 	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = PLAYER;
-	key_i[1] = player.getUid();
+	key_i[0] = htobe32(PLAYER);
+	key_i[1] = htobe32(player.getUid());
 	std::string key(key_c, 8);
 	std::string val;
 	storage::PlayerInfo p = player;
@@ -361,8 +362,8 @@ int dbGate::deletePlayer(const Player& player) {
 	// TODO Delete objects owned by this uid
 	static char key_c[8];
 	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = PLAYER;
-	key_i[1] = player.getUid();
+	key_i[0] = htobe32(PLAYER);
+	key_i[1] = htobe32(player.getUid());
 	std::string key(key_c, 8);
 	return delLdbObject(key);
 }
@@ -410,9 +411,9 @@ int dbGate::delLdbObject(const std::string& key) {
 storage::InventoryEntry* dbGate::getInventoryEntry(unsigned long long guid) {
 	static char key_c[12];
 	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = INVENTORY;
-	key_i[1] = guid >> 32;
-	key_i[2] = guid & -1;
+	key_i[0] = htobe32(INVENTORY);
+	key_i[1] = htobe32(guid >> 32);
+	key_i[2] = htobe32(guid & -1);
 	std::string key(key_c, 12);
 	std::string val = getLdbObject(key);
 	if (val.empty()) return NULL;
@@ -431,9 +432,9 @@ int dbGate::setInventoryEntry(const storage::InventoryEntry& ent) {
 	else if (ent.has_item()) guid = ent.item().guid();
 	static char key_c[12];
 	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = INVENTORY;
-	key_i[1] = guid >> 32;
-	key_i[2] = guid & -1;
+	key_i[0] = htobe32(INVENTORY);
+	key_i[1] = htobe32(guid >> 32);
+	key_i[2] = htobe32(guid & -1);
 	std::string key(key_c, 12);
 	std::string val;
 	if (!ent.SerializeToString(&val)) return -1;
@@ -523,9 +524,9 @@ int dbGate::deleteItem(const proto::Item& i) {
 int dbGate::deleteByGuid(unsigned long long guid) {
 	static char key_c[12];
 	unsigned int* key_i = (unsigned int*) key_c;
-	key_i[0] = INVENTORY;
-	key_i[1] = guid >> 32;
-	key_i[2] = guid & -1;
+	key_i[0] = htobe32(INVENTORY);
+	key_i[1] = htobe32(guid >> 32);
+	key_i[2] = htobe32(guid & -1);
 	std::string key(key_c, 12);
 	return delLdbObject(key);
 }
