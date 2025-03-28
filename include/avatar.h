@@ -43,15 +43,13 @@ public:
 	void setUid(unsigned int);
 	void setOwner(const Player&);
 	unsigned short getWeaponId() const;
-	const Item& getWeapon() const;
-	Item* getWeapon();
+	Item* getWeapon() const;
 	int setWeapon(Item*);
 	std::vector<unsigned short> getArtifactIds() const;
 	std::vector<const Item*> getArtifacts() const;
 	std::vector<Item*> getArtifacts();
 	unsigned short getArtifactId(unsigned int) const;
-	const Item& getArtifact(unsigned int) const;
-	Item* getArtifact(unsigned int);
+	Item* getArtifact(unsigned int) const;
 	int setArtifacts(Item*[5]);
 	int setArtifact(Item*);
 	int setArtifact(Item*, unsigned int);

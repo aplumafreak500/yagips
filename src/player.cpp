@@ -875,8 +875,21 @@ void Player::onLogin(Session& s) {
 	proto::AvatarDataNotify adn;
 	proto::AvatarTeam atp;
 	unsigned long long guid = ((unsigned long long) player->getUid() << 32) | 0xd0d0c0;
+	// TODO Hardcoded until proper inventory handling is implemented
+	Item it(14502);
+	it.guid = guid | 0x1000000;
+	it.type = ITEM_WEAPON;
+	it.data.weapon.level = 90;
+	it.data.weapon.exp = 700000;
+	it.data.weapon.locked = 1;
+	it.data.weapon.ascension = 6;
+	it.data.weapon.refinement = 5;
+	it.data.weapon.numAffixes = 1;
+	it.data.weapon.affixes[0] = 1145024;
+	addItem(it);
 	Avatar av(10000029); // Klee can help!
 	av.setGuid(guid);
+	av.setWeapon(getItemByGuid(it.guid));
 	addAvatar(av);
 	swapToAvatar(guid);
 	AvatarTeam at;
@@ -885,7 +898,7 @@ void Player::onLogin(Session& s) {
 	addAvatarTeam(&at);
 	swapToTeam(&at);
 	avp = adn.add_avatar_list();
-	avp->add_equip_guid_list(guid | 0x1000000);
+	avp->add_equip_guid_list(it.guid);
 	*avp = av;
 	atp = at;
 	auto m = adn.mutable_avatar_team_map();
@@ -918,18 +931,6 @@ void Player::onLogin(Session& s) {
 		pdn_p.setData(pkt_data);
 		s.sendPacket(pdn_p);
 	}
-	// TODO Hardcoded until proper inventory handling is implemented
-	Item it(14502);
-	it.guid = guid | 0x1000000;
-	it.type = ITEM_WEAPON;
-	it.data.weapon.level = 90;
-	it.data.weapon.exp = 700000;
-	it.data.weapon.locked = 1;
-	it.data.weapon.ascension = 6;
-	it.data.weapon.refinement = 5;
-	it.data.weapon.numAffixes = 1;
-	it.data.weapon.affixes[0] = 1145024;
-	addItem(it);
 	proto::PlayerStoreNotify psn;
 	psn.set_store_type(proto::StoreType::STORE_PACK);
 	// TODO Make this configurable

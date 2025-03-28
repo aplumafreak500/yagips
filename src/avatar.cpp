@@ -28,10 +28,14 @@ Avatar::Avatar() {
 	constellation = 0;
 	ascension = 0;
 	wings = 14001;
-	talent_level[0] = 1;
-	talent_level[1] = 1;
-	talent_level[2] = 1;
+	for (unsigned int i = 0; i < 3; i++) {
+		talent_level[i] = 1;
+	}
 	energy = 0;
+	weapon = NULL;
+	for (unsigned int i = 0; i < 5; i++) {
+		artifacts[i] = NULL;
+	}
 }
 
 Avatar::~Avatar() {}
@@ -51,12 +55,15 @@ Avatar::Avatar(unsigned int _id) {
 	constellation = 0;
 	ascension = 0;
 	wings = 14001;
-	talent_level[0] = 1;
-	talent_level[1] = 1;
-	talent_level[2] = 1;
+	for (unsigned int i = 0; i < 3; i++) {
+		talent_level[i] = 1;
+	}
 	energy = 0;
-	// TODO Weapon
+	weapon = NULL;
 	// TODO Costume
+	for (unsigned int i = 0; i < 5; i++) {
+		artifacts[i] = NULL;
+	}
 }
 
 Avatar::Avatar(const proto::AvatarInfo& pb) {
@@ -212,14 +219,11 @@ void Avatar::setOwner(const Player& p) {
 }
 
 unsigned short Avatar::getWeaponId() const {
+	if (weapon == NULL) return 0;
 	return weapon->id;
 }
 
-const Item& Avatar::getWeapon() const {
-	return *weapon;
-}
-
-Item* Avatar::getWeapon() {
+Item* Avatar::getWeapon() const {
 	return weapon;
 }
 
@@ -263,7 +267,7 @@ unsigned short Avatar::getArtifactId(unsigned int i) const {
 	return artifacts[i]->id;
 }
 
-Item* Avatar::getArtifact(unsigned int i) {
+Item* Avatar::getArtifact(unsigned int i) const {
 	return artifacts[i];
 }
 
