@@ -21,12 +21,11 @@ struct Vector {
 	long double y;
 	long double z;
 	Vector();
-	Vector(proto::Vector);
-	Vector(proto::Vector3Int);
-	Vector(VectorInt);
+	Vector(const proto::Vector&);
+	Vector(const proto::Vector3Int&);
+	Vector(const VectorInt&);
 	operator proto::Vector() const;
 	operator proto::Vector3Int() const;
-	operator VectorInt() const;
 };
 
 struct VectorInt {
@@ -34,11 +33,10 @@ struct VectorInt {
 	long long y;
 	long long z;
 	VectorInt();
-	VectorInt(proto::Vector);
-	VectorInt(proto::Vector3Int);
-	VectorInt(Vector);
+	VectorInt(const proto::Vector&);
+	VectorInt(const proto::Vector3Int&);
+	VectorInt(const Vector&);
 	operator proto::Vector() const;
 	operator proto::Vector3Int() const;
-	operator Vector() const;
 };
 #endif
