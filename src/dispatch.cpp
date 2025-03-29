@@ -47,7 +47,7 @@ enum {
 };
 
 #define LIVE_MAJOR 5
-#define LIVE_MINOR 4
+#define LIVE_MINOR 5
 #define CUR_MAJOR 1
 #define CUR_MINOR 3
 
@@ -155,10 +155,10 @@ std::string getQueryRegionListHttpRsp(const char* post) {
 		(major == 1 && minor > 6) || // 2.0 was the first major version with a minor set to 7 or 8
 		(major == LIVE_MAJOR && minor > LIVE_MINOR) ||
 		minor > 8 ||
-		// TODO: Does any beta version have a patch value above 51?
-		patch > 51 ||
+		// TODO: Does any beta version have a patch value above 54?
+		patch > 54 ||
 		// TODO: Does any live version have a patch value above 1?
-		(patch > 1 && patch < 51)
+		(patch > 1 && patch < 50)
 	) {
 		// Invalid version
 		json_object_put(jobj);
