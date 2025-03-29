@@ -13,6 +13,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <string>
 #include "player.h"
 #include "avatar.h"
+#include "item.h"
 #include "packet.h"
 #include "session.h"
 #include "packet_head.pb.h"
@@ -67,6 +68,7 @@ int handleSceneInitFinishReq(Session& session, std::string&, std::string& data) 
 	proto::SceneTeamAvatar* sceneTeamAvatar;
 	proto::SceneAvatarInfo* sceneAvatarInfo;
 	proto::SceneAvatarInfo* sceneAvatarInfo2;
+	proto::SceneWeaponInfo* sceneWeaponInfo;
 	proto::SceneEntityInfo* sceneEntityInfo;
 	proto::AvatarInfo* avatarInfo2;
 	Packet rsp_pkt(proto::SceneInitFinishRsp_CmdId_CMD_ID);
@@ -133,7 +135,13 @@ int handleSceneInitFinishReq(Session& session, std::string&, std::string& data) 
 		sceneAvatarInfo->set_guid(avatar->getGuid());
 		sceneAvatarInfo->set_peer_id(1);
 		sceneAvatarInfo->add_equip_id_list(avatar->getWeapon()->guid);
-		// TODO SceneWeaponInfo
+		sceneWeaponInfo = sceneAvatarInfo->mutable_weapon();
+		sceneWeaponInfo->set_entity_id((6 << 24) | 1);
+		sceneWeaponInfo->set_item_id(avatar->getWeapon()->id);
+		sceneWeaponInfo->set_guid(avatar->getWeapon()->guid);
+		sceneWeaponInfo->set_level(avatar->getWeapon()->data.weapon.level);
+		sceneWeaponInfo->set_promote_level(avatar->getWeapon()->data.weapon.ascension);
+		// TODO Affixes
 		// TODO other fields
 		sceneAvatarInfo2 = sceneEntityInfo->mutable_avatar();
 		*sceneAvatarInfo2 = *sceneAvatarInfo;
