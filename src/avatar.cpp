@@ -36,6 +36,7 @@ Avatar::Avatar() {
 	for (unsigned int i = 0; i < 5; i++) {
 		artifacts[i] = NULL;
 	}
+	set_equips = 0;
 }
 
 Avatar::~Avatar() {}
@@ -64,6 +65,7 @@ Avatar::Avatar(unsigned int _id) {
 	for (unsigned int i = 0; i < 5; i++) {
 		artifacts[i] = NULL;
 	}
+	set_equips = 0;
 }
 
 Avatar::Avatar(const proto::AvatarInfo& pb) {
@@ -90,7 +92,11 @@ Avatar::Avatar(const proto::AvatarInfo& pb) {
 	// TODO Auxiliary friendship data
 	// TODO Has obtained namecard
 	// TODO Costume
-	// TODO Artifacts/weapon
+	unsigned int i;
+	for (i = 0; i < pb.equip_guid_list_size(); i++) {
+		equip_guids.push_back(pb.equip_guid_list(i));
+	}
+	set_equips = 0;
 	// TODO Skill map
 	// TODO Skill level map (talent levels)
 	// TODO Fight props
@@ -99,6 +105,49 @@ Avatar::Avatar(const proto::AvatarInfo& pb) {
 	// TODO Core proud skill level (?)
 	// TODO Inherit proud skill list (?)
 	// TODO Proud skill extra level map (?)
+}
+
+Avatar::operator proto::AvatarInfo() {
+	proto::AvatarFetterInfo* fi = new proto::AvatarFetterInfo;
+	fi->set_exp_level(friendship);
+	if (friendship < 10) {
+		fi->set_exp_number(friendship_exp);
+	}
+	// TODO Auxiliary friendship data
+	// TODO Has obtained namecard
+	proto::AvatarInfo pb;
+	pb.set_avatar_id(id);
+	pb.set_guid(guid);
+	pb.set_born_time(bornTime);
+	pb.set_skill_depot_id(skillDepotId);
+	pb.set_allocated_fetter_info(fi);
+	pb.set_wearing_flycloak_id(wings);
+	// TODO Costume
+	// TODO Check current hp first
+	pb.set_life_state(1);
+	if (!set_equips) loadEquips();
+	if (weapon != NULL) {
+		pb.add_equip_guid_list(weapon->guid);
+	}
+	unsigned int i;
+	for (i = 0; i < 5; i++) {
+		if (artifacts[i] != NULL) {
+			pb.add_equip_guid_list(artifacts[i]->guid);
+		}
+	}
+	// TODO Maybe there's a better way to do this, especially where the Traveler is concerned...
+	for (i = 0; i < constellation; i++) {
+		pb.add_talent_id_list(skillDepot->constellationSkills[i]);
+	}
+	// TODO Skill map
+	// TODO Skill level map (talent levels)
+	// TODO Fight props
+	// TODO Avatar type
+	// TODO Props (including current/max hp, level, exp, ascension, and satiation
+	// TODO Core proud skill level (?)
+	// TODO Inherit proud skill list (?)
+	// TODO Proud skill extra level map (?)
+	return pb;
 }
 
 Avatar::operator proto::AvatarInfo() const {
@@ -119,8 +168,15 @@ Avatar::operator proto::AvatarInfo() const {
 	// TODO Costume
 	// TODO Check current hp first
 	pb.set_life_state(1);
-	// TODO Artifacts/weapon
+	if (weapon != NULL) {
+		pb.add_equip_guid_list(weapon->guid);
+	}
 	unsigned int i;
+	for (i = 0; i < 5; i++) {
+		if (artifacts[i] != NULL) {
+			pb.add_equip_guid_list(artifacts[i]->guid);
+		}
+	}
 	// TODO Maybe there's a better way to do this, especially where the Traveler is concerned...
 	for (i = 0; i < constellation; i++) {
 		pb.add_talent_id_list(skillDepot->constellationSkills[i]);
@@ -150,6 +206,25 @@ int Avatar::loadFromDb(unsigned long long _guid) {
 
 int Avatar::saveToDb() const {
 	return globalDbGate->saveAvatar(*this);
+}
+
+void Avatar::loadEquips() {
+	const Player* owner = getOwner();
+	Item* t;
+	unsigned int i;
+	if (owner != NULL) {
+		for (i = 0; i < equip_guids.size(); i++) {
+			t = (Item*) owner->getItemByGuid(equip_guids[i]);
+			if (t == NULL) continue;
+			else {
+				if (t->type == ITEM_WEAPON) {
+					setWeaponIfNull(t);
+				}
+				else if (t->type == ITEM_ARTIFACT) setArtifactIfNull(t);
+			}
+		}
+		set_equips = 1;
+	}
 }
 
 unsigned int Avatar::getId() const {
@@ -202,20 +277,29 @@ void Avatar::setGuid() { /* TODO
 	if (!guid >> 32) return;
 	Player* owner = globalDbGate->getPlayerByUid(guid >> 32);
 	if (owner == NULL) return;
-	guid = owner->getNewGuid(); */
+	guid = owner->getNewGuid();
+	set_equips = 0; */
 }
 
 void Avatar::setGuid(unsigned long long g) {
+	if (getUid() != (g >> 32)) set_equips = 0;
 	guid = g;
 }
 
 void Avatar::setUid(unsigned int u) {
 	guid &= 0xffffffff;
 	guid |= ((unsigned long long) u) << 32;
+	set_equips = 0;
 }
 
 void Avatar::setOwner(const Player& p) {
 	setUid(p.getUid());
+}
+
+unsigned short Avatar::getWeaponId() {
+	if (!set_equips) loadEquips();
+	if (weapon == NULL) return 0;
+	return weapon->id;
 }
 
 unsigned short Avatar::getWeaponId() const {
@@ -223,8 +307,18 @@ unsigned short Avatar::getWeaponId() const {
 	return weapon->id;
 }
 
+Item* Avatar::getWeapon() {
+	if (!set_equips) loadEquips();
+	return weapon;
+}
+
 Item* Avatar::getWeapon() const {
 	return weapon;
+}
+
+int Avatar::setWeaponIfNull(Item* w) {
+	if (weapon != NULL) return 0;
+	return setWeapon(w);
 }
 
 int Avatar::setWeapon(Item* w) {
@@ -232,6 +326,16 @@ int Avatar::setWeapon(Item* w) {
 	// TODO Check if equipped on someone else
 	weapon = w;
 	return 0;
+}
+
+std::vector<unsigned short> Avatar::getArtifactIds() {
+	std::vector<unsigned short> ret;
+	unsigned int i;
+	for (i = 0; i < 5; i++) {
+		if (artifacts[i] == NULL) ret.push_back(0);
+		else ret.push_back(artifacts[i]->id);
+	}
+	return ret;
 }
 
 std::vector<unsigned short> Avatar::getArtifactIds() const {
@@ -244,16 +348,8 @@ std::vector<unsigned short> Avatar::getArtifactIds() const {
 	return ret;
 }
 
-std::vector<const Item*> Avatar::getArtifacts() const {
-	std::vector<const Item*> ret;
-	unsigned int i;
-	for (i = 0; i < 5; i++) {
-		ret.push_back(artifacts[i]);
-	}
-	return ret;
-}
-
 std::vector<Item*> Avatar::getArtifacts() {
+	if (!set_equips) loadEquips();
 	std::vector<Item*> ret;
 	unsigned int i;
 	for (i = 0; i < 5; i++) {
@@ -262,9 +358,29 @@ std::vector<Item*> Avatar::getArtifacts() {
 	return ret;
 }
 
+std::vector<Item*> Avatar::getArtifacts() const {
+	std::vector<Item*> ret;
+	unsigned int i;
+	for (i = 0; i < 5; i++) {
+		ret.push_back(artifacts[i]);
+	}
+	return ret;
+}
+
+unsigned short Avatar::getArtifactId(unsigned int i) {
+	if (!set_equips) loadEquips();
+	if (artifacts[i] == NULL) return 0;
+	return artifacts[i]->id;
+}
+
 unsigned short Avatar::getArtifactId(unsigned int i) const {
 	if (artifacts[i] == NULL) return 0;
 	return artifacts[i]->id;
+}
+
+Item* Avatar::getArtifact(unsigned int i) {
+	if (!set_equips) loadEquips();
+	return artifacts[i];
 }
 
 Item* Avatar::getArtifact(unsigned int i) const {
@@ -283,13 +399,20 @@ int Avatar::setArtifacts(Item* item[5]) {
 	return 0;
 }
 
-int Avatar::setArtifact(Item* item) {
-	if (item->type != ITEM_ARTIFACT) return -1;
+int Avatar::setArtifactIfNull(Item* item) {
 	unsigned int idx = ((item->id % 100) / 10) - 1;
+	return setArtifactIfNull(item, idx);
+}
+
+int Avatar::setArtifact(Item* item) {
+	unsigned int idx = ((item->id % 100) / 10) - 1;
+	return setArtifact(item, idx);
+}
+
+int Avatar::setArtifactIfNull(Item* item, unsigned int idx) {
 	if (idx >= 5) return -1;
-	// TODO Check if equipped on someone else
-	artifacts[idx] = item;
-	return 0;
+	if (artifacts[idx] != NULL) return 0;
+	return setArtifact(item, idx);
 }
 
 int Avatar::setArtifact(Item* item, unsigned int idx) {
